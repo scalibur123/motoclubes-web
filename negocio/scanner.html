@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Escáner QR</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
+body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
+header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:9px}
+header .brand{font-size:15px;font-weight:800;color:#fff}
+header .sep{color:rgba(255,255,255,.4);margin:0 4px}
+header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+nav{background:var(--white);border-bottom:1px solid var(--card);padding:0 24px;display:flex}
+.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);text-decoration:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.nav-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+main{max-width:500px;margin:0 auto;padding:28px 20px}
+.info-box{background:#FFF0E6;border-radius:12px;padding:14px 16px;font-size:12px;color:#6B4423;line-height:1.6;margin-bottom:16px}
+.info-box strong{font-weight:700;display:block;margin-bottom:4px}
+.card{background:var(--white);border-radius:16px;padding:24px;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:700;color:var(--black);margin-bottom:6px}
+.card-sub{font-size:13px;color:var(--gray);margin-bottom:20px;line-height:1.5}
+.scanner-wrap{position:relative;width:100%;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1;display:none}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+.scanner-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scanner-frame{width:65%;aspect-ratio:1;border:3px solid var(--orange);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);position:relative}
+.scanner-line{position:absolute;width:60%;height:2px;background:var(--orange);animation:scan 2s linear infinite;opacity:.8;left:20%}
+@keyframes scan{0%{top:18%}100%{top:82%}}
+#canvas{display:none}
+.btn-start{width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px}
+.btn-start:hover{background:var(--orange-dark)}
+.btn-start:disabled{opacity:.6;cursor:not-allowed}
+.result-card{border-radius:16px;padding:28px;text-align:center;display:none;margin-bottom:16px}
+.result-card.ok{background:#F0FFF4;border:2px solid #C6F6D5}
+.result-card.error{background:#FFF5F5;border:2px solid #FED7D7}
+.result-icon{font-size:52px;margin-bottom:14px}
+.result-title{font-size:20px;font-weight:800;margin-bottom:10px}
+.result-card.ok .result-title{color:#276749}
+.result-card.error .result-title{color:var(--red)}
+.result-detail{font-size:14px;line-height:1.7;margin-bottom:20px}
+.result-card.ok .result-detail{color:#2F855A}
+.result-card.error .result-detail{color:#C53030}
+.rider-info{background:rgba(255,255,255,.7);border-radius:10px;padding:12px 16px;margin-bottom:16px;text-align:left}
+.rider-info .label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.rider-info .value{font-size:15px;font-weight:700;color:var(--black)}
+.btn-retry{background:var(--orange);color:#fff;border:none;padding:12px 32px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.btn-retry:hover{background:var(--orange-dark)}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+    <span class="brand">MOTOCLUBes</span><span class="sep">·</span>
+    <span class="biz-name" id="biz-name">Cargando...</span>
+  </div>
+  <button class="btn-logout" onclick="handleLogout()">Cerrar sesión</button>
+</header>
+<nav>
+  <a href="index.html" class="nav-tab">Panel</a>
+  <a href="ofertas.html" class="nav-tab">Ofertas</a>
+  <a href="perfil.html" class="nav-tab">Perfil</a>
+  <a href="scanner.html" class="nav-tab active">Escáner</a>
+</nav>
+<main>
+  <div class="info-box">
+    <strong>¿Cómo funciona?</strong>
+    El motero muestra el QR desde la app MOTOCLUBes. Pulsa "Activar cámara", apunta al QR y el canje se registra automáticamente.
+  </div>
+  <div class="card" id="scanner-card">
+    <div class="card-title">📷 Escanear QR del motero</div>
+    <div class="card-sub">Apunta la cámara al código QR que muestra el motero en su móvil.</div>
+    <div class="scanner-wrap" id="scanner-wrap">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="scanner-overlay">
+        <div class="scanner-frame">
+          <div class="scanner-line"></div>
+        </div>
+      </div>
+    </div>
+    <canvas id="canvas"></canvas>
+    <button class="btn-start" id="btn-start" onclick="startScanner()">📷 Activar cámara</button>
+  </div>
+  <div class="result-card ok" id="result-ok">
+    <div class="result-icon">✅</div>
+    <div class="result-title">¡Canje registrado!</div>
+    <div class="rider-info" id="rider-info"></div>
+    <div class="result-detail">El descuento ha sido validado.<br>Se ha enviado confirmación por email.</div>
+    <button class="btn-retry" onclick="resetScanner()">Escanear otro QR</button>
+  </div>
+  <div class="result-card error" id="result-error">
+    <div class="result-icon">❌</div>
+    <div class="result-title">QR no válido</div>
+    <div class="result-detail" id="result-error-detail">Este QR no es válido o ya fue utilizado.</div>
+    <button class="btn-retry" onclick="resetScanner()">Intentar de nuevo</button>
+  </div>
+</main>
+<script>
+const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const session = JSON.parse(localStorage.getItem('business_session') || 'null')
+if (!session) window.location.href = 'login.html'
+
+let scanning = false, stream = null, animFrame = null, bizName = ''
+
+async function init() {
+  const { data: biz } = await sbClient.from('rider_friendly_businesses').select('name,email').eq('id', session.business_id).single()
+  bizName = biz?.name || session.email
+  document.getElementById('biz-name').textContent = bizName
+}
+
+async function startScanner() {
+  const btn = document.getElementById('btn-start')
+  btn.disabled = true
+  btn.innerHTML = '<div class="spinner"></div> Activando...'
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    const video = document.getElementById('video')
+    video.srcObject = stream
+    await video.play()
+    document.getElementById('scanner-wrap').style.display = 'block'
+    btn.style.display = 'none'
+    scanning = true
+    requestAnimationFrame(scanFrame)
+  } catch(e) {
+    btn.disabled = false
+    btn.innerHTML = '📷 Activar cámara'
+    showError('No se pudo acceder a la cámara. Comprueba los permisos del navegador.')
+  }
+}
+
+function scanFrame() {
+  if (!scanning) return
+  const video = document.getElementById('video')
+  const canvas = document.getElementById('canvas')
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
+    if (code) {
+      scanning = false
+      stopCamera()
+      processQR(code.data)
+      return
+    }
+  }
+  animFrame = requestAnimationFrame(scanFrame)
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null }
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null }
+}
+
+async function processQR(data) {
+  const btn = document.getElementById('btn-start')
+  btn.innerHTML = '<div class="spinner"></div> Verificando...'
+  btn.style.display = 'flex'
+  btn.disabled = true
+
+  let couponCode = data
+  try { const p = JSON.parse(data); if (p.code) couponCode = p.code } catch(e) {}
+
+  const { data: coupon } = await sbClient
+    .from('business_coupons')
+    .select('*, business_offers(title, discount_pct, fixed_price, offer_type, applies_to)')
+    .eq('code', couponCode)
+    .single()
+
+  if (!coupon) { showError('Este QR no existe en el sistema.'); return }
+  if (coupon.status === 'redeemed') { showError('Este QR ya fue canjeado anteriormente.'); return }
+  if (coupon.status !== 'active') { showError('Este QR no está activo.'); return }
+  if (coupon.business_id !== session.business_id) { showError('Este QR no pertenece a tu negocio.'); return }
+
+  const { data: profile } = await sbClient
+    .from('profiles')
+    .select('username, full_name')
+    .eq('id', coupon.user_id)
+    .single()
+
+  const now = new Date().toISOString()
+  const offer = coupon.business_offers
+  const commissionPct = 2
+  const offerValue = offer?.fixed_price || null
+  const commissionAmount = offerValue ? (offerValue * commissionPct / 100) : null
+
+  const { error: updateError } = await sbClient
+    .from('business_coupons')
+    .update({ status: 'redeemed', redeemed_at: now, redeemed_by_business: true })
+    .eq('code', couponCode)
+
+  if (updateError) { showError('Error al registrar el canje: ' + updateError.message); return }
+
+  await sbClient.from('business_redemptions').insert({
+    business_id: session.business_id,
+    offer_id: coupon.offer_id,
+    user_id: coupon.user_id,
+    coupon_id: coupon.id,
+    redeemed_at: now,
+    commission_pct: commissionPct,
+    commission_amount: commissionAmount,
+    offer_value: offerValue
+  })
+
+  await fetch(`${SUPABASE_URL}/functions/v1/business-redemption-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+    body: JSON.stringify({
+      business_id: session.business_id,
+      business_name: bizName,
+      rider_nickname: profile?.username || 'Motero',
+      offer_title: offer?.title || 'Oferta',
+      offer_desc: offer?.discount_pct ? offer.discount_pct + '% de descuento' : offer?.fixed_price ? offer.fixed_price + '€' : offer?.title,
+      redeemed_at: now
+    })
+  })
+
+  const offerDesc = offer?.discount_pct ? offer.discount_pct + '% de descuento' : offer?.fixed_price ? offer.fixed_price + '€' : offer?.title || 'Oferta'
+  const riderName = profile?.username || profile?.full_name || 'Motero'
+
+  document.getElementById('rider-info').innerHTML = `
+    <div class="label">Motero</div>
+    <div class="value" style="margin-bottom:10px">🏍️ ${riderName}</div>
+    <div class="label">Oferta aplicada</div>
+    <div class="value">${offerDesc}</div>
+  `
+  document.getElementById('scanner-card').style.display = 'none'
+  document.getElementById('result-ok').style.display = 'block'
+}
+
+function showError(msg) {
+  document.getElementById('result-error-detail').textContent = msg
+  document.getElementById('scanner-card').style.display = 'none'
+  document.getElementById('result-error').style.display = 'block'
+}
+
+function resetScanner() {
+  document.getElementById('scanner-card').style.display = 'block'
+  document.getElementById('scanner-wrap').style.display = 'none'
+  document.getElementById('result-ok').style.display = 'none'
+  document.getElementById('result-error').style.display = 'none'
+  const btn = document.getElementById('btn-start')
+  btn.style.display = 'flex'
+  btn.disabled = false
+  btn.innerHTML = '📷 Activar cámara'
+  scanning = false
+}
+
+function handleLogout() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+init()
+</script>
+</body>
+</html>
