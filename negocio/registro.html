@@ -113,7 +113,8 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
             <div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Cuando lleguen, escanea su QR</strong> desde <strong>motoclubes.es/negocio/scanner</strong> con tu móvil. El descuento queda registrado automáticamente.</div>
           </div>
         </div>
-      </div>  
+      </div>
+
       <button class="btn" id="btn-register" onclick="handleRegister()">Crear cuenta</button>
 
       <hr class="divider">
@@ -171,7 +172,6 @@ window.handleRegister = async function() {
   btn.innerHTML = '<div class="spinner"></div> Creando cuenta...'
 
   try {
-    // Intentar signup
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -180,7 +180,6 @@ window.handleRegister = async function() {
       }
     })
 
-    // Si ya existe, intentar login para obtener el ID real
     let userId
     if (authError && authError.message.includes('already registered')) {
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
@@ -192,7 +191,6 @@ window.handleRegister = async function() {
         return
       }
       userId = loginData.user.id
-      // Cerrar sesión inmediatamente — el registro aún no está completo
       await supabase.auth.signOut()
     } else if (authError) {
       alertError.textContent = 'Error al crear la cuenta. Inténtalo de nuevo.'
@@ -204,7 +202,6 @@ window.handleRegister = async function() {
       userId = authData.user.id
     }
 
-    // Verificar que no tenga ya un negocio
     const { data: existing } = await supabase
       .from('business_users')
       .select('id')
@@ -247,7 +244,9 @@ window.handleRegister = async function() {
     btn.disabled = false
     btn.innerHTML = 'Crear cuenta'
   }
-  document.addEventListener('keydown', (e) => {
+}
+
+document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') window.handleRegister()
 })
 </script>
