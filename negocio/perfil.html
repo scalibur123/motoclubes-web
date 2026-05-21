@@ -34,10 +34,15 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .field input::placeholder,.field textarea::placeholder{color:var(--gray-light)}
 .field-hint{font-size:11px;color:var(--gray-light);margin-top:4px;line-height:1.5}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cat-group{margin-bottom:16px}
-.cat-group-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.acc-group{border:1.5px solid var(--card);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.acc-header{padding:13px 16px;font-size:13px;font-weight:600;color:var(--black);cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--white);user-select:none;transition:background .15s}
+.acc-header:hover{background:var(--cream)}
+.acc-header.open{background:#FFF0E6;color:#B85000}
+.acc-header .arrow{font-size:11px;transition:transform .2s;color:var(--gray-light)}
+.acc-header.open .arrow{transform:rotate(180deg)}
+.acc-body{display:none;padding:12px 16px;background:var(--cream);border-top:1px solid var(--card)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--card);background:var(--cream);color:var(--gray);cursor:pointer;transition:all .15s;user-select:none}
+.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--card);background:var(--white);color:var(--gray);cursor:pointer;transition:all .15s;user-select:none}
 .chip:hover{border-color:var(--orange);color:var(--orange)}
 .chip.sel{background:#FFF0E6;border-color:var(--orange);color:#B85000}
 .escape-box{display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px dashed var(--card);border-radius:10px;padding:12px 14px;margin-top:8px}
@@ -98,8 +103,8 @@ input[type="file"]{display:none}
 </header>
 <nav>
   <a href="index.html" class="nav-tab">Panel</a>
-  <a href="perfil.html" class="nav-tab active">Perfil</a>
   <a href="ofertas.html" class="nav-tab">Ofertas</a>
+  <a href="perfil.html" class="nav-tab active">Perfil</a>
 </nav>
 <main>
   <div class="alert error" id="alert-error"></div>
@@ -133,6 +138,21 @@ const CATEGORIES = {
   'Otros servicios': ['Seguros','Escuela conducción','Otro']
 }
 
+function toggleAccordion(groupId) {
+  const all = document.querySelectorAll('.acc-body')
+  const allHeaders = document.querySelectorAll('.acc-header')
+  all.forEach(el => {
+    if (el.id === groupId) {
+      const isOpen = el.style.display === 'block'
+      el.style.display = isOpen ? 'none' : 'block'
+      el.previousElementSibling.classList.toggle('open', !isOpen)
+    } else {
+      el.style.display = 'none'
+      el.previousElementSibling.classList.remove('open')
+    }
+  })
+}
+
 async function loadPerfil() {
   const { data } = await sbClient.from('rider_friendly_businesses').select('*').eq('id', session.business_id).single()
   biz = data
@@ -147,14 +167,22 @@ async function loadPerfil() {
   document.getElementById('content').innerHTML = `
     <div class="section-block">
       <div class="section-label">Categoría</div>
-      ${Object.entries(CATEGORIES).map(([grupo, items]) => `
-        <div class="cat-group">
-          <div class="cat-group-label">${grupo}</div>
-          <div class="chips">${items.map(item => `
-            <div class="chip ${selectedType===item?'sel':''}" onclick="selectType('${item}')" data-type="${item}">${item}</div>
-          `).join('')}</div>
-        </div>
-      `).join('')}
+      ${Object.entries(CATEGORIES).map(([grupo, items]) => {
+        const groupId = 'acc-' + grupo.replace(/[^a-z]/gi,'')
+        const isSelected = items.includes(selectedType)
+        return `
+        <div class="acc-group">
+          <div class="acc-header ${isSelected?'open':''}" onclick="toggleAccordion('${groupId}')">
+            <span>${grupo}${isSelected ? ' · <em style=\'font-style:normal;font-size:12px\'>' + selectedType + '</em>' : ''}</span>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="acc-body" id="${groupId}" style="display:${isSelected?'block':'none'}">
+            <div class="chips">${items.map(item => `
+              <div class="chip ${selectedType===item?'sel':''}" onclick="selectType('${item}');toggleAccordion('${groupId}')" data-type="${item}">${item}</div>
+            `).join('')}</div>
+          </div>
+        </div>`
+      }).join('')}
       <div class="escape-box">
         <span>¿No encuentras tu categoría? <a href="mailto:admin@motoclubes.es?subject=Nueva categoría Rider Friendly">Escríbenos y la añadimos</a></span>
       </div>
