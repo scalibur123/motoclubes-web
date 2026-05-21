@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
 body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
 header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;gap:10px}
 header img{width:32px;height:32px;border-radius:9px}
@@ -32,7 +32,6 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .info-box{background:var(--cream);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--gray);line-height:1.6;display:flex;align-items:flex-start;gap:8px}
 .alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
 .alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
-.alert.success{background:#F0FFF4;border:1px solid #C6F6D5;color:var(--green)}
 .alert.show{display:block}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -45,9 +44,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 <body>
 <header>
   <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
-  <span>MOTOCLUBes</span>
-  <span class="sep">·</span>
-  <span class="sub">Alta negocio Rider Friendly</span>
+  <span>MOTOCLUBes</span><span class="sep">·</span><span class="sub">Alta negocio Rider Friendly</span>
 </header>
 <main>
   <div class="card">
@@ -71,25 +68,18 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       <hr class="divider">
       <div class="info-box">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Recibirás un email de confirmación. Debes verificarlo antes de poder acceder al panel.
+        Recibirás un email de bienvenida con acceso al panel.
       </div>
     </div>
     <div class="success-screen" id="success-view">
       <div class="icon">📧</div>
-      <h2>¡Revisa tu email!</h2>
-      <p>Hemos enviado un enlace de confirmación a <strong id="confirm-email"></strong>.<br><br>Haz clic en el enlace para activar tu cuenta y acceder al panel.</p>
+      <h2>¡Cuenta creada!</h2>
+      <p>Hemos enviado un email de bienvenida a <strong id="confirm-email"></strong>.<br><br>Ya puedes <a href="login.html" style="color:#FF7A1A;font-weight:700">iniciar sesión</a> en tu panel.</p>
     </div>
   </div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-sbClient.auth.getSession().then(({ data: { session } }) => {
-  if (session) window.location.href = 'index.html'
-})
 
 async function handleRegister() {
   const bizName = document.getElementById('biz-name').value.trim()
@@ -121,60 +111,21 @@ async function handleRegister() {
   btn.innerHTML = '<div class="spinner"></div> Creando cuenta...'
 
   try {
-    const { data: authData, error: authError } = await sbClient.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin + '/negocio/login.html' }
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/business-register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, business_name: bizName })
     })
 
-    let userId
+    const data = await res.json()
 
-    if (authError && authError.message.includes('already registered')) {
-      const { data: loginData, error: loginError } = await sbClient.auth.signInWithPassword({ email, password })
-      if (loginError) {
-        alertError.textContent = 'Este email ya tiene cuenta de motero. Usa la misma contraseña de la app.'
-        alertError.classList.add('show')
-        btn.disabled = false
-        btn.innerHTML = 'Crear cuenta'
-        return
-      }
-      userId = loginData.user.id
-      await sbClient.auth.signOut()
-    } else if (authError) {
-      alertError.textContent = 'Error al crear la cuenta: ' + authError.message
-      alertError.classList.add('show')
-      btn.disabled = false
-      btn.innerHTML = 'Crear cuenta'
-      return
-    } else {
-      userId = authData.user.id
-    }
-
-    const { data: existing } = await sbClient.from('business_users').select('id').eq('id', userId).single()
-
-    if (existing) {
-      alertError.textContent = 'Este email ya tiene un negocio registrado. Ve a iniciar sesión.'
+    if (!res.ok || data.error) {
+      alertError.textContent = data.error || 'Error al crear la cuenta.'
       alertError.classList.add('show')
       btn.disabled = false
       btn.innerHTML = 'Crear cuenta'
       return
     }
-
-    const { data: biz, error: bizError } = await sbClient
-      .from('rider_friendly_businesses')
-      .insert({ name: bizName, is_active: false })
-      .select('id')
-      .single()
-
-    if (bizError) {
-      alertError.textContent = 'Error al crear el perfil: ' + bizError.message
-      alertError.classList.add('show')
-      btn.disabled = false
-      btn.innerHTML = 'Crear cuenta'
-      return
-    }
-
-    await sbClient.from('business_users').insert({ id: userId, business_id: biz.id })
 
     document.getElementById('confirm-email').textContent = email
     document.getElementById('form-view').style.display = 'none'
