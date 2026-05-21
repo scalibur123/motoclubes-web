@@ -171,6 +171,7 @@ window.handleRegister = async function() {
   btn.innerHTML = '<div class="spinner"></div> Creando cuenta...'
 
   try {
+    // Intentar signup
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -179,12 +180,39 @@ window.handleRegister = async function() {
       }
     })
 
-    if (authError) {
-      let msg = 'Error al crear la cuenta.'
-      if (authError.message.includes('already registered')) {
-        msg = 'Este email ya tiene una cuenta. <a href="login.html">Inicia sesión</a>'
+    // Si ya existe, intentar login para obtener el ID real
+    let userId
+    if (authError && authError.message.includes('already registered')) {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (loginError) {
+        alertError.textContent = 'Este email ya tiene cuenta de motero. Usa la misma contraseña de la app para registrar tu negocio.'
+        alertError.classList.add('show')
+        btn.disabled = false
+        btn.innerHTML = 'Crear cuenta'
+        return
       }
-      alertError.innerHTML = msg
+      userId = loginData.user.id
+      // Cerrar sesión inmediatamente — el registro aún no está completo
+      await supabase.auth.signOut()
+    } else if (authError) {
+      alertError.textContent = 'Error al crear la cuenta. Inténtalo de nuevo.'
+      alertError.classList.add('show')
+      btn.disabled = false
+      btn.innerHTML = 'Crear cuenta'
+      return
+    } else {
+      userId = authData.user.id
+    }
+
+    // Verificar que no tenga ya un negocio
+    const { data: existing } = await supabase
+      .from('business_users')
+      .select('id')
+      .eq('id', userId)
+      .single()
+
+    if (existing) {
+      alertError.textContent = 'Este email ya tiene un negocio registrado. Ve a iniciar sesión.'
       alertError.classList.add('show')
       btn.disabled = false
       btn.innerHTML = 'Crear cuenta'
@@ -207,7 +235,7 @@ window.handleRegister = async function() {
 
     await supabase
       .from('business_users')
-      .insert({ id: authData.user.id, business_id: biz.id })
+      .insert({ id: userId, business_id: biz.id })
 
     document.getElementById('confirm-email').textContent = email
     document.getElementById('form-view').style.display = 'none'
@@ -219,9 +247,7 @@ window.handleRegister = async function() {
     btn.disabled = false
     btn.innerHTML = 'Crear cuenta'
   }
-}
-
-document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') window.handleRegister()
 })
 </script>
