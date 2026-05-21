@@ -1,22 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Alta negocio</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;
+  --cream:#F5EFE8;--card:#EBE0D2;--black:#111111;
+  --gray:#555555;--gray-light:#888888;--white:#FFFFFF;
+  --red:#E53E3E;--green:#38A169;
+}
+body{font-family:'Manrope',sans-serif;background:var(--cream);
+  min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--orange);padding:14px 24px;
+  display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:9px}
+header span{font-size:15px;font-weight:800;color:#fff}
+header .sep{color:rgba(255,255,255,.4);margin:0 4px}
+header .sub{font-size:13px;color:rgba(255,255,255,.8);font-weight:500}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--white);border-radius:20px;padding:36px 32px;
+  width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.card-title{font-size:20px;font-weight:800;color:var(--black);margin-bottom:6px}
+.card-sub{font-size:14px;color:var(--gray);margin-bottom:28px;line-height:1.5}
+.card-sub a{color:var(--orange);text-decoration:none;font-weight:600}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;
+  color:var(--gray);margin-bottom:6px;letter-spacing:.3px}
+.field input{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;
+  background:var(--cream);border:1.5px solid var(--card);border-radius:10px;
+  color:var(--black);transition:border-color .2s;outline:none}
+.field input:focus{border-color:var(--orange);background:var(--white)}
+.field input::placeholder{color:var(--gray-light)}
+.field-hint{font-size:11px;color:var(--gray-light);margin-top:4px}
+.btn{width:100%;padding:12px;background:var(--orange);color:#fff;
+  border:none;border-radius:50px;font-size:15px;font-weight:700;
+  font-family:inherit;cursor:pointer;transition:background .2s,transform .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.divider{border:none;border-top:1px solid var(--card);margin:20px 0}
+.info-box{background:var(--cream);border-radius:10px;padding:12px 14px;
+  font-size:12px;color:var(--gray);line-height:1.6;
+  display:flex;align-items:flex-start;gap:8px}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;
+  font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
+.alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
+.alert.success{background:#F0FFF4;border:1px solid #C6F6D5;color:var(--green)}
+.alert.show{display:block}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success-screen{text-align:center;padding:20px 0;display:none}
+.success-screen .icon{font-size:48px;margin-bottom:16px}
+.success-screen h2{font-size:20px;font-weight:800;margin-bottom:10px}
+.success-screen p{font-size:14px;color:var(--gray);line-height:1.6}
+</style>
+</head>
+<body>
 
-MOTOCLUBes
-·
-Alta negocio Rider Friendly
-Crea tu cuenta
-¿Ya tienes cuenta? Inicia sesión
-NOMBRE DEL NEGOCIO
-EMAIL DE CONTACTO
-CONTRASEÑA
-Mínimo 8 caracteres
-REPITE LA CONTRASEÑA
-¿Cómo funciona Rider Friendly?
-1
-Completa tu perfil — apareces en el mapa de MOTOCLUBes. Los moteros te encontrarán al planificar sus rutas y podrán llamarte para reservar.
-2
-Añade ofertas si quieres — descuentos, menús especiales o precios motero. Los riders obtendrán un QR en la app para canjearlos.
-3
-Cuando lleguen, escanea su QR desde motoclubes.es/negocio/scanner con tu móvil. El descuento queda registrado automáticamente.
-Crear cuenta
+<header>
+  <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+  <span>MOTOCLUBes</span>
+  <span class="sep">·</span>
+  <span class="sub">Alta negocio Rider Friendly</span>
+</header>
 
+<main>
+  <div class="card">
+    <div id="form-view">
+      <div class="card-title">Crea tu cuenta</div>
+      <div class="card-sub">
+        ¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a>
+      </div>
 
-Recibirás un email de confirmación. Debes verificarlo antes de poder acceder al panel.
+      <div class="alert error" id="alert-error"></div>
+
+      <div class="field">
+        <label>NOMBRE DEL NEGOCIO</label>
+        <input type="text" id="biz-name" placeholder="Ej: Casa Pepe — Asador de montaña">
+      </div>
+      <div class="field">
+        <label>EMAIL DE CONTACTO</label>
+        <input type="email" id="email" placeholder="correo@tunegocio.es" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>CONTRASEÑA</label>
+        <input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+        <div class="field-hint">Mínimo 8 caracteres</div>
+      </div>
+      <div class="field">
+        <label>REPITE LA CONTRASEÑA</label>
+        <input type="password" id="password2" placeholder="••••••••" autocomplete="new-password">
+      </div>
+
+      <div style="background:#FFF0E6;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#B85000;margin-bottom:10px;">¿Cómo funciona Rider Friendly?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+            <div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Completa tu perfil</strong> — apareces en el mapa de MOTOCLUBes. Los moteros te encontrarán al planificar sus rutas y podrán llamarte para reservar.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+            <div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Añade ofertas si quieres</strong> — descuentos, menús especiales o precios motero. Los riders obtendrán un QR en la app para canjearlos.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+            <div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Cuando lleguen, escanea su QR</strong> desde <strong>motoclubes.es/negocio/scanner</strong> con tu móvil. El descuento queda registrado automáticamente.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-register" onclick="handleRegister()">Crear cuenta</button>
+
+      <hr class="divider">
+
+      <div class="info-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Recibirás un email de confirmación. Debes verificarlo antes de poder acceder al panel.
+      </div>
+    </div>
+
+    <div class="success-screen" id="success-view">
+      <div class="icon">📧</div>
+      <h2>¡Revisa tu email!</h2>
+      <p>Hemos enviado un enlace de confirmación a <strong id="confirm-email"></strong>.<br><br>
+      Haz clic en el enlace para activar tu cuenta y acceder al panel.</p>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { supabase } from './js/supabase.js'
+
+const { data: { session } } = await supabase.auth.getSession()
+if (session) window.location.href = 'index.html'
+
+window.handleRegister = async function() {
+  const bizName = document.getElementById('biz-name').value.trim()
+  const email = document.getElementById('email').value.trim()
+  const password = document.getElementById('password').value
+  const password2 = document.getElementById('password2').value
+  const btn = document.getElementById('btn-register')
+  const alertError = document.getElementById('alert-error')
+
+  alertError.classList.remove('show')
+
+  if (!bizName || !email || !password || !password2) {
+    alertError.textContent = 'Por favor rellena todos los campos.'
+    alertError.classList.add('show')
+    return
+  }
+  if (password.length < 8) {
+    alertError.textContent = 'La contraseña debe tener al menos 8 caracteres.'
+    alertError.classList.add('show')
+    return
+  }
+  if (password !== password2) {
+    alertError.textContent = 'Las contraseñas no coinciden.'
+    alertError.classList.add('show')
+    return
+  }
+
+  btn.disabled = true
+  btn.innerHTML = '<div class="spinner"></div> Creando cuenta...'
+
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/negocio/login.html`
+      }
+    })
+
+    let userId
+    if (authError && authError.message.includes('already registered')) {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (loginError) {
+        alertError.textContent = 'Este email ya tiene cuenta de motero. Usa la misma contraseña de la app para registrar tu negocio.'
+        alertError.classList.add('show')
+        btn.disabled = false
+        btn.innerHTML = 'Crear cuenta'
+        return
+      }
+      userId = loginData.user.id
+      await supabase.auth.signOut()
+    } else if (authError) {
+      alertError.textContent = 'Error al crear la cuenta. Inténtalo de nuevo.'
+      alertError.classList.add('show')
+      btn.disabled = false
+      btn.innerHTML = 'Crear cuenta'
+      return
+    } else {
+      userId = authData.user.id
+    }
+
+    const { data: existing } = await supabase
+      .from('business_users')
+      .select('id')
+      .eq('id', userId)
+      .single()
+
+    if (existing) {
+      alertError.textContent = 'Este email ya tiene un negocio registrado. Ve a iniciar sesión.'
+      alertError.classList.add('show')
+      btn.disabled = false
+      btn.innerHTML = 'Crear cuenta'
+      return
+    }
+
+    const { data: biz, error: bizError } = await supabase
+      .from('rider_friendly_businesses')
+      .insert({ name: bizName, is_active: false })
+      .select('id')
+      .single()
+
+    if (bizError) {
+      alertError.textContent = 'Error al crear el perfil del negocio. Contacta con admin@motoclubes.es'
+      alertError.classList.add('show')
+      btn.disabled = false
+      btn.innerHTML = 'Crear cuenta'
+      return
+    }
+
+    await supabase
+      .from('business_users')
+      .insert({ id: userId, business_id: biz.id })
+
+    document.getElementById('confirm-email').textContent = email
+    document.getElementById('form-view').style.display = 'none'
+    document.getElementById('success-view').style.display = 'block'
+
+  } catch(e) {
+    alertError.textContent = 'Error de conexión. Inténtalo de nuevo.'
+    alertError.classList.add('show')
+    btn.disabled = false
+    btn.innerHTML = 'Crear cuenta'
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') window.handleRegister()
+})
+</script>
+
+</body>
+</html>
