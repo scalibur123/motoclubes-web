@@ -80,6 +80,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 </main>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 
 async function handleRegister() {
   const bizName = document.getElementById('biz-name').value.trim()
@@ -113,7 +114,11 @@ async function handleRegister() {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/business-register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
       body: JSON.stringify({ email, password, business_name: bizName })
     })
 
