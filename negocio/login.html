@@ -93,7 +93,6 @@ async function handleLogin() {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
     })
     const bizData = await bizRes.json()
-    console.log("bizData:", JSON.stringify(bizData))
     const hasProfile = bizData?.[0]?.phone && bizData[0].phone.trim() !== ''
     window.location.href = hasProfile ? 'index.html' : 'perfil.html'
   } catch(e) {
