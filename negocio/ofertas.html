@@ -7,38 +7,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;
-  --cream:#F5EFE8;--card:#EBE0D2;--black:#111111;
-  --gray:#555555;--gray-light:#888888;--white:#FFFFFF;
-  --red:#E53E3E;--green:#38A169;
-}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
 body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
-header{background:var(--orange);padding:14px 24px;
-  display:flex;align-items:center;justify-content:space-between}
+header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .header-left{display:flex;align-items:center;gap:10px}
 header img{width:32px;height:32px;border-radius:9px}
 header .brand{font-size:15px;font-weight:800;color:#fff}
 header .sep{color:rgba(255,255,255,.4);margin:0 4px}
-header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;
-  max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;
-  padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;
-  font-family:inherit;cursor:pointer;transition:background .2s}
+header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
 .btn-logout:hover{background:rgba(255,255,255,.25)}
-nav{background:var(--white);border-bottom:1px solid var(--card);
-  padding:0 24px;display:flex}
-.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);
-  text-decoration:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+nav{background:var(--white);border-bottom:1px solid var(--card);padding:0 24px;display:flex}
+.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);text-decoration:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
 .nav-tab:hover{color:var(--black)}
 .nav-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
 main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
-.section-label{font-size:12px;font-weight:700;color:var(--gray);
-  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
-.oferta-card{background:var(--white);border-radius:14px;padding:14px 16px;
-  margin-bottom:10px;display:flex;align-items:center;gap:12px}
-.oferta-val{font-size:19px;font-weight:800;color:var(--orange);
-  min-width:52px;line-height:1.2;text-align:center}
+.section-label{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.oferta-card{background:var(--white);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.oferta-val{font-size:19px;font-weight:800;color:var(--orange);min-width:52px;line-height:1.2;text-align:center}
 .oferta-info{flex:1}
 .oferta-title{font-size:14px;font-weight:600;color:var(--black)}
 .oferta-meta{font-size:11px;color:var(--gray-light);margin-top:2px}
@@ -46,69 +32,48 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
 .badge.on{background:#EAF3DE;color:#3B6D11}
 .badge.off{background:var(--cream);color:var(--gray)}
-.icon-btn{background:none;border:none;cursor:pointer;font-size:16px;
-  padding:4px;border-radius:6px;transition:background .15s;color:var(--gray)}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:background .15s;color:var(--gray)}
 .icon-btn:hover{background:var(--cream)}
-.empty-state{background:var(--white);border-radius:14px;padding:36px;
-  text-align:center;color:var(--gray-light);font-size:14px;line-height:1.6;margin-bottom:16px}
+.empty-state{background:var(--white);border-radius:14px;padding:36px;text-align:center;color:var(--gray-light);font-size:14px;line-height:1.6;margin-bottom:16px}
 .form-block{background:var(--white);border-radius:16px;padding:22px;margin-top:20px}
 .field{margin-bottom:14px}
-.field label{display:block;font-size:12px;font-weight:600;
-  color:var(--gray);margin-bottom:5px;letter-spacing:.3px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:5px;letter-spacing:.3px}
 .field label span{color:var(--gray-light);font-weight:400}
-.field input,.field textarea,.field select{
-  width:100%;padding:10px 14px;font-size:14px;font-family:inherit;
-  background:var(--cream);border:1.5px solid var(--card);border-radius:10px;
-  color:var(--black);transition:border-color .2s;outline:none;resize:none}
-.field input:focus,.field textarea:focus,.field select:focus{
-  border-color:var(--orange);background:var(--white)}
+.field input,.field textarea,.field select{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--cream);border:1.5px solid var(--card);border-radius:10px;color:var(--black);transition:border-color .2s;outline:none;resize:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--orange);background:var(--white)}
 .field input::placeholder,.field textarea::placeholder{color:var(--gray-light)}
 .field-hint{font-size:11px;color:var(--gray-light);margin-top:4px;line-height:1.5}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .tipo-list{display:flex;flex-direction:column;gap:0}
-.tipo-row{display:flex;align-items:center;gap:10px;padding:10px 0;
-  border-bottom:1px solid var(--card);cursor:pointer}
+.tipo-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--card);cursor:pointer}
 .tipo-row:last-child{border-bottom:none}
-.tipo-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--card);
-  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.tipo-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--card);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .tipo-radio.sel{border-color:var(--orange);background:var(--orange)}
 .tipo-radio.sel::after{content:'';width:6px;height:6px;background:#fff;border-radius:50%}
 .tipo-lbl{font-size:13px;color:var(--black);flex:1}
 .tipo-sub{font-size:11px;color:var(--gray-light)}
 .checks-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
 .check-item{display:flex;align-items:center;gap:6px;cursor:pointer}
-.check-box{width:16px;height:16px;border-radius:4px;border:2px solid var(--card);
-  flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.check-box{width:16px;height:16px;border-radius:4px;border:2px solid var(--card);flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center}
 .check-box.sel{background:var(--orange);border-color:var(--orange)}
 .check-box.sel::after{content:'✓';font-size:10px;color:#fff;font-weight:700}
 .check-lbl{font-size:13px;color:var(--black)}
 .preview-box{background:#FFF0E6;border-radius:12px;padding:14px 16px;margin-top:16px}
-.preview-box-label{font-size:10px;font-weight:700;color:#B85000;
-  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.preview-box-label{font-size:10px;font-weight:700;color:#B85000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .preview-box-txt{font-size:14px;color:#6B4423;font-weight:600;line-height:1.5}
 .btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
-.btn-primary{background:var(--orange);color:#fff;border:none;
-  padding:11px 24px;border-radius:50px;font-size:14px;font-weight:700;
-  font-family:inherit;cursor:pointer;transition:background .2s;
-  display:flex;align-items:center;gap:6px}
+.btn-primary{background:var(--orange);color:#fff;border:none;padding:11px 24px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:6px}
 .btn-primary:hover{background:var(--orange-dark)}
 .btn-primary:disabled{opacity:.6;cursor:not-allowed}
-.btn-outline{background:transparent;color:var(--brown);
-  border:1.5px solid var(--card);padding:11px 20px;border-radius:50px;
-  font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-outline{background:transparent;color:var(--brown);border:1.5px solid var(--card);padding:11px 20px;border-radius:50px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
 .btn-outline:hover{border-color:var(--brown);background:var(--card)}
-.btn-new{background:var(--orange);color:#fff;border:none;
-  padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;
-  font-family:inherit;cursor:pointer;transition:background .2s;
-  display:flex;align-items:center;gap:6px;margin-bottom:20px}
+.btn-new{background:var(--orange);color:#fff;border:none;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:20px}
 .btn-new:hover{background:var(--orange-dark)}
-.alert{padding:10px 14px;border-radius:10px;font-size:13px;
-  font-weight:500;margin-bottom:16px;display:none}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
 .alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
 .alert.success{background:#F0FFF4;border:1px solid #C6F6D5;color:var(--green)}
 .alert.show{display:block}
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);
-  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading{text-align:center;padding:40px;color:var(--gray-light)}
 .campos{display:none}
@@ -116,186 +81,82 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 </style>
 </head>
 <body>
-
 <header>
   <div class="header-left">
     <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
-    <span class="brand">MOTOCLUBes</span>
-    <span class="sep">·</span>
+    <span class="brand">MOTOCLUBes</span><span class="sep">·</span>
     <span class="biz-name" id="biz-name-header">Cargando...</span>
   </div>
   <button class="btn-logout" onclick="handleLogout()">Cerrar sesión</button>
 </header>
-
 <nav>
   <a href="index.html" class="nav-tab">Panel</a>
   <a href="perfil.html" class="nav-tab">Perfil</a>
   <a href="ofertas.html" class="nav-tab active">Ofertas</a>
 </nav>
-
 <main>
   <div class="alert error" id="alert-error"></div>
   <div class="alert success" id="alert-success"></div>
-
   <div class="section-label">Ofertas activas</div>
   <div id="ofertas-list"><div class="loading">Cargando ofertas...</div></div>
-
   <button class="btn-new" onclick="showForm()">+ Nueva oferta</button>
-
   <div class="form-block" id="form-block" style="display:none">
     <div class="section-label">Nueva oferta</div>
-
     <div class="field">
       <label>TIPO DE OFERTA</label>
       <div class="tipo-list">
-        <div class="tipo-row" onclick="selectTipo('pct_consumicion')">
-          <div class="tipo-radio sel" id="radio-pct_consumicion"></div>
-          <div class="tipo-lbl">Descuento % en consumición</div>
-          <div class="tipo-sub">ej. 10% menú</div>
-        </div>
-        <div class="tipo-row" onclick="selectTipo('menu_cerrado')">
-          <div class="tipo-radio" id="radio-menu_cerrado"></div>
-          <div class="tipo-lbl">Menú motero — precio cerrado por persona</div>
-          <div class="tipo-sub">ej. 25€/p</div>
-        </div>
-        <div class="tipo-row" onclick="selectTipo('alojamiento')">
-          <div class="tipo-radio" id="radio-alojamiento"></div>
-          <div class="tipo-lbl">Alojamiento — precio por persona/noche</div>
-          <div class="tipo-sub">ej. 30€/p/n</div>
-        </div>
-        <div class="tipo-row" onclick="selectTipo('producto_gratis')">
-          <div class="tipo-radio" id="radio-producto_gratis"></div>
-          <div class="tipo-lbl">Producto gratuito</div>
-          <div class="tipo-sub">café, postre…</div>
-        </div>
-        <div class="tipo-row" onclick="selectTipo('pct_servicio')">
-          <div class="tipo-radio" id="radio-pct_servicio"></div>
-          <div class="tipo-lbl">Descuento % en servicio</div>
-          <div class="tipo-sub">taller, equipación…</div>
-        </div>
-        <div class="tipo-row" onclick="selectTipo('otro')">
-          <div class="tipo-radio" id="radio-otro"></div>
-          <div class="tipo-lbl">Otro</div>
-          <div class="tipo-sub">campo libre corto</div>
-        </div>
+        <div class="tipo-row" onclick="selectTipo('pct_consumicion')"><div class="tipo-radio sel" id="radio-pct_consumicion"></div><div class="tipo-lbl">Descuento % en consumición</div><div class="tipo-sub">ej. 10% menú</div></div>
+        <div class="tipo-row" onclick="selectTipo('menu_cerrado')"><div class="tipo-radio" id="radio-menu_cerrado"></div><div class="tipo-lbl">Menú motero — precio cerrado por persona</div><div class="tipo-sub">ej. 25€/p</div></div>
+        <div class="tipo-row" onclick="selectTipo('alojamiento')"><div class="tipo-radio" id="radio-alojamiento"></div><div class="tipo-lbl">Alojamiento — precio por persona/noche</div><div class="tipo-sub">ej. 30€/p/n</div></div>
+        <div class="tipo-row" onclick="selectTipo('producto_gratis')"><div class="tipo-radio" id="radio-producto_gratis"></div><div class="tipo-lbl">Producto gratuito</div><div class="tipo-sub">café, postre…</div></div>
+        <div class="tipo-row" onclick="selectTipo('pct_servicio')"><div class="tipo-radio" id="radio-pct_servicio"></div><div class="tipo-lbl">Descuento % en servicio</div><div class="tipo-sub">taller, equipación…</div></div>
+        <div class="tipo-row" onclick="selectTipo('otro')"><div class="tipo-radio" id="radio-otro"></div><div class="tipo-lbl">Otro</div><div class="tipo-sub">campo libre corto</div></div>
       </div>
     </div>
-
     <div class="campos visible" id="campos-pct_consumicion">
       <div class="grid2">
-        <div class="field">
-          <label>DESCUENTO (%)</label>
-          <input type="number" id="f-pct" min="1" max="100" placeholder="10" oninput="updatePreview()">
-        </div>
-        <div class="field">
-          <label>APLICA A</label>
-          <select id="f-aplica" onchange="updatePreview()">
-            <option value="menú del día">Menú del día</option>
-            <option value="carta">Carta</option>
-            <option value="desayuno">Desayuno</option>
-            <option value="bebidas">Bebidas</option>
-            <option value="todo">Todo</option>
-          </select>
-        </div>
+        <div class="field"><label>DESCUENTO (%)</label><input type="number" id="f-pct" min="1" max="100" placeholder="10" oninput="updatePreview()"></div>
+        <div class="field"><label>APLICA A</label><select id="f-aplica" onchange="updatePreview()"><option value="menú del día">Menú del día</option><option value="carta">Carta</option><option value="desayuno">Desayuno</option><option value="bebidas">Bebidas</option><option value="todo">Todo</option></select></div>
       </div>
     </div>
-
     <div class="campos" id="campos-menu_cerrado">
-      <div class="field">
-        <label>PRECIO POR PERSONA (€)</label>
-        <input type="number" id="f-precio-menu" min="1" placeholder="25" oninput="updatePreview()">
-      </div>
-      <div class="field">
-        <label>QUÉ INCLUYE</label>
+      <div class="field"><label>PRECIO POR PERSONA (€)</label><input type="number" id="f-precio-menu" min="1" placeholder="25" oninput="updatePreview()"></div>
+      <div class="field"><label>QUÉ INCLUYE</label>
         <div class="checks-row">
-          <div class="check-item" onclick="toggleCheck('inc-primero')">
-            <div class="check-box sel" id="inc-primero"></div>
-            <span class="check-lbl">Primero</span>
-          </div>
-          <div class="check-item" onclick="toggleCheck('inc-segundo')">
-            <div class="check-box sel" id="inc-segundo"></div>
-            <span class="check-lbl">Segundo</span>
-          </div>
-          <div class="check-item" onclick="toggleCheck('inc-postre')">
-            <div class="check-box sel" id="inc-postre"></div>
-            <span class="check-lbl">Postre</span>
-          </div>
-          <div class="check-item" onclick="toggleCheck('inc-bebida')">
-            <div class="check-box sel" id="inc-bebida"></div>
-            <span class="check-lbl">Bebida</span>
-          </div>
-          <div class="check-item" onclick="toggleCheck('inc-cafe')">
-            <div class="check-box" id="inc-cafe"></div>
-            <span class="check-lbl">Café</span>
-          </div>
+          <div class="check-item" onclick="toggleCheck('inc-primero')"><div class="check-box sel" id="inc-primero"></div><span class="check-lbl">Primero</span></div>
+          <div class="check-item" onclick="toggleCheck('inc-segundo')"><div class="check-box sel" id="inc-segundo"></div><span class="check-lbl">Segundo</span></div>
+          <div class="check-item" onclick="toggleCheck('inc-postre')"><div class="check-box sel" id="inc-postre"></div><span class="check-lbl">Postre</span></div>
+          <div class="check-item" onclick="toggleCheck('inc-bebida')"><div class="check-box sel" id="inc-bebida"></div><span class="check-lbl">Bebida</span></div>
+          <div class="check-item" onclick="toggleCheck('inc-cafe')"><div class="check-box" id="inc-cafe"></div><span class="check-lbl">Café</span></div>
         </div>
       </div>
     </div>
-
     <div class="campos" id="campos-alojamiento">
       <div class="grid2">
-        <div class="field">
-          <label>PRECIO POR PERSONA/NOCHE (€)</label>
-          <input type="number" id="f-precio-aloj" min="1" placeholder="30" oninput="updatePreview()">
-        </div>
-        <div class="field">
-          <label>TIPO DE HABITACIÓN</label>
-          <select id="f-hab" onchange="updatePreview()">
-            <option value="individual">Individual</option>
-            <option value="doble" selected>Doble</option>
-            <option value="suite">Suite</option>
-            <option value="múltiple">Múltiple</option>
-          </select>
-        </div>
+        <div class="field"><label>PRECIO POR PERSONA/NOCHE (€)</label><input type="number" id="f-precio-aloj" min="1" placeholder="30" oninput="updatePreview()"></div>
+        <div class="field"><label>TIPO DE HABITACIÓN</label><select id="f-hab" onchange="updatePreview()"><option value="individual">Individual</option><option value="doble" selected>Doble</option><option value="suite">Suite</option><option value="múltiple">Múltiple</option></select></div>
       </div>
     </div>
-
     <div class="campos" id="campos-producto_gratis">
-      <div class="field">
-        <label>PRODUCTO GRATUITO</label>
-        <input type="text" id="f-producto" placeholder="Ej: Café con el menú" oninput="updatePreview()">
-      </div>
+      <div class="field"><label>PRODUCTO GRATUITO</label><input type="text" id="f-producto" placeholder="Ej: Café con el menú" oninput="updatePreview()"></div>
     </div>
-
     <div class="campos" id="campos-pct_servicio">
       <div class="grid2">
-        <div class="field">
-          <label>DESCUENTO (%)</label>
-          <input type="number" id="f-pct-serv" min="1" max="100" placeholder="10" oninput="updatePreview()">
-        </div>
-        <div class="field">
-          <label>TIPO DE SERVICIO</label>
-          <input type="text" id="f-serv" placeholder="Ej: Revisión de motos" oninput="updatePreview()">
-        </div>
+        <div class="field"><label>DESCUENTO (%)</label><input type="number" id="f-pct-serv" min="1" max="100" placeholder="10" oninput="updatePreview()"></div>
+        <div class="field"><label>TIPO DE SERVICIO</label><input type="text" id="f-serv" placeholder="Ej: Revisión de motos" oninput="updatePreview()"></div>
       </div>
     </div>
-
     <div class="campos" id="campos-otro">
-      <div class="field">
-        <label>DESCRIBE LA OFERTA <span>(máx. 80 caracteres)</span></label>
-        <input type="text" id="f-otro" maxlength="80"
-          placeholder="Ej: Lavado de moto gratis con cualquier servicio" oninput="updatePreview()">
-      </div>
+      <div class="field"><label>DESCRIBE LA OFERTA <span>(máx. 80 caracteres)</span></label><input type="text" id="f-otro" maxlength="80" placeholder="Ej: Lavado de moto gratis con cualquier servicio" oninput="updatePreview()"></div>
     </div>
-
     <div class="grid2">
-      <div class="field">
-        <label>CADUCIDAD <span>(opcional)</span></label>
-        <input type="date" id="f-caducidad" onchange="updatePreview()">
-        <div class="field-hint">Déjalo vacío si la oferta no tiene fecha límite.</div>
-      </div>
-      <div class="field">
-        <label>CONDICIÓN <span>(opcional · máx. 80 car.)</span></label>
-        <input type="text" id="f-condicion" maxlength="80"
-          placeholder="Ej: No acumulable. Solo mediodía." oninput="updatePreview()">
-      </div>
+      <div class="field"><label>CADUCIDAD <span>(opcional)</span></label><input type="date" id="f-caducidad" onchange="updatePreview()"><div class="field-hint">Déjalo vacío si no tiene fecha límite.</div></div>
+      <div class="field"><label>CONDICIÓN <span>(opcional)</span></label><input type="text" id="f-condicion" maxlength="80" placeholder="Ej: No acumulable. Solo mediodía." oninput="updatePreview()"></div>
     </div>
-
     <div class="preview-box">
       <div class="preview-box-label">Así lo verá el motero en la app</div>
       <div class="preview-box-txt" id="preview-txt">Selecciona el tipo de oferta y rellena los campos</div>
     </div>
-
     <div class="btn-row">
       <button class="btn-outline" onclick="hideForm()">Cancelar</button>
       <button class="btn-outline" onclick="handleSave(false)">Guardar borrador</button>
@@ -303,36 +164,25 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
     </div>
   </div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-<script type="module">
-import { supabase } from './js/supabase.js'
-
-const { data: { session } } = await supabase.auth.getSession()
-if (!session) { window.location.href = 'login.html' }
-
-const { data: bizUser } = await supabase
-  .from('business_users').select('business_id').eq('id', session.user.id).single()
-if (!bizUser) { window.location.href = 'login.html' }
-
-const { data: biz } = await supabase
-  .from('rider_friendly_businesses').select('name').eq('id', bizUser.business_id).single()
-document.getElementById('biz-name-header').textContent = biz?.name || ''
+const session = JSON.parse(localStorage.getItem('business_session') || 'null')
+if (!session) window.location.href = 'login.html'
 
 let tipoActual = 'pct_consumicion'
 
 async function loadOfertas() {
-  const { data: ofertas } = await supabase
-    .from('business_offers')
-    .select('*')
-    .eq('business_id', bizUser.business_id)
-    .order('created_at', { ascending: false })
+  const { data: biz } = await sbClient.from('rider_friendly_businesses').select('name').eq('id', session.business_id).single()
+  document.getElementById('biz-name-header').textContent = biz?.name || ''
 
+  const { data: ofertas } = await sbClient.from('business_offers').select('*').eq('business_id', session.business_id).order('created_at', { ascending: false })
   const list = document.getElementById('ofertas-list')
   if (!ofertas || ofertas.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      Aún no tienes ofertas publicadas.<br>
-      ¡Crea tu primera oferta para aparecer en el mapa!
-    </div>`
+    list.innerHTML = '<div class="empty-state">Aún no tienes ofertas publicadas.<br>¡Crea tu primera oferta para aparecer en el mapa!</div>'
     return
   }
   list.innerHTML = ofertas.map(o => `
@@ -340,30 +190,18 @@ async function loadOfertas() {
       <div class="oferta-val">${o.discount_pct ? o.discount_pct+'%' : (o.fixed_price ? o.fixed_price+'€' : '🎁')}</div>
       <div class="oferta-info">
         <div class="oferta-title">${o.title}</div>
-        <div class="oferta-meta">
-          ${o.ends_at ? 'Hasta '+new Date(o.ends_at).toLocaleDateString('es-ES') : 'Sin caducidad'}
-          · ${o.uses_count ?? 0} canjes
-        </div>
+        <div class="oferta-meta">${o.ends_at ? 'Hasta '+new Date(o.ends_at).toLocaleDateString('es-ES') : 'Sin caducidad'} · ${o.uses_count ?? 0} canjes</div>
       </div>
       <div class="oferta-actions">
         <span class="badge ${o.is_active ? 'on' : 'off'}">${o.is_active ? 'Activa' : 'Borrador'}</span>
         <button class="icon-btn" onclick="toggleActive('${o.id}',${o.is_active})">${o.is_active ? '⏸' : '▶️'}</button>
         <button class="icon-btn" onclick="deleteOferta('${o.id}')">🗑️</button>
       </div>
-    </div>
-  `).join('')
+    </div>`).join('')
 }
 
-await loadOfertas()
-
-window.showForm = function() {
-  document.getElementById('form-block').style.display = 'block'
-  document.getElementById('form-block').scrollIntoView({ behavior: 'smooth' })
-}
-window.hideForm = function() {
-  document.getElementById('form-block').style.display = 'none'
-}
-
+window.showForm = function() { document.getElementById('form-block').style.display = 'block'; document.getElementById('form-block').scrollIntoView({ behavior: 'smooth' }) }
+window.hideForm = function() { document.getElementById('form-block').style.display = 'none' }
 window.selectTipo = function(tipo) {
   tipoActual = tipo
   document.querySelectorAll('.tipo-radio').forEach(r => r.classList.remove('sel'))
@@ -372,138 +210,44 @@ window.selectTipo = function(tipo) {
   document.getElementById('campos-'+tipo).classList.add('visible')
   updatePreview()
 }
-
-window.toggleCheck = function(id) {
-  document.getElementById(id).classList.toggle('sel')
-  updatePreview()
-}
-
+window.toggleCheck = function(id) { document.getElementById(id).classList.toggle('sel'); updatePreview() }
 window.updatePreview = function() {
-  const preview = document.getElementById('preview-txt')
   const condicion = document.getElementById('f-condicion').value.trim()
   const caducidad = document.getElementById('f-caducidad').value
   let txt = ''
-
-  if (tipoActual === 'pct_consumicion') {
-    const pct = document.getElementById('f-pct').value
-    const aplica = document.getElementById('f-aplica').value
-    txt = pct ? `${pct}% de descuento en ${aplica}` : '—'
-  } else if (tipoActual === 'menu_cerrado') {
-    const precio = document.getElementById('f-precio-menu').value
-    const incluidos = ['primero','segundo','postre','bebida','cafe']
-      .filter(i => document.getElementById('inc-'+i)?.classList.contains('sel'))
-      .map(i => i.charAt(0).toUpperCase()+i.slice(1))
-    txt = precio ? `Menú motero · ${precio}€/persona` : '—'
-    if (incluidos.length) txt += ` · ${incluidos.join(' · ')}`
-  } else if (tipoActual === 'alojamiento') {
-    const precio = document.getElementById('f-precio-aloj').value
-    const hab = document.getElementById('f-hab').value
-    txt = precio ? `Hab. ${hab} · ${precio}€/persona/noche` : '—'
-    if (['doble','suite','múltiple'].includes(hab)) txt += ' · Mín. 2 personas'
-  } else if (tipoActual === 'producto_gratis') {
-    const prod = document.getElementById('f-producto').value.trim()
-    txt = prod ? `${prod} — gratis para moteros` : '—'
-  } else if (tipoActual === 'pct_servicio') {
-    const pct = document.getElementById('f-pct-serv').value
-    const serv = document.getElementById('f-serv').value.trim()
-    txt = pct && serv ? `${pct}% de descuento en ${serv}` : '—'
-  } else if (tipoActual === 'otro') {
-    txt = document.getElementById('f-otro').value.trim() || '—'
-  }
-
+  if (tipoActual === 'pct_consumicion') { const pct = document.getElementById('f-pct').value; const aplica = document.getElementById('f-aplica').value; txt = pct ? `${pct}% de descuento en ${aplica}` : '—' }
+  else if (tipoActual === 'menu_cerrado') { const precio = document.getElementById('f-precio-menu').value; const inc = ['primero','segundo','postre','bebida','cafe'].filter(i => document.getElementById('inc-'+i)?.classList.contains('sel')).map(i => i.charAt(0).toUpperCase()+i.slice(1)); txt = precio ? `Menú motero · ${precio}€/persona` + (inc.length ? ' · '+inc.join(' · ') : '') : '—' }
+  else if (tipoActual === 'alojamiento') { const precio = document.getElementById('f-precio-aloj').value; const hab = document.getElementById('f-hab').value; txt = precio ? `Hab. ${hab} · ${precio}€/persona/noche` : '—' }
+  else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); txt = prod ? `${prod} — gratis para moteros` : '—' }
+  else if (tipoActual === 'pct_servicio') { const pct = document.getElementById('f-pct-serv').value; const serv = document.getElementById('f-serv').value.trim(); txt = pct && serv ? `${pct}% de descuento en ${serv}` : '—' }
+  else if (tipoActual === 'otro') { txt = document.getElementById('f-otro').value.trim() || '—' }
   if (condicion) txt += ` · ${condicion}`
   if (caducidad) txt += ` · Hasta ${new Date(caducidad).toLocaleDateString('es-ES')}`
-  preview.textContent = txt || 'Rellena los campos para ver la vista previa'
+  document.getElementById('preview-txt').textContent = txt || 'Rellena los campos para ver la vista previa'
 }
-
 window.handleSave = async function(publish) {
   const btn = document.getElementById('btn-publish')
   const alertError = document.getElementById('alert-error')
   const alertSuccess = document.getElementById('alert-success')
-  alertError.classList.remove('show')
-  alertSuccess.classList.remove('show')
-
-  const oferta = {
-    business_id: bizUser.business_id,
-    offer_type: tipoActual,
-    is_active: publish,
-    condition_text: document.getElementById('f-condicion').value.trim() || null,
-    ends_at: document.getElementById('f-caducidad').value || null,
-    uses_count: 0
-  }
-
-  if (tipoActual === 'pct_consumicion') {
-    const pct = parseInt(document.getElementById('f-pct').value)
-    if (!pct) { alertError.textContent = 'Introduce el porcentaje de descuento.'; alertError.classList.add('show'); return }
-    oferta.discount_pct = pct
-    oferta.applies_to = document.getElementById('f-aplica').value
-    oferta.title = `${pct}% de descuento en ${oferta.applies_to}`
-  } else if (tipoActual === 'menu_cerrado') {
-    const precio = parseFloat(document.getElementById('f-precio-menu').value)
-    if (!precio) { alertError.textContent = 'Introduce el precio por persona.'; alertError.classList.add('show'); return }
-    oferta.fixed_price = precio
-    oferta.includes = ['primero','segundo','postre','bebida','cafe']
-      .filter(i => document.getElementById('inc-'+i)?.classList.contains('sel'))
-    oferta.title = `Menú motero · ${precio}€/persona`
-  } else if (tipoActual === 'alojamiento') {
-    const precio = parseFloat(document.getElementById('f-precio-aloj').value)
-    if (!precio) { alertError.textContent = 'Introduce el precio por persona/noche.'; alertError.classList.add('show'); return }
-    oferta.fixed_price = precio
-    oferta.room_type = document.getElementById('f-hab').value
-    oferta.title = `Hab. ${oferta.room_type} · ${precio}€/persona/noche`
-  } else if (tipoActual === 'producto_gratis') {
-    const prod = document.getElementById('f-producto').value.trim()
-    if (!prod) { alertError.textContent = 'Describe el producto gratuito.'; alertError.classList.add('show'); return }
-    oferta.title = prod + ' — gratis para moteros'
-  } else if (tipoActual === 'pct_servicio') {
-    const pct = parseInt(document.getElementById('f-pct-serv').value)
-    const serv = document.getElementById('f-serv').value.trim()
-    if (!pct || !serv) { alertError.textContent = 'Rellena el descuento y el tipo de servicio.'; alertError.classList.add('show'); return }
-    oferta.discount_pct = pct
-    oferta.applies_to = serv
-    oferta.title = `${pct}% de descuento en ${serv}`
-  } else if (tipoActual === 'otro') {
-    const txt = document.getElementById('f-otro').value.trim()
-    if (!txt) { alertError.textContent = 'Describe la oferta.'; alertError.classList.add('show'); return }
-    oferta.title = txt
-  }
-
-  btn.disabled = true
-  btn.innerHTML = '<div class="spinner"></div> Guardando...'
-
-  const { error } = await supabase.from('business_offers').insert(oferta)
-
-  if (error) {
-    alertError.textContent = 'Error al guardar la oferta. Inténtalo de nuevo.'
-    alertError.classList.add('show')
-  } else {
-    alertSuccess.textContent = publish ? '✅ Oferta publicada correctamente.' : '✅ Borrador guardado.'
-    alertSuccess.classList.add('show')
-    hideForm()
-    await loadOfertas()
-    window.scrollTo(0,0)
-  }
-
-  btn.disabled = false
-  btn.innerHTML = 'Publicar oferta'
+  alertError.classList.remove('show'); alertSuccess.classList.remove('show')
+  const oferta = { business_id: session.business_id, offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value || null, uses_count: 0 }
+  if (tipoActual === 'pct_consumicion') { const pct = parseInt(document.getElementById('f-pct').value); if (!pct) { alertError.textContent = 'Introduce el porcentaje.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = document.getElementById('f-aplica').value; oferta.title = `${pct}% de descuento en ${oferta.applies_to}` }
+  else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona` }
+  else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.room_type = document.getElementById('f-hab').value; oferta.title = `Hab. ${oferta.room_type} · ${precio}€/persona/noche` }
+  else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { alertError.textContent = 'Describe el producto.'; alertError.classList.add('show'); return } oferta.title = prod + ' — gratis para moteros' }
+  else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = document.getElementById('f-serv').value.trim(); if (!pct || !serv) { alertError.textContent = 'Rellena descuento y servicio.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
+  else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { alertError.textContent = 'Describe la oferta.'; alertError.classList.add('show'); return } oferta.title = txt }
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
+  const { error } = await sbClient.from('business_offers').insert(oferta)
+  if (error) { alertError.textContent = 'Error al guardar: ' + error.message; alertError.classList.add('show') }
+  else { alertSuccess.textContent = publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0) }
+  btn.disabled = false; btn.innerHTML = 'Publicar oferta'
 }
+window.toggleActive = async function(id, currentState) { await sbClient.from('business_offers').update({ is_active: !currentState }).eq('id', id); await loadOfertas() }
+window.deleteOferta = async function(id) { if (!confirm('¿Eliminar esta oferta?')) return; await sbClient.from('business_offers').delete().eq('id', id); await loadOfertas() }
+window.handleLogout = function() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
 
-window.toggleActive = async function(id, currentState) {
-  await supabase.from('business_offers').update({ is_active: !currentState }).eq('id', id)
-  await loadOfertas()
-}
-
-window.deleteOferta = async function(id) {
-  if (!confirm('¿Eliminar esta oferta? Esta acción no se puede deshacer.')) return
-  await supabase.from('business_offers').delete().eq('id', id)
-  await loadOfertas()
-}
-
-window.handleLogout = async function() {
-  await supabase.auth.signOut()
-  window.location.href = 'login.html'
-}
+loadOfertas()
 </script>
-
 </body>
 </html>

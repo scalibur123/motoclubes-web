@@ -9,76 +9,50 @@
 <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;
-  --cream:#F5EFE8;--card:#EBE0D2;--black:#111111;
-  --gray:#555555;--gray-light:#888888;--white:#FFFFFF;
-  --red:#E53E3E;--green:#38A169;
-}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
 body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
-header{background:var(--orange);padding:14px 24px;
-  display:flex;align-items:center;justify-content:space-between}
+header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .header-left{display:flex;align-items:center;gap:10px}
 header img{width:32px;height:32px;border-radius:9px}
 header .brand{font-size:15px;font-weight:800;color:#fff}
 header .sep{color:rgba(255,255,255,.4);margin:0 4px}
-header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;
-  max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;
-  padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;
-  font-family:inherit;cursor:pointer;transition:background .2s}
+header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
 .btn-logout:hover{background:rgba(255,255,255,.25)}
-nav{background:var(--white);border-bottom:1px solid var(--card);
-  padding:0 24px;display:flex}
-.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);
-  text-decoration:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+nav{background:var(--white);border-bottom:1px solid var(--card);padding:0 24px;display:flex}
+.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);text-decoration:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
 .nav-tab:hover{color:var(--black)}
 .nav-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
 main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .section-block{background:var(--white);border-radius:16px;padding:22px;margin-bottom:16px}
-.section-label{font-size:12px;font-weight:700;color:var(--gray);
-  text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px}
+.section-label{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px}
 .field{margin-bottom:14px}
-.field label{display:block;font-size:12px;font-weight:600;
-  color:var(--gray);margin-bottom:5px;letter-spacing:.3px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:5px;letter-spacing:.3px}
 .field label span{color:var(--gray-light);font-weight:400}
-.field input,.field textarea,.field select{
-  width:100%;padding:10px 14px;font-size:14px;font-family:inherit;
-  background:var(--cream);border:1.5px solid var(--card);border-radius:10px;
-  color:var(--black);transition:border-color .2s;outline:none;resize:none}
-.field input:focus,.field textarea:focus,.field select:focus{
-  border-color:var(--orange);background:var(--white)}
+.field input,.field textarea,.field select{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--cream);border:1.5px solid var(--card);border-radius:10px;color:var(--black);transition:border-color .2s;outline:none;resize:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--orange);background:var(--white)}
 .field input::placeholder,.field textarea::placeholder{color:var(--gray-light)}
 .field-hint{font-size:11px;color:var(--gray-light);margin-top:4px;line-height:1.5}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .cat-group{margin-bottom:16px}
-.cat-group-label{font-size:11px;font-weight:700;color:var(--gray);
-  text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cat-group-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;
-  border:1.5px solid var(--card);background:var(--cream);color:var(--gray);
-  cursor:pointer;transition:all .15s;user-select:none}
+.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--card);background:var(--cream);color:var(--gray);cursor:pointer;transition:all .15s;user-select:none}
 .chip:hover{border-color:var(--orange);color:var(--orange)}
 .chip.sel{background:#FFF0E6;border-color:var(--orange);color:#B85000}
-.escape-box{display:flex;align-items:center;gap:10px;
-  background:var(--cream);border:1.5px dashed var(--card);
-  border-radius:10px;padding:12px 14px;margin-top:8px}
+.escape-box{display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px dashed var(--card);border-radius:10px;padding:12px 14px;margin-top:8px}
 .escape-box span{font-size:12px;color:var(--gray);flex:1;line-height:1.5}
 .escape-box a{color:var(--orange);font-weight:600;text-decoration:none;white-space:nowrap}
 #map{width:100%;height:220px;border-radius:12px;margin-bottom:6px}
-.map-hint{font-size:11px;color:var(--gray-light);
-  display:flex;align-items:center;gap:4px;margin-bottom:14px}
-.photos-guide{background:#FFF0E6;border-radius:10px;padding:12px 14px;
-  margin-bottom:14px;font-size:12px;color:#6B4423;line-height:1.6}
+.map-hint{font-size:11px;color:var(--gray-light);display:flex;align-items:center;gap:4px;margin-bottom:14px}
+.photos-guide{background:#FFF0E6;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#6B4423;line-height:1.6}
 .photos-guide strong{font-weight:700;display:block;margin-bottom:4px}
 .guide-row{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
 .guide-item{display:flex;align-items:center;gap:5px;font-size:12px}
 .guide-ok{color:var(--green)}
 .guide-no{color:var(--red)}
 .photos-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:6px}
-.photo-slot{border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:6px;cursor:pointer;
-  transition:border-color .2s,background .2s;position:relative;overflow:hidden}
+.photo-slot{border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden}
 .photo-slot.empty{background:var(--cream);border:2px dashed var(--card)}
 .photo-slot.empty:hover{border-color:var(--orange);background:#FFF0E6}
 .photo-slot.filled{border:2px solid var(--card)}
@@ -86,103 +60,69 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .photo-slot.main-slot{aspect-ratio:auto;height:140px}
 .photo-slot .slot-label{font-size:11px;color:var(--gray-light);font-weight:500}
 .photo-slot .slot-icon{font-size:20px}
-.photo-delete{position:absolute;top:6px;right:6px;width:22px;height:22px;
-  background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;
-  font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-delete{position:absolute;top:6px;right:6px;width:22px;height:22px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 input[type="file"]{display:none}
-.preview-label{font-size:11px;font-weight:700;color:#B85000;
-  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;
-  display:flex;align-items:center;gap:5px}
+.preview-label{font-size:11px;font-weight:700;color:#B85000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 .app-card{border-radius:14px;overflow:hidden;border:1px solid var(--card);max-width:280px}
-.app-card-img{height:100px;background:linear-gradient(135deg,#C8A882,#8B6340);
-  position:relative;display:flex;align-items:flex-end;padding:10px}
-.app-card-overlay{position:absolute;inset:0;
-  background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.55))}
+.app-card-img{height:100px;background:linear-gradient(135deg,#C8A882,#8B6340);position:relative;display:flex;align-items:flex-end;padding:10px}
+.app-card-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.55))}
 .app-card-txt{position:relative;z-index:1}
 .app-card-name{font-size:13px;font-weight:700;color:#fff}
 .app-card-cat{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
 .app-card-body{background:var(--white);padding:10px 12px}
-.rf-badge-mini{display:inline-flex;align-items:center;gap:4px;
-  background:#FFF0E6;border-radius:20px;padding:2px 8px;
-  font-size:10px;font-weight:700;color:var(--orange);margin-bottom:7px}
+.rf-badge-mini{display:inline-flex;align-items:center;gap:4px;background:#FFF0E6;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--orange);margin-bottom:7px}
 .app-card-desc{font-size:11px;color:var(--gray);line-height:1.5}
-.sticky-footer{position:fixed;bottom:0;left:0;right:0;
-  background:var(--white);border-top:1px solid var(--card);
-  padding:14px 20px;display:flex;gap:10px;justify-content:flex-end}
-.btn-primary{background:var(--orange);color:#fff;border:none;
-  padding:11px 28px;border-radius:50px;font-size:14px;font-weight:700;
-  font-family:inherit;cursor:pointer;transition:background .2s;
-  display:flex;align-items:center;gap:6px}
+.sticky-footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--card);padding:14px 20px;display:flex;gap:10px;justify-content:flex-end}
+.btn-primary{background:var(--orange);color:#fff;border:none;padding:11px 28px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:6px}
 .btn-primary:hover{background:var(--orange-dark)}
 .btn-primary:disabled{opacity:.6;cursor:not-allowed}
-.btn-outline{background:transparent;color:var(--brown);
-  border:1.5px solid var(--card);padding:11px 22px;border-radius:50px;
-  font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-outline{background:transparent;color:var(--brown);border:1.5px solid var(--card);padding:11px 22px;border-radius:50px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
 .btn-outline:hover{border-color:var(--brown);background:var(--card)}
-.alert{padding:10px 14px;border-radius:10px;font-size:13px;
-  font-weight:500;margin-bottom:16px;display:none}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
 .alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
 .alert.success{background:#F0FFF4;border:1px solid #C6F6D5;color:var(--green)}
 .alert.show{display:block}
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);
-  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading{text-align:center;padding:60px 20px;color:var(--gray-light)}
 </style>
 </head>
 <body>
-
 <header>
   <div class="header-left">
     <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
-    <span class="brand">MOTOCLUBes</span>
-    <span class="sep">·</span>
+    <span class="brand">MOTOCLUBes</span><span class="sep">·</span>
     <span class="biz-name" id="biz-name-header">Cargando...</span>
   </div>
   <button class="btn-logout" onclick="handleLogout()">Cerrar sesión</button>
 </header>
-
 <nav>
   <a href="index.html" class="nav-tab">Panel</a>
   <a href="perfil.html" class="nav-tab active">Perfil</a>
   <a href="ofertas.html" class="nav-tab">Ofertas</a>
 </nav>
-
 <main>
   <div class="alert error" id="alert-error"></div>
   <div class="alert success" id="alert-success"></div>
   <div id="content"><div class="loading">Cargando perfil...</div></div>
 </main>
-
 <div class="sticky-footer">
   <button class="btn-outline" onclick="window.location.href='index.html'">Cancelar</button>
   <button class="btn-primary" id="btn-save" onclick="handleSave()">Guardar cambios</button>
 </div>
-
 <input type="file" id="file-input" accept="image/*" multiple>
-
-<script type="module">
-import { supabase } from './js/supabase.js'
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibW90b2NsdWJlcyIsImEiOiJjbXA2cmJxaTUwM3djMnJzZXlvMzBycGg0In0.dw_0jtLStDE_MyCAm6zOig'
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-const { data: { session } } = await supabase.auth.getSession()
-if (!session) { window.location.href = 'login.html' }
+const session = JSON.parse(localStorage.getItem('business_session') || 'null')
+if (!session) window.location.href = 'login.html'
 
-const { data: bizUser } = await supabase
-  .from('business_users').select('business_id').eq('id', session.user.id).single()
-if (!bizUser) { window.location.href = 'login.html' }
-
-const { data: biz } = await supabase
-  .from('rider_friendly_businesses').select('*').eq('id', bizUser.business_id).single()
-
-document.getElementById('biz-name-header').textContent = biz?.name || ''
-
-let currentLat = biz?.lat || 40.4168
-let currentLng = biz?.lng || -3.7038
-let photos = biz?.photos || []
-let selectedType = biz?.type || ''
-let map, marker
+let currentLat = 40.4168, currentLng = -3.7038
+let photos = [], selectedType = '', map, marker, biz
 
 const CATEGORIES = {
   'Restauración': ['Restaurante','Bar / Cafetería','Área de descanso'],
@@ -193,196 +133,157 @@ const CATEGORIES = {
   'Otros servicios': ['Seguros','Escuela conducción','Otro']
 }
 
-document.getElementById('content').innerHTML = `
-  <div class="section-block">
-    <div class="section-label">Categoría</div>
-    ${Object.entries(CATEGORIES).map(([grupo, items]) => `
-      <div class="cat-group">
-        <div class="cat-group-label">${grupo}</div>
-        <div class="chips">
-          ${items.map(item => `
-            <div class="chip ${selectedType === item ? 'sel' : ''}"
-              onclick="selectType('${item}')" data-type="${item}">${item}</div>
-          `).join('')}
+async function loadPerfil() {
+  const { data } = await sbClient.from('rider_friendly_businesses').select('*').eq('id', session.business_id).single()
+  biz = data
+  if (!biz) return
+
+  document.getElementById('biz-name-header').textContent = biz.name || ''
+  currentLat = biz.lat || 40.4168
+  currentLng = biz.lng || -3.7038
+  photos = biz.photos || []
+  selectedType = biz.type || ''
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-block">
+      <div class="section-label">Categoría</div>
+      ${Object.entries(CATEGORIES).map(([grupo, items]) => `
+        <div class="cat-group">
+          <div class="cat-group-label">${grupo}</div>
+          <div class="chips">${items.map(item => `
+            <div class="chip ${selectedType===item?'sel':''}" onclick="selectType('${item}')" data-type="${item}">${item}</div>
+          `).join('')}</div>
+        </div>
+      `).join('')}
+      <div class="escape-box">
+        <span>¿No encuentras tu categoría? <a href="mailto:admin@motoclubes.es?subject=Nueva categoría Rider Friendly">Escríbenos y la añadimos</a></span>
+      </div>
+    </div>
+    <div class="section-block">
+      <div class="section-label">Datos del negocio</div>
+      <div class="field"><label>NOMBRE DEL NEGOCIO</label><input type="text" id="f-name" value="${biz.name||''}" placeholder="Ej: Casa Pepe"></div>
+      <div class="field"><label>DESCRIPCIÓN <span>(máx. 160 caracteres)</span></label>
+        <textarea id="f-desc" rows="3" maxlength="160" placeholder="Ej: Asador tradicional en plena sierra.">${biz.description||''}</textarea>
+        <div class="field-hint"><span id="char-count">${(biz.description||'').length}</span>/160</div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>TELÉFONO</label><input type="tel" id="f-phone" value="${biz.phone||''}" placeholder="+34 918 000 000"></div>
+        <div class="field"><label>WEB <span>(opcional)</span></label><input type="url" id="f-web" value="${biz.website||''}" placeholder="tunegocio.es"></div>
+      </div>
+    </div>
+    <div class="section-block">
+      <div class="section-label">Ubicación</div>
+      <div class="field">
+        <label>DIRECCIÓN</label>
+        <input type="text" id="f-address" value="${biz.address||''}" placeholder="Ej: Ctra. M-611 km 32, Miraflores de la Sierra">
+        <div class="field-hint">Si la dirección no aparece en el mapa, ajusta el pin manualmente.</div>
+      </div>
+      <div id="map"></div>
+      <div class="map-hint">☝️ Arrastra el pin a tu posición exacta.</div>
+    </div>
+    <div class="section-block">
+      <div class="section-label">Fotos</div>
+      <div class="photos-guide">
+        <strong>Foto de portada</strong>
+        Usa una foto del exterior o entorno del local.
+        <div class="guide-row">
+          <div class="guide-item"><span class="guide-ok">✅</span> Exterior</div>
+          <div class="guide-item"><span class="guide-ok">✅</span> Terraza</div>
+          <div class="guide-item"><span class="guide-no">❌</span> Logo</div>
+          <div class="guide-item"><span class="guide-no">❌</span> Plato</div>
         </div>
       </div>
-    `).join('')}
-    <div class="escape-box">
-      <span>¿No encuentras tu categoría? <a href="mailto:admin@motoclubes.es?subject=Nueva categoría Rider Friendly">Escríbenos y la añadimos</a> — te respondemos en 24h.</span>
+      <div class="photos-grid" id="photos-grid"></div>
+      <div class="field-hint">Máx. 5 fotos · 2 MB cada una</div>
     </div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-label">Datos del negocio</div>
-    <div class="field">
-      <label>NOMBRE DEL NEGOCIO</label>
-      <input type="text" id="f-name" value="${biz?.name || ''}" placeholder="Ej: Casa Pepe — Asador de montaña">
-    </div>
-    <div class="field">
-      <label>DESCRIPCIÓN <span>(máx. 160 caracteres)</span></label>
-      <textarea id="f-desc" rows="3" maxlength="160"
-        placeholder="Ej: Asador tradicional en plena sierra. Terraza con vistas y aparcamiento para motos.">${biz?.description || ''}</textarea>
-      <div class="field-hint"><span id="char-count">${(biz?.description || '').length}</span>/160</div>
-    </div>
-    <div class="grid2">
-      <div class="field">
-        <label>TELÉFONO</label>
-        <input type="tel" id="f-phone" value="${biz?.phone || ''}" placeholder="+34 918 000 000">
-      </div>
-      <div class="field">
-        <label>WEB <span>(opcional)</span></label>
-        <input type="url" id="f-web" value="${biz?.website || ''}" placeholder="tunegocio.es">
+    <div class="section-block">
+      <div class="section-label">Horario</div>
+      <div class="grid2">
+        <div class="field"><label>APERTURA</label><input type="time" id="f-open" value="${biz.opening_time||'09:00'}"></div>
+        <div class="field"><label>CIERRE</label><input type="time" id="f-close" value="${biz.closing_time||'22:00'}"></div>
       </div>
     </div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-label">Ubicación</div>
-    <div class="field">
-      <label>DIRECCIÓN O DESCRIPCIÓN DEL LUGAR</label>
-      <input type="text" id="f-address" value="${biz?.address || ''}"
-        placeholder="Ej: Ctra. M-611 km 32, Miraflores de la Sierra">
-      <div class="field-hint">Si la dirección exacta no aparece en el mapa, escríbela aquí y ajusta el pin manualmente.</div>
-    </div>
-    <div id="map"></div>
-    <div class="map-hint">☝️ Arrastra el pin a tu posición exacta — es lo que ven los moteros en el mapa.</div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-label">Fotos</div>
-    <div class="photos-guide">
-      <strong>Foto de portada</strong>
-      Esta imagen es lo primero que ve el motero. Usa una foto representativa del local o el entorno.
-      <div class="guide-row">
-        <div class="guide-item"><span class="guide-ok">✅</span> Exterior del local</div>
-        <div class="guide-item"><span class="guide-ok">✅</span> Terraza o entorno</div>
-        <div class="guide-item"><span class="guide-no">❌</span> Logo o texto</div>
-        <div class="guide-item"><span class="guide-no">❌</span> Foto de un plato</div>
-      </div>
-    </div>
-    <div class="photos-grid" id="photos-grid"></div>
-    <div class="field-hint">Máx. 5 fotos · 2 MB cada una · La primera siempre será la portada.</div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-label">Horario</div>
-    <div class="grid2">
-      <div class="field">
-        <label>APERTURA</label>
-        <input type="time" id="f-open" value="${biz?.opening_time || '09:00'}">
-      </div>
-      <div class="field">
-        <label>CIERRE</label>
-        <input type="time" id="f-close" value="${biz?.closing_time || '22:00'}">
-      </div>
-    </div>
-    <div class="field-hint">Para festivos o cierres especiales, indícalo en la descripción.</div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-label">📱 Así aparecerá en la app</div>
-    <div class="preview-label">Vista previa</div>
-    <div class="app-card">
-      <div class="app-card-img" id="preview-img">
-        <div class="app-card-overlay"></div>
-        <div class="app-card-txt">
-          <div class="app-card-name" id="preview-name">${biz?.name || 'Nombre del negocio'}</div>
-          <div class="app-card-cat" id="preview-cat">${biz?.type || 'Categoría'}</div>
+    <div class="section-block">
+      <div class="section-label">📱 Así aparecerá en la app</div>
+      <div class="preview-label">Vista previa</div>
+      <div class="app-card">
+        <div class="app-card-img" id="preview-img">
+          <div class="app-card-overlay"></div>
+          <div class="app-card-txt">
+            <div class="app-card-name" id="preview-name">${biz.name||'Nombre del negocio'}</div>
+            <div class="app-card-cat" id="preview-cat">${biz.type||'Categoría'}</div>
+          </div>
+        </div>
+        <div class="app-card-body">
+          <div class="rf-badge-mini">🪖 Rider Friendly</div>
+          <div class="app-card-desc" id="preview-desc">${biz.description||'Descripción del negocio'}</div>
         </div>
       </div>
-      <div class="app-card-body">
-        <div class="rf-badge-mini">🪖 Rider Friendly</div>
-        <div class="app-card-desc" id="preview-desc">${biz?.description || 'Descripción del negocio'}</div>
-      </div>
     </div>
-  </div>
-`
+  `
 
-mapboxgl.accessToken = MAPBOX_TOKEN
-map = new mapboxgl.Map({
-  container: 'map',
-  style: 'mapbox://styles/mapbox/streets-v12',
-  center: [currentLng, currentLat],
-  zoom: biz?.lat ? 14 : 5
-})
+  document.getElementById('f-name').addEventListener('input', e => {
+    document.getElementById('preview-name').textContent = e.target.value || 'Nombre del negocio'
+  })
+  document.getElementById('f-desc').addEventListener('input', e => {
+    document.getElementById('preview-desc').textContent = e.target.value || 'Descripción'
+    document.getElementById('char-count').textContent = e.target.value.length
+  })
+  document.getElementById('f-address').addEventListener('change', async e => {
+    const q = e.target.value.trim()
+    if (!q) return
+    const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${MAPBOX_TOKEN}&country=es&limit=1`)
+    const json = await res.json()
+    if (json.features?.length) {
+      const [lng, lat] = json.features[0].center
+      currentLat = lat; currentLng = lng
+      map.flyTo({ center: [lng, lat], zoom: 14 })
+      marker.setLngLat([lng, lat])
+    }
+  })
 
-marker = new mapboxgl.Marker({ color: '#FF7A1A', draggable: true })
-  .setLngLat([currentLng, currentLat])
-  .addTo(map)
+  mapboxgl.accessToken = MAPBOX_TOKEN
+  map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/streets-v12', center: [currentLng, currentLat], zoom: biz.lat ? 14 : 5 })
+  marker = new mapboxgl.Marker({ color: '#FF7A1A', draggable: true }).setLngLat([currentLng, currentLat]).addTo(map)
+  marker.on('dragend', () => { const pos = marker.getLngLat(); currentLat = pos.lat; currentLng = pos.lng })
 
-marker.on('dragend', () => {
-  const pos = marker.getLngLat()
-  currentLat = pos.lat
-  currentLng = pos.lng
-})
-
-document.getElementById('f-address').addEventListener('change', async (e) => {
-  const q = e.target.value.trim()
-  if (!q) return
-  const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${MAPBOX_TOKEN}&country=es&limit=1`)
-  const json = await res.json()
-  if (json.features?.length) {
-    const [lng, lat] = json.features[0].center
-    currentLat = lat; currentLng = lng
-    map.flyTo({ center: [lng, lat], zoom: 14 })
-    marker.setLngLat([lng, lat])
-  }
-})
-
-window.selectType = function(type) {
-  selectedType = type
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.type === type))
-  document.getElementById('preview-cat').textContent = type
+  renderPhotos()
 }
 
-document.getElementById('f-name').addEventListener('input', e => {
-  document.getElementById('preview-name').textContent = e.target.value || 'Nombre del negocio'
-})
-document.getElementById('f-desc').addEventListener('input', e => {
-  document.getElementById('preview-desc').textContent = e.target.value || 'Descripción del negocio'
-  document.getElementById('char-count').textContent = e.target.value.length
-})
-
-renderPhotos()
 function renderPhotos() {
   const grid = document.getElementById('photos-grid')
   if (!grid) return
   let html = ''
   for (let i = 0; i < 5; i++) {
     if (photos[i]) {
-      html += `<div class="photo-slot filled ${i===0?'main-slot':''}">
-        <img src="${photos[i]}" alt="Foto ${i+1}">
-        <button class="photo-delete" onclick="removePhoto(${i})">✕</button>
-      </div>`
+      html += `<div class="photo-slot filled ${i===0?'main-slot':''}"><img src="${photos[i]}" alt="Foto ${i+1}"><button class="photo-delete" onclick="removePhoto(${i})">✕</button></div>`
     } else if (i === 0 || photos.length >= i) {
-      html += `<div class="photo-slot empty ${i===0?'main-slot':''}" onclick="triggerUpload(${i})">
-        <span class="slot-icon">${i===0?'📸':'+'}</span>
-        <span class="slot-label">${i===0?'Portada':'Foto '+(i+1)}</span>
-      </div>`
+      html += `<div class="photo-slot empty ${i===0?'main-slot':''}" onclick="triggerUpload(${i})"><span class="slot-icon">${i===0?'📸':'+'}</span><span class="slot-label">${i===0?'Portada':'Foto '+(i+1)}</span></div>`
     }
   }
   grid.innerHTML = html
   const previewImg = document.getElementById('preview-img')
-  if (photos[0] && previewImg) {
-    previewImg.style.backgroundImage = `url(${photos[0]})`
-    previewImg.style.backgroundSize = 'cover'
-    previewImg.style.backgroundPosition = 'center'
-  }
+  if (photos[0] && previewImg) { previewImg.style.backgroundImage = `url(${photos[0]})`; previewImg.style.backgroundSize = 'cover'; previewImg.style.backgroundPosition = 'center' }
 }
 
 let uploadSlot = 0
 window.triggerUpload = function(slot) { uploadSlot = slot; document.getElementById('file-input').click() }
 window.removePhoto = function(idx) { photos.splice(idx, 1); renderPhotos() }
+window.selectType = function(type) {
+  selectedType = type
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.type === type))
+  document.getElementById('preview-cat').textContent = type
+}
 
-document.getElementById('file-input').addEventListener('change', async (e) => {
+document.getElementById('file-input').addEventListener('change', async e => {
   const files = Array.from(e.target.files)
   for (const file of files) {
     if (file.size > 2 * 1024 * 1024) { alert('La foto ' + file.name + ' supera 2 MB.'); continue }
     const ext = file.name.split('.').pop()
-    const path = `businesses/${bizUser.business_id}/${Date.now()}.${ext}`
-    const { data, error } = await supabase.storage.from('business-photos').upload(path, file, { upsert: true })
+    const path = `businesses/${session.business_id}/${Date.now()}.${ext}`
+    const { error } = await sbClient.storage.from('business-photos').upload(path, file, { upsert: true })
     if (!error) {
-      const { data: url } = supabase.storage.from('business-photos').getPublicUrl(path)
+      const { data: url } = sbClient.storage.from('business-photos').getPublicUrl(path)
       if (photos.length < 5) photos.push(url.publicUrl)
       renderPhotos()
     }
@@ -390,60 +291,41 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
   e.target.value = ''
 })
 
-window.handleSave = async function() {
+async function handleSave() {
   const btn = document.getElementById('btn-save')
   const alertError = document.getElementById('alert-error')
   const alertSuccess = document.getElementById('alert-success')
-  alertError.classList.remove('show')
-  alertSuccess.classList.remove('show')
+  alertError.classList.remove('show'); alertSuccess.classList.remove('show')
 
   const name = document.getElementById('f-name').value.trim()
-  if (!name) {
-    alertError.textContent = 'El nombre del negocio es obligatorio.'
-    alertError.classList.add('show')
-    window.scrollTo(0,0)
-    return
-  }
+  if (!name) { alertError.textContent = 'El nombre del negocio es obligatorio.'; alertError.classList.add('show'); window.scrollTo(0,0); return }
 
-  btn.disabled = true
-  btn.innerHTML = '<div class="spinner"></div> Guardando...'
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
 
-  const { error } = await supabase
-    .from('rider_friendly_businesses')
-    .update({
-      name,
-      type: selectedType,
-      description: document.getElementById('f-desc').value.trim(),
-      phone: document.getElementById('f-phone').value.trim(),
-      website: document.getElementById('f-web').value.trim(),
-      address: document.getElementById('f-address').value.trim(),
-      lat: currentLat,
-      lng: currentLng,
-      photos,
-      opening_time: document.getElementById('f-open').value,
-      closing_time: document.getElementById('f-close').value,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', bizUser.business_id)
+  const { error } = await sbClient.from('rider_friendly_businesses').update({
+    name, type: selectedType,
+    description: document.getElementById('f-desc').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    website: document.getElementById('f-web').value.trim(),
+    address: document.getElementById('f-address').value.trim(),
+    lat: currentLat, lng: currentLng, photos,
+    opening_time: document.getElementById('f-open').value,
+    closing_time: document.getElementById('f-close').value,
+    updated_at: new Date().toISOString()
+  }).eq('id', session.business_id)
 
-  if (error) {
-    alertError.textContent = 'Error al guardar. Inténtalo de nuevo.'
-    alertError.classList.add('show')
-  } else {
-    alertSuccess.textContent = '✅ Cambios guardados correctamente.'
-    alertSuccess.classList.add('show')
-    window.scrollTo(0,0)
-  }
+  if (error) { alertError.textContent = 'Error al guardar: ' + error.message; alertError.classList.add('show') }
+  else { alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0) }
 
-  btn.disabled = false
-  btn.innerHTML = 'Guardar cambios'
+  btn.disabled = false; btn.innerHTML = 'Guardar cambios'
 }
 
-window.handleLogout = async function() {
-  await supabase.auth.signOut()
-  window.location.href = 'login.html'
-}
+function handleLogout() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+window.handleSave = handleSave
+window.handleLogout = handleLogout
+
+loadPerfil()
 </script>
-
 </body>
 </html>
