@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Panel de negocio</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;
+  --cream:#F5EFE8;--card:#EBE0D2;--black:#111111;
+  --gray:#555555;--gray-light:#888888;--white:#FFFFFF;
+}
+body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
+header{background:var(--orange);padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:9px}
+header .brand{font-size:15px;font-weight:800;color:#fff}
+header .sep{color:rgba(255,255,255,.4);margin:0 4px}
+header .biz-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;
+  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;
+  padding:7px 14px;border-radius:50px;font-size:12px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:background .2s}
+.btn-logout:hover{background:rgba(255,255,255,.25)}
+nav{background:var(--white);border-bottom:1px solid var(--card);
+  padding:0 24px;display:flex}
+.nav-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray);
+  text-decoration:none;border-bottom:2px solid transparent;
+  transition:color .2s,border-color .2s;white-space:nowrap}
+.nav-tab:hover{color:var(--black)}
+.nav-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+main{max-width:800px;margin:0 auto;padding:28px 20px}
+.rf-banner{border-radius:14px;padding:14px 18px;
+  display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.rf-banner.active{background:#F0FFF4;border:1.5px solid #C6F6D5}
+.rf-banner.inactive{background:#FFFBF0;border:1.5px solid #FAD080}
+.rf-banner-icon{font-size:24px}
+.rf-banner-title{font-size:14px;font-weight:700}
+.rf-banner.active .rf-banner-title{color:#276749}
+.rf-banner.inactive .rf-banner-title{color:#744210}
+.rf-banner-sub{font-size:12px;margin-top:2px}
+.rf-banner.active .rf-banner-sub{color:#38A169}
+.rf-banner.inactive .rf-banner-sub{color:#975A16}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--white);border-radius:14px;padding:18px;text-align:center}
+.stat-num{font-size:28px;font-weight:800;color:var(--black)}
+.stat-lbl{font-size:11px;color:var(--gray-light);margin-top:4px;font-weight:500}
+.section-title{font-size:13px;font-weight:700;color:var(--gray);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.ofertas-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.oferta-item{background:var(--white);border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px}
+.oferta-pct{font-size:20px;font-weight:800;color:var(--orange);min-width:48px}
+.oferta-info{flex:1}
+.oferta-title{font-size:14px;font-weight:600;color:var(--black)}
+.oferta-meta{font-size:12px;color:var(--gray-light);margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.badge.on{background:#EAF3DE;color:#3B6D11}
+.badge.off{background:var(--cream);color:var(--gray)}
+.empty-state{background:var(--white);border-radius:14px;padding:32px;
+  text-align:center;color:var(--gray-light);font-size:14px}
+.btn-row{display:flex;gap:10px;margin-bottom:24px}
+.btn-primary{background:var(--orange);color:#fff;border:none;
+  padding:11px 22px;border-radius:50px;font-size:14px;font-weight:700;
+  font-family:inherit;cursor:pointer;transition:background .2s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{background:var(--orange-dark)}
+.btn-outline{background:transparent;color:var(--brown);
+  border:1.5px solid var(--card);padding:11px 22px;border-radius:50px;
+  font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+  transition:border-color .2s,background .2s;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px}
+.btn-outline:hover{border-color:var(--brown);background:var(--card)}
+.btn-ghost{background:transparent;color:var(--orange);
+  border:1.5px solid var(--orange);padding:9px 18px;border-radius:50px;
+  font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+  transition:background .2s;width:100%}
+.btn-ghost:hover{background:rgba(255,122,26,.08)}
+.loading{text-align:center;padding:60px 20px;color:var(--gray-light);font-size:14px}
+.spinner{width:24px;height:24px;border:2px solid var(--card);
+  border-top-color:var(--orange);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+    <span class="brand">MOTOCLUBes</span>
+    <span class="sep">·</span>
+    <span class="biz-name" id="biz-name">Cargando...</span>
+  </div>
+  <button class="btn-logout" onclick="handleLogout()">Cerrar sesión</button>
+</header>
+
+<nav>
+  <a href="index.html" class="nav-tab active">Panel</a>
+  <a href="perfil.html" class="nav-tab">Perfil</a>
+  <a href="ofertas.html" class="nav-tab">Ofertas</a>
+</nav>
+
+<main>
+  <div class="loading">
+    <div class="spinner"></div>
+    Cargando tu panel...
+  </div>
+</main>
+
+<script type="module">
+import { supabase } from './js/supabase.js'
+
+const { data: { session } } = await supabase.auth.getSession()
+if (!session) window.location.href = 'login.html'
+
+const { data: bizUser } = await supabase
+  .from('business_users')
+  .select('business_id')
+  .eq('id', session.user.id)
+  .single()
+
+if (!bizUser) window.location.href = 'login.html'
+
+const { data: biz } = await supabase
+  .from('rider_friendly_businesses')
+  .select('*')
+  .eq('id', bizUser.business_id)
+  .single()
+
+document.getElementById('biz-name').textContent = biz?.name || session.user.email
+
+const now = new Date()
+const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+const { count: canjes } = await supabase
+  .from('business_redemptions')
+  .select('*', { count: 'exact', head: true })
+  .eq('business_id', bizUser.business_id)
+  .gte('created_at', firstDay)
+
+const { data: ofertas } = await supabase
+  .from('business_offers')
+  .select('*')
+  .eq('business_id', bizUser.business_id)
+  .order('created_at', { ascending: false })
+  .limit(3)
+
+const rfActive = biz?.is_active === true
+
+document.querySelector('main').innerHTML = `
+  <div class="rf-banner ${rfActive ? 'active' : 'inactive'}">
+    <div class="rf-banner-icon">${rfActive ? '🪖' : '⏳'}</div>
+    <div>
+      <div class="rf-banner-title">${rfActive
+        ? 'Badge Rider Friendly activo — apareces en el mapa de la app'
+        : 'Badge pendiente de activación — completa tu perfil para aparecer en el mapa'
+      }</div>
+      <div class="rf-banner-sub">${rfActive
+        ? 'Los moteros pueden ver tu negocio y tus ofertas'
+        : 'Rellena tu perfil y publica al menos una oferta'
+      }</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num">—</div>
+      <div class="stat-lbl">Visitas este mes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${canjes ?? 0}</div>
+      <div class="stat-lbl">Canjes este mes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${biz?.rating_avg ? biz.rating_avg.toFixed(1) : '—'}</div>
+      <div class="stat-lbl">Valoración media</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <a href="perfil.html" class="btn-outline">✏️ Editar perfil</a>
+    <a href="ofertas.html" class="btn-primary">+ Nueva oferta</a>
+  </div>
+
+  <div class="section-title">Últimas ofertas</div>
+  <div class="ofertas-list">
+    ${ofertas && ofertas.length > 0
+      ? ofertas.map(o => `
+        <div class="oferta-item">
+          <div class="oferta-pct">${o.discount_pct ? o.discount_pct + '%' : (o.fixed_price ? o.fixed_price + '€' : '🎁')}</div>
+          <div class="oferta-info">
+            <div class="oferta-title">${o.title}</div>
+            <div class="oferta-meta">${o.ends_at
+              ? 'Hasta ' + new Date(o.ends_at).toLocaleDateString('es-ES')
+              : 'Sin caducidad'} · ${o.uses_count ?? 0} canjes</div>
+          </div>
+          <span class="badge ${o.is_active ? 'on' : 'off'}">${o.is_active ? 'Activa' : 'Borrador'}</span>
+        </div>
+      `).join('')
+      : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>¡Crea tu primera oferta para aparecer en el mapa!</div>'
+    }
+  </div>
+
+  <button class="btn-ghost" onclick="window.location.href='mailto:admin@motoclubes.es'">
+    ✉️ Contactar con MOTOCLUBes
+  </button>
+`
+
+window.handleLogout = async function() {
+  await supabase.auth.signOut()
+  window.location.href = 'login.html'
+}
+</script>
+
+</body>
+</html>
