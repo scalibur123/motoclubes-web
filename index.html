@@ -3,24 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOTOCLUBes — Próximamente</title>
+<title>MOTOCLUBes — Soporte</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Manrope',sans-serif;background:#111;color:#fff;
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:40px 20px}
-img{width:72px;height:72px;border-radius:20px;margin-bottom:24px}
+.logo{width:72px;height:72px;border-radius:20px;margin-bottom:24px}
 h1{font-size:28px;font-weight:800;letter-spacing:-0.5px;margin-bottom:12px}
 h1 span{color:#FF7A1A}
-p{font-size:16px;color:rgba(255,255,255,0.5);line-height:1.6;max-width:340px;margin:0 auto}
+.tagline{font-size:16px;color:rgba(255,255,255,0.5);line-height:1.6;max-width:340px;margin:0 auto 40px}
+.support{border-top:1px solid rgba(255,255,255,0.12);padding-top:32px;max-width:420px;width:100%}
+.support h2{font-size:15px;font-weight:700;color:#FF7A1A;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+.support p{font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:8px}
+.support a{color:#FF7A1A;text-decoration:none;font-weight:600}
+.support a:hover{text-decoration:underline}
+.company{margin-top:24px;font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6}
 </style>
 </head>
 <body>
 <div>
-  <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+  <img class="logo" src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
   <h1>Moto<span>CLUBes</span></h1>
-  <p>Estamos preparando algo grande.<br>Volvemos pronto. 🏍️</p>
+  <p class="tagline">La app que viaja contigo.<br>Estamos preparando algo grande. 🏍️</p>
+
+  <div class="support">
+    <h2>Soporte y contacto</h2>
+    <p>MOTOCLUBes es una comunidad y aplicación para moteros en España: planificación de rutas, navegación, grupos y puntos de interés.</p>
+    <p>¿Tienes dudas o necesitas ayuda? Escríbenos a:</p>
+    <p><a href="mailto:admin@motoclubes.es">admin@motoclubes.es</a></p>
+    <div class="company">
+      MOTOCLUBES TECH S.L.<br>
+      Rd. Santa Eulalia 36, Parc Industrial Pallejà 1, Barcelona, España<br>
+      NIF: B88765003
+    </div>
+  </div>
 </div>
 </body>
 </html>
