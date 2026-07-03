@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MOTOCLUBes · prueba audio Agora v2</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 14px; background: #f4f5f3; color: #1a1a1a; }
+  .card { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 16px; }
+  h1 { font-size: 16px; margin: 0 0 10px; }
+  .banner { font-size: 15px; font-weight: 700; padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; }
+  .banner.good { background: #e3f5e9; color: #1f6e3a; }
+  .banner.bad { background: #fde8e8; color: #b00; }
+  .banner.wait { background: #fff4e0; color: #9a6a00; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 9px; font-family: inherit; }
+  .btn { margin-top: 14px; width: 100%; padding: 14px; font-size: 16px; font-weight: 700; color: #fff; background: #1f6e3a; border: none; border-radius: 999px; }
+  .btn.stop { background: #b00; }
+  .btn:disabled { opacity: 0.5; }
+  .row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .meter { flex: 1; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .meter > div { height: 100%; width: 0%; background: #1f6e3a; }
+  .people { margin-top: 10px; font-size: 14px; font-weight: 600; }
+  #log { margin-top: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #111; color: #6f6; padding: 10px; border-radius: 8px; white-space: pre-wrap; min-height: 60px; max-height: 220px; overflow: auto; }
+  .hint { font-size: 12px; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Prueba audio Agora v2 — MOTOCLUBes</h1>
+
+  <div id="sdkBanner" class="banner wait">Comprobando SDK de Agora…</div>
+
+  <label>App ID</label>
+  <input id="appId" type="text" value="31e8192b0c43439dbd888e6f5218502d" spellcheck="false" autocomplete="off" />
+  <label>Channel (canal)</label>
+  <input id="channel" type="text" value="prueba" spellcheck="false" autocomplete="off" />
+  <label>Temp token (pégalo aquí)</label>
+  <input id="token" type="text" placeholder="007eJx..." spellcheck="false" autocomplete="off" />
+
+  <button class="btn" id="join">Unirme y activar micro</button>
+  <button class="btn stop" id="leave" disabled>Salir</button>
+
+  <div class="row">
+    <span style="font-size:13px;color:#666;min-width:64px;">Tu micro</span>
+    <div class="meter"><div id="micMeter"></div></div>
+  </div>
+  <div class="people" id="people">Nadie más en el canal todavía.</div>
+
+  <label style="margin-top:14px;">Registro (todo sale aquí, sin inspector):</label>
+  <div id="log"></div>
+  <p class="hint">Ábrelo en 2 dispositivos con el mismo canal para hablar. Pégame el texto del recuadro negro si algo falla.</p>
+</div>
+
+<script>
+  window.__agoraLoaded = false;
+  function __mark(ok){ window.__agoraLoaded = ok; }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/agora-rtc-sdk-ng@4.23.4/AgoraRTC_N-production.js" onload="__mark(true)" onerror="__mark(false)"></script>
+
+<script>
+(function () {
+  var logEl = document.getElementById("log");
+  var banner = document.getElementById("sdkBanner");
+  var peopleEl = document.getElementById("people");
+  var micMeter = document.getElementById("micMeter");
+  var joinBtn = document.getElementById("join");
+  var leaveBtn = document.getElementById("leave");
+
+  function log(msg) {
+    var t = new Date().toLocaleTimeString();
+    logEl.textContent += "[" + t + "] " + msg + "\n";
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  window.onerror = function (m, src, line) { log("ERROR JS: " + m + " (línea " + line + ")"); };
+  window.addEventListener("unhandledrejection", function (e) {
+    log("PROMESA RECHAZADA: " + (e.reason && e.reason.message ? e.reason.message : e.reason));
+  });
+
+  var hasSdk = (typeof AgoraRTC !== "undefined");
+  if (hasSdk) {
+    banner.className = "banner good";
+    banner.textContent = "✅ SDK de Agora cargado. Listo para probar.";
+    log("SDK cargado OK. Versión: " + (AgoraRTC.VERSION || "?"));
+  } else {
+    banner.className = "banner bad";
+    banner.textContent = "❌ El SDK de Agora NO cargó (sin internet o el CDN está bloqueado).";
+    log("SDK NO cargado. __agoraLoaded=" + window.__agoraLoaded);
+  }
+
+  var client = null, localAudioTrack = null, remotes = {}, meterTimer = null;
+
+  function updatePeople() {
+    var ids = Object.keys(remotes);
+    peopleEl.textContent = ids.length === 0 ? "Nadie más en el canal todavía." : "Escuchando a " + ids.length + " persona(s).";
+  }
+
+  joinBtn.addEventListener("click", function () {
+    log("Pulsado UNIRME.");
+    if (typeof AgoraRTC === "undefined") { log("Abortado: el SDK no está cargado."); return; }
+    var appId = document.getElementById("appId").value.trim();
+    var channel = document.getElementById("channel").value.trim();
+    var token = document.getElementById("token").value.trim();
+    if (!appId || !channel) { log("Falta App ID o canal."); return; }
+    if (!token) { log("AVISO: sin token. Con proyecto en modo Secure, Agora lo exige."); }
+
+    joinBtn.disabled = true;
+    log("Conectando al canal '" + channel + "'…");
+
+    try {
+      client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      client.on("user-published", function (user, mediaType) {
+        client.subscribe(user, mediaType).then(function () {
+          if (mediaType === "audio") {
+            remotes[user.uid] = true;
+            user.audioTrack && user.audioTrack.play();
+            updatePeople();
+            log("Oyendo a otra persona (uid " + user.uid + ").");
+          }
+        }).catch(function (e) { log("Error al subscribir: " + e.message); });
+      });
+      client.on("user-left", function (user) { delete remotes[user.uid]; updatePeople(); log("Se fue uid " + user.uid); });
+
+      client.join(appId, channel, token || null, null).then(function () {
+        log("Unido al canal. Pidiendo micro…");
+        return AgoraRTC.createMicrophoneAudioTrack();
+      }).then(function (track) {
+        localAudioTrack = track;
+        log("Micro activo. Publicando…");
+        return client.publish([localAudioTrack]);
+      }).then(function () {
+        leaveBtn.disabled = false;
+        log("✅ LISTO. Micro publicado. Abre esto en otro dispositivo con el mismo canal.");
+        meterTimer = setInterval(function () {
+          if (localAudioTrack && localAudioTrack.getVolumeLevel) {
+            micMeter.style.width = Math.min(100, Math.round(localAudioTrack.getVolumeLevel() * 100) * 2) + "%";
+          }
+        }, 120);
+      }).catch(function (e) {
+        joinBtn.disabled = false;
+        log("❌ Error al conectar: " + (e && e.message ? e.message : e) + (e && e.code ? " (code " + e.code + ")" : ""));
+      });
+    } catch (e) {
+      joinBtn.disabled = false;
+      log("❌ Excepción: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  leaveBtn.addEventListener("click", function () {
+    try { if (meterTimer) clearInterval(meterTimer); } catch (e) {}
+    try { if (localAudioTrack) { localAudioTrack.stop(); localAudioTrack.close(); localAudioTrack = null; } } catch (e) {}
+    try { if (client) client.leave(); } catch (e) {}
+    remotes = {}; updatePeople(); micMeter.style.width = "0%";
+    joinBtn.disabled = false; leaveBtn.disabled = true;
+    log("Has salido del canal.");
+  });
+
+  log("Página lista. Pulsa 'Unirme' cuando el banner esté en verde.");
+})();
+</script>
+</body>
+</html>
