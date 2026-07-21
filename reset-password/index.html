@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Cambiar contraseña · MOTOCLUBes</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#111;color:#fff;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 20px}
+.logo{width:72px;height:72px;border-radius:20px;margin-bottom:24px}
+h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+h1 span{color:#FF7A1A}
+.sub{font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;max-width:340px;margin:0 auto 28px}
+.card{width:100%;max-width:360px}
+.field{position:relative;margin-bottom:14px}
+input[type=password],input[type=text]{
+  width:100%;border-radius:16px;border:1px solid rgba(255,255,255,0.15);
+  background:#1b1b1b;color:#fff;padding:15px 48px 15px 16px;font-size:16px;font-family:inherit;outline:none}
+input:focus{border-color:#FF7A1A}
+.toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(255,255,255,0.5);font-size:13px;font-weight:600;cursor:pointer;padding:6px}
+button.primary{width:100%;border:none;border-radius:999px;background:#FF7A1A;color:#111;
+  font-family:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer;margin-top:4px}
+button.primary:disabled{opacity:0.55;cursor:default}
+.msg{font-size:14px;line-height:1.6;margin-top:14px;min-height:20px}
+.msg.err{color:#ff6b6b}
+.msg.ok{color:#7CFF9B}
+.hidden{display:none}
+.hint{font-size:13px;color:rgba(255,255,255,0.4);margin-top:18px;line-height:1.6}
+.hint a{color:#FF7A1A;text-decoration:none;font-weight:600}
+.check{width:64px;height:64px;border-radius:50%;background:rgba(124,255,155,0.12);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px}
+</style>
+</head>
+<body>
+<img class="logo" src="https://www.motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+
+<!-- FORMULARIO -->
+<div id="form-view" class="card">
+  <h1>Nueva <span>contraseña</span></h1>
+  <p class="sub">Elige una contraseña nueva para tu cuenta de MOTOCLUBes.</p>
+  <div class="field">
+    <input id="pw" type="password" placeholder="Nueva contraseña" autocomplete="new-password" minlength="8">
+    <button class="toggle" id="toggle" type="button">Ver</button>
+  </div>
+  <button class="primary" id="save">Guardar contraseña</button>
+  <p class="msg" id="msg"></p>
+</div>
+
+<!-- ÉXITO -->
+<div id="ok-view" class="card hidden">
+  <div class="check">✓</div>
+  <h1>Contraseña <span>cambiada</span></h1>
+  <p class="sub">Ya puedes abrir la app <b>MOTOCLUBes</b> y entrar con tu nueva contraseña.</p>
+</div>
+
+<!-- ENLACE NO VÁLIDO -->
+<div id="bad-view" class="card hidden">
+  <h1>Enlace <span>caducado</span></h1>
+  <p class="sub">Este enlace ya no es válido o ha caducado. Pídelo de nuevo desde la app,
+  en <b>«¿Olvidaste tu contraseña?»</b>.</p>
+</div>
+
+<p class="hint">¿Necesitas ayuda? <a href="https://www.motoclubes.es">motoclubes.es</a></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var SUPABASE_URL = "https://yxmirhpwmdmaxynlshdx.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi";
+
+  var params = new URLSearchParams(location.search);
+  // Soporta el hash por si algún cliente lo mete ahí.
+  if ((!params.get("token_hash")) && location.hash) {
+    params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  }
+  var tokenHash = params.get("token_hash");
+  var type = params.get("type") || "recovery";
+
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { detectSessionInUrl: false, persistSession: false, autoRefreshToken: false }
+  });
+
+  var formView = document.getElementById("form-view");
+  var okView = document.getElementById("ok-view");
+  var badView = document.getElementById("bad-view");
+  var pw = document.getElementById("pw");
+  var saveBtn = document.getElementById("save");
+  var msg = document.getElementById("msg");
+  var toggle = document.getElementById("toggle");
+
+  toggle.addEventListener("click", function () {
+    if (pw.type === "password") { pw.type = "text"; toggle.textContent = "Ocultar"; }
+    else { pw.type = "password"; toggle.textContent = "Ver"; }
+  });
+
+  function showBad() { formView.classList.add("hidden"); badView.classList.remove("hidden"); }
+  function showOk() { formView.classList.add("hidden"); okView.classList.remove("hidden"); }
+  function setError(t) { msg.textContent = t; msg.className = "msg err"; }
+
+  // Si ni siquiera hay token, el enlace no vale.
+  if (!tokenHash) { showBad(); return; }
+
+  saveBtn.addEventListener("click", async function () {
+    var value = pw.value || "";
+    if (value.length < 8) { setError("Mínimo 8 caracteres."); return; }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Guardando…";
+    msg.textContent = "";
+
+    try {
+      // El token SOLO se gasta aquí, al pulsar Guardar: por eso el escaneo del
+      // correo (que no pulsa) no puede quemarlo.
+      var v = await sb.auth.verifyOtp({ token_hash: tokenHash, type: type });
+      if (v.error || !v.data || !v.data.session) {
+        saveBtn.disabled = false; saveBtn.textContent = "Guardar contraseña";
+        showBad();
+        return;
+      }
+      var u = await sb.auth.updateUser({ password: value });
+      if (u.error) {
+        saveBtn.disabled = false; saveBtn.textContent = "Guardar contraseña";
+        setError(u.error.message || "No se pudo guardar. Inténtalo de nuevo.");
+        return;
+      }
+      showOk();
+    } catch (e) {
+      saveBtn.disabled = false; saveBtn.textContent = "Guardar contraseña";
+      setError("Algo ha fallado. Inténtalo de nuevo.");
+    }
+  });
+})();
+</script>
+</body>
+</html>
