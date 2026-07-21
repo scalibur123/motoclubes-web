@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "C6CY6Y927Z.es.motoclubes.app",
+        "paths": ["/reset-password", "/reset-password/*", "/confirm", "/confirm/*"]
+      }
+    ]
+  }
+}
