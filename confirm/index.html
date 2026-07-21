@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Confirmar cuenta · MOTOCLUBes</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#111;color:#fff;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 20px}
+.logo{width:72px;height:72px;border-radius:20px;margin-bottom:24px}
+h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+h1 span{color:#FF7A1A}
+.sub{font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;max-width:340px;margin:0 auto 28px}
+.card{width:100%;max-width:360px}
+button.primary{width:100%;border:none;border-radius:999px;background:#FF7A1A;color:#111;
+  font-family:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer}
+button.primary:disabled{opacity:0.55;cursor:default}
+.msg{font-size:14px;line-height:1.6;margin-top:14px;min-height:20px}
+.msg.err{color:#ff6b6b}
+.hidden{display:none}
+.hint{font-size:13px;color:rgba(255,255,255,0.4);margin-top:18px;line-height:1.6}
+.hint a{color:#FF7A1A;text-decoration:none;font-weight:600}
+.check{width:64px;height:64px;border-radius:50%;background:rgba(124,255,155,0.12);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px}
+</style>
+</head>
+<body>
+<img class="logo" src="https://www.motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+
+<!-- BOTÓN CONFIRMAR -->
+<div id="form-view" class="card">
+  <h1>Confirmar <span>cuenta</span></h1>
+  <p class="sub">Pulsa el botón para activar tu cuenta de MOTOCLUBes.</p>
+  <button class="primary" id="confirm">Confirmar cuenta</button>
+  <p class="msg" id="msg"></p>
+</div>
+
+<!-- ÉXITO -->
+<div id="ok-view" class="card hidden">
+  <div class="check">✓</div>
+  <h1>Cuenta <span>confirmada</span></h1>
+  <p class="sub">¡Listo! Ya puedes abrir la app <b>MOTOCLUBes</b> y entrar con tu cuenta.</p>
+</div>
+
+<!-- ENLACE NO VÁLIDO -->
+<div id="bad-view" class="card hidden">
+  <h1>Enlace <span>caducado</span></h1>
+  <p class="sub">Este enlace ya no es válido o ha caducado. Si tu cuenta no se activa,
+  vuelve a registrarte en la app o escríbenos.</p>
+</div>
+
+<p class="hint">¿Necesitas ayuda? <a href="https://www.motoclubes.es">motoclubes.es</a></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var SUPABASE_URL = "https://yxmirhpwmdmaxynlshdx.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi";
+
+  var params = new URLSearchParams(location.search);
+  if ((!params.get("token_hash")) && location.hash) {
+    params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  }
+  var tokenHash = params.get("token_hash");
+  var type = params.get("type") || "signup";
+
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { detectSessionInUrl: false, persistSession: false, autoRefreshToken: false }
+  });
+
+  var formView = document.getElementById("form-view");
+  var okView = document.getElementById("ok-view");
+  var badView = document.getElementById("bad-view");
+  var confirmBtn = document.getElementById("confirm");
+  var msg = document.getElementById("msg");
+
+  function showBad() { formView.classList.add("hidden"); badView.classList.remove("hidden"); }
+  function showOk() { formView.classList.add("hidden"); okView.classList.remove("hidden"); }
+
+  if (!tokenHash) { showBad(); return; }
+
+  confirmBtn.addEventListener("click", async function () {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Confirmando…";
+    msg.textContent = "";
+
+    async function tryType(t) {
+      try {
+        var r = await sb.auth.verifyOtp({ token_hash: tokenHash, type: t });
+        return !r.error;
+      } catch (e) { return false; }
+    }
+
+    // El token SOLO se gasta aquí, al pulsar: el escaneo del correo no puede quemarlo.
+    // Intentamos el tipo del enlace y, por robustez, el alternativo signup/email.
+    var ok = await tryType(type);
+    if (!ok) {
+      var alt = (type === "signup") ? "email" : "signup";
+      ok = await tryType(alt);
+    }
+
+    if (ok) { showOk(); }
+    else {
+      confirmBtn.disabled = false; confirmBtn.textContent = "Confirmar cuenta";
+      showBad();
+    }
+  });
+})();
+</script>
+</body>
+</html>
