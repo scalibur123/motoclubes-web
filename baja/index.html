@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Baja de correos · MOTOCLUBes</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#111;color:#fff;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 20px}
+.logo{width:72px;height:72px;border-radius:20px;margin-bottom:24px}
+h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+h1 span{color:#FF7A1A}
+.sub{font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;max-width:340px;margin:0 auto 28px}
+.card{width:100%;max-width:360px}
+button.primary{width:100%;border:none;border-radius:999px;background:#FF7A1A;color:#111;
+  font-family:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer}
+button.primary:disabled{opacity:0.55;cursor:default}
+.msg{font-size:14px;line-height:1.6;margin-top:14px;min-height:20px}
+.msg.err{color:#ff6b6b}
+.hidden{display:none}
+.hint{font-size:13px;color:rgba(255,255,255,0.4);margin-top:18px;line-height:1.6}
+.hint a{color:#FF7A1A;text-decoration:none;font-weight:600}
+.check{width:64px;height:64px;border-radius:50%;background:rgba(124,255,155,0.12);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px}
+</style>
+</head>
+<body>
+<img class="logo" src="https://www.motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+
+<!-- CARGANDO -->
+<div id="load-view" class="card">
+  <h1>Un <span>momento</span></h1>
+  <p class="sub">Comprobando el enlace…</p>
+</div>
+
+<!-- BOTÓN DARSE DE BAJA -->
+<div id="form-view" class="card hidden">
+  <h1>Dejar de recibir <span>novedades</span></h1>
+  <p class="sub">Pulsa el botón y no volveremos a enviarte correos de novedades.
+  Los avisos importantes de tu cuenta seguirán llegando.</p>
+  <button class="primary" id="baja">Darme de baja</button>
+  <p class="msg" id="msg"></p>
+</div>
+
+<!-- ÉXITO -->
+<div id="ok-view" class="card hidden">
+  <div class="check">✓</div>
+  <h1>Te hemos dado de <span>baja</span></h1>
+  <p class="sub">No recibirás más correos de novedades de <b>MOTOCLUBes</b>.
+  Los avisos importantes de tu cuenta seguirán llegando. Buen viaje 🏍️</p>
+</div>
+
+<!-- YA ESTABA DE BAJA -->
+<div id="dup-view" class="card hidden">
+  <div class="check">✓</div>
+  <h1>Ya estabas de <span>baja</span></h1>
+  <p class="sub">No te enviamos correos de novedades. No tienes que hacer nada más.</p>
+</div>
+
+<!-- ENLACE NO VÁLIDO -->
+<div id="bad-view" class="card hidden">
+  <h1>Enlace no <span>válido</span></h1>
+  <p class="sub">No reconocemos este enlace. Puede que esté incompleto —prueba a abrir
+  el del correo tal cual, sin recortarlo— o que sea de un correo muy antiguo.</p>
+</div>
+
+<p class="hint">¿Necesitas ayuda? <a href="https://www.motoclubes.es">motoclubes.es</a></p>
+
+<script>
+(function () {
+  // La pagina vive aqui y no en la Edge Function porque Supabase reescribe a
+  // text/plain cualquier GET que devuelva HTML desde *.supabase.co.
+  var API = "https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/email-unsubscribe";
+
+  var token = new URLSearchParams(location.search).get("token");
+
+  var views = {
+    load: document.getElementById("load-view"),
+    form: document.getElementById("form-view"),
+    ok:   document.getElementById("ok-view"),
+    dup:  document.getElementById("dup-view"),
+    bad:  document.getElementById("bad-view")
+  };
+  function show(name) {
+    for (var k in views) views[k].classList.toggle("hidden", k !== name);
+  }
+
+  var btn = document.getElementById("baja");
+  var msg = document.getElementById("msg");
+
+  if (!token) { show("bad"); return; }
+
+  var url = API + "?token=" + encodeURIComponent(token);
+
+  // 1 · Consultar. El GET NO da de baja: asi el escaneo automatico de enlaces
+  // que hacen algunos antivirus de correo no puede darte de baja sin querer.
+  fetch(url)
+    .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+    .then(function (res) {
+      if (res.s !== 200 || !res.d.ok) { show("bad"); return; }
+      show(res.d.ya_de_baja ? "dup" : "form");
+    })
+    .catch(function () { show("bad"); });
+
+  // 2 · Dar de baja de verdad.
+  btn.addEventListener("click", function () {
+    btn.disabled = true;
+    btn.textContent = "Dando de baja…";
+    msg.textContent = "";
+    msg.className = "msg";
+
+    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+      .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+      .then(function (res) {
+        if (res.s === 200 && res.d.ok) { show("ok"); return; }
+        throw new Error(res.d.reason || "error");
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = "Darme de baja";
+        msg.className = "msg err";
+        msg.textContent = "No hemos podido completarlo. Vuelve a intentarlo en un momento.";
+      });
+  });
+})();
+</script>
+</body>
+</html>
