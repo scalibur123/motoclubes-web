@@ -336,15 +336,49 @@ window.selectType = function(type) {
   document.getElementById('preview-cat').textContent = type
 }
 
+// SEG7-FOTOS-REDUCIR-25AGO: antes se RECHAZABA toda foto de mas de 2 MB. Ese tope
+// era de esta pagina, no del bucket (business-photos va sin file_size_limit), y
+// cualquier foto de movil lo pasa: el portal era inusable con un telefono. Nadie lo
+// vio porque nadie lo uso (0 objetos en el bucket).
+// Ahora no se rechaza: se REDUCE aqui antes de subir. Un directorio no necesita
+// 4000 px, y asi el rider tampoco se traga los megas al pintar el negocio.
+const FOTO_LADO_MAX = 1600
+const FOTO_CALIDAD = 0.82
+
+async function reducirFoto(file) {
+  // Si no es imagen o el navegador no sabe decodificarla, se sube tal cual.
+  if (!file.type.startsWith('image/')) return { blob: file, ext: (file.name.split('.').pop() || 'jpg') }
+  try {
+    const bitmap = await createImageBitmap(file)
+    const escala = Math.min(1, FOTO_LADO_MAX / Math.max(bitmap.width, bitmap.height))
+    const w = Math.round(bitmap.width * escala)
+    const h = Math.round(bitmap.height * escala)
+    const lienzo = document.createElement('canvas')
+    lienzo.width = w; lienzo.height = h
+    lienzo.getContext('2d').drawImage(bitmap, 0, 0, w, h)
+    const blob = await new Promise(r => lienzo.toBlob(r, 'image/jpeg', FOTO_CALIDAD))
+    bitmap.close && bitmap.close()
+    if (!blob) throw new Error('toBlob vacio')
+    // Si reducir no ha servido de nada (ya era pequena y comprimida), gana la original.
+    if (blob.size >= file.size) return { blob: file, ext: (file.name.split('.').pop() || 'jpg') }
+    return { blob, ext: 'jpg' }
+  } catch (err) {
+    console.warn('[fotos] no se pudo reducir, se sube la original:', err)
+    return { blob: file, ext: (file.name.split('.').pop() || 'jpg') }
+  }
+}
+
 document.getElementById('file-input').addEventListener('change', async e => {
   const files = Array.from(e.target.files)
   for (const file of files) {
-    if (file.size > 2 * 1024 * 1024) { alert('La foto ' + file.name + ' supera 2 MB.'); continue }
     try {
+      const { blob, ext } = await reducirFoto(file)
+      // Red de seguridad: si aun asi es enorme, no se sube a ciegas.
+      if (blob.size > 8 * 1024 * 1024) throw new Error('la foto sigue pesando ' + Math.round(blob.size / 1048576) + ' MB despues de reducirla')
       // El servidor decide la ruta y firma la subida: la foto nace con dueno.
-      const slot = await api('photo_slot', { ext: file.name.split('.').pop() })
+      const slot = await api('photo_slot', { ext })
       const { error } = await sbClient.storage.from('business-photos')
-        .uploadToSignedUrl(slot.path, slot.token, file)
+        .uploadToSignedUrl(slot.path, slot.token, blob, { contentType: blob.type || 'image/jpeg' })
       if (error) throw new Error(error.message)
       if (photos.length < 5) photos.push(slot.public_url)
       renderPhotos()
