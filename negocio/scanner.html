@@ -109,14 +109,40 @@ const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
-if (!session) window.location.href = 'login.html'
+if (!session || !session.token) { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+async function api(action, payload = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/business-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-business-token': session.token
+    },
+    body: JSON.stringify({ action, payload })
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) { localStorage.removeItem('business_session'); window.location.href = 'login.html'; throw new Error('sesion caducada') }
+  if (!res.ok || data.error) throw new Error(data.error || 'Error de conexion')
+  return data
+}
+
+async function handleLogout() {
+  try { await api('logout') } catch (e) {}
+  localStorage.removeItem('business_session')
+  window.location.href = 'login.html'
+}
 
 let scanning = false, stream = null, animFrame = null, bizName = ''
 
 async function init() {
-  const { data: biz } = await sbClient.from('rider_friendly_businesses').select('name,email').eq('id', session.business_id).single()
-  bizName = biz?.name || session.email
+  try {
+    const r = await api('profile_get')
+    bizName = r.business?.name || session.email
+  } catch (e) { bizName = session.email }
   document.getElementById('biz-name').textContent = bizName
 }
 
@@ -175,62 +201,16 @@ async function processQR(data) {
   let couponCode = data
   try { const p = JSON.parse(data); if (p.code) couponCode = p.code } catch(e) {}
 
-  const { data: coupon } = await sbClient
-    .from('business_coupons')
-    .select('*, business_offers(title, discount_pct, fixed_price, offer_type, applies_to)')
-    .eq('code', couponCode)
-    .single()
+  let redeem
+  try {
+    redeem = await api('coupon_redeem', { code: couponCode })
+  } catch (err) {
+    showError(err.message)
+    return
+  }
 
-  if (!coupon) { showError('Este QR no existe en el sistema.'); return }
-  if (coupon.status === 'redeemed') { showError('Este QR ya fue canjeado anteriormente.'); return }
-  if (coupon.status !== 'active') { showError('Este QR no está activo.'); return }
-  if (coupon.business_id !== session.business_id) { showError('Este QR no pertenece a tu negocio.'); return }
-
-  const { data: profile } = await sbClient
-    .from('profiles')
-    .select('username, full_name')
-    .eq('id', coupon.user_id)
-    .single()
-
-  const now = new Date().toISOString()
-  const offer = coupon.business_offers
-  const commissionPct = 2
-  const offerValue = offer?.fixed_price || null
-  const commissionAmount = offerValue ? (offerValue * commissionPct / 100) : null
-
-  const { error: updateError } = await sbClient
-    .from('business_coupons')
-    .update({ status: 'redeemed', redeemed_at: now, redeemed_by_business: true })
-    .eq('code', couponCode)
-
-  if (updateError) { showError('Error al registrar el canje: ' + updateError.message); return }
-
-  await sbClient.from('business_redemptions').insert({
-    business_id: session.business_id,
-    offer_id: coupon.offer_id,
-    user_id: coupon.user_id,
-    coupon_id: coupon.id,
-    redeemed_at: now,
-    commission_pct: commissionPct,
-    commission_amount: commissionAmount,
-    offer_value: offerValue
-  })
-
-  await fetch(`${SUPABASE_URL}/functions/v1/business-redemption-notify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-    body: JSON.stringify({
-      business_id: session.business_id,
-      business_name: bizName,
-      rider_nickname: profile?.username || 'Motero',
-      offer_title: offer?.title || 'Oferta',
-      offer_desc: offer?.discount_pct ? offer.discount_pct + '% de descuento' : offer?.fixed_price ? offer.fixed_price + '€' : offer?.title,
-      redeemed_at: now
-    })
-  })
-
-  const offerDesc = offer?.discount_pct ? offer.discount_pct + '% de descuento' : offer?.fixed_price ? offer.fixed_price + '€' : offer?.title || 'Oferta'
-  const riderName = profile?.username || profile?.full_name || 'Motero'
+  const offerDesc = redeem.offer_desc
+  const riderName = redeem.rider
 
   document.getElementById('rider-info').innerHTML = `
     <div class="label">Motero</div>
@@ -260,7 +240,7 @@ function resetScanner() {
   scanning = false
 }
 
-function handleLogout() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
 
 init()
 </script>
