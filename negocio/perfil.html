@@ -342,8 +342,10 @@ window.selectType = function(type) {
 // vio porque nadie lo uso (0 objetos en el bucket).
 // Ahora no se rechaza: se REDUCE aqui antes de subir. Un directorio no necesita
 // 4000 px, y asi el rider tampoco se traga los megas al pintar el negocio.
-const FOTO_LADO_MAX = 1600
-const FOTO_CALIDAD = 0.82
+// Medido con la primera foto real (25-ago): a 1600/0.82 salio de 1.377 KB, demasiado
+// para que lo descargue un rider con datos moviles. Un directorio no necesita mas.
+const FOTO_LADO_MAX = 1280
+const FOTO_CALIDAD = 0.75
 
 async function reducirFoto(file) {
   // Si no es imagen o el navegador no sabe decodificarla, se sube tal cual.
