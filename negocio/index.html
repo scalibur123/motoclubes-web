@@ -84,33 +84,40 @@ const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
-if (!session) window.location.href = 'login.html'
+if (!session || !session.token) { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+async function api(action, payload = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/business-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-business-token': session.token
+    },
+    body: JSON.stringify({ action, payload })
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) { localStorage.removeItem('business_session'); window.location.href = 'login.html'; throw new Error('sesion caducada') }
+  if (!res.ok || data.error) throw new Error(data.error || 'Error de conexion')
+  return data
+}
+
+async function handleLogout() {
+  try { await api('logout') } catch (e) {}
+  localStorage.removeItem('business_session')
+  window.location.href = 'login.html'
+}
 
 async function loadPanel() {
-  const { data: biz } = await sbClient
-    .from('rider_friendly_businesses')
-    .select('*')
-    .eq('id', session.business_id)
-    .single()
+  const d = await api('dashboard')
+  const biz = d.business
+  const canjes = d.canjes_mes
+  const ofertas = d.offers
 
   document.getElementById('biz-name').textContent = biz?.name || session.email
-
-  const now = new Date()
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-
-  const { count: canjes } = await sbClient
-    .from('business_redemptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('business_id', session.business_id)
-    .gte('created_at', firstDay)
-
-  const { data: ofertas } = await sbClient
-    .from('business_offers')
-    .select('*')
-    .eq('business_id', session.business_id)
-    .order('created_at', { ascending: false })
-    .limit(3)
 
   const rfActive = biz?.is_active === true
 
@@ -154,10 +161,7 @@ async function loadPanel() {
   `
 }
 
-function handleLogout() {
-  localStorage.removeItem('business_session')
-  window.location.href = 'login.html'
-}
+
 
 loadPanel()
 </script>
