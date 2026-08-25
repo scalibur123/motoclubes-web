@@ -255,7 +255,7 @@ async function loadPerfil() {
         </div>
       </div>
       <div class="photos-grid" id="photos-grid"></div>
-      <div class="field-hint" id="foto-hint">Máx. 5 fotos · se reducen solas al subirlas · <b>v4</b></div>
+      <div class="field-hint" id="foto-hint">Máx. 5 fotos · se reducen solas al subirlas</div>
     </div>
     <div class="section-block">
       <div class="section-label">Horario</div>
@@ -324,7 +324,19 @@ function renderPhotos() {
   }
   grid.innerHTML = html
   const previewImg = document.getElementById('preview-img')
-  if (photos[0] && previewImg) { previewImg.style.backgroundImage = `url(${photos[0]})`; previewImg.style.backgroundSize = 'cover'; previewImg.style.backgroundPosition = 'center' }
+  // FOTOS-3 (25-ago-2026): esto era `if (photos[0] && previewImg)`, o sea SOLO sabia
+  // pintar. Al borrar la ultima foto no entraba en el if y la vista previa se
+  // quedaba con la anterior pegada: la cuadricula decia "no hay fotos" y la previa
+  // seguia ensenando una. Ahora el else limpia.
+  if (previewImg) {
+    if (photos[0]) {
+      previewImg.style.backgroundImage = `url(${photos[0]})`
+      previewImg.style.backgroundSize = 'cover'
+      previewImg.style.backgroundPosition = 'center'
+    } else {
+      previewImg.style.backgroundImage = ''
+    }
+  }
 }
 
 let uploadSlot = 0
@@ -389,8 +401,8 @@ document.getElementById('file-input').addEventListener('change', async e => {
       const hint = document.getElementById('foto-hint')
       if (hint) {
         hint.innerHTML = r.reducida
-          ? 'v4 · original ' + Math.round(file.size/1024) + ' KB → subida <b>' + Math.round(blob.size/1024) + ' KB</b> (' + r.w + '×' + r.h + ')'
-          : 'v4 · <b>NO se redujo</b> (' + (r.motivo || 'sin motivo') + ') · subida ' + Math.round(blob.size/1024) + ' KB'
+          ? 'Subida: ' + Math.round(file.size/1024) + ' KB → <b>' + Math.round(blob.size/1024) + ' KB</b>'
+          : 'Subida sin reducir (' + (r.motivo || 'sin motivo') + ')'
       }
     } catch (err) {
       alert('No se pudo subir ' + file.name + ': ' + err.message)
