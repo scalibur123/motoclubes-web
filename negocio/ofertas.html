@@ -171,16 +171,39 @@ const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
-if (!session) window.location.href = 'login.html'
+if (!session || !session.token) { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+async function api(action, payload = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/business-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-business-token': session.token
+    },
+    body: JSON.stringify({ action, payload })
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) { localStorage.removeItem('business_session'); window.location.href = 'login.html'; throw new Error('sesion caducada') }
+  if (!res.ok || data.error) throw new Error(data.error || 'Error de conexion')
+  return data
+}
+
+async function handleLogout() {
+  try { await api('logout') } catch (e) {}
+  localStorage.removeItem('business_session')
+  window.location.href = 'login.html'
+}
 
 let tipoActual = 'pct_consumicion'
 
 async function loadOfertas() {
-  const { data: biz } = await sbClient.from('rider_friendly_businesses').select('name').eq('id', session.business_id).single()
-  document.getElementById('biz-name-header').textContent = biz?.name || ''
-
-  const { data: ofertas } = await sbClient.from('business_offers').select('*').eq('business_id', session.business_id).order('created_at', { ascending: false })
+  const r = await api('offers_list')
+  document.getElementById('biz-name-header').textContent = r.business_name || ''
+  const ofertas = r.offers
   const list = document.getElementById('ofertas-list')
   if (!ofertas || ofertas.length === 0) {
     list.innerHTML = '<div class="empty-state">Aún no tienes ofertas publicadas.<br>¡Crea tu primera oferta para aparecer en el mapa!</div>'
@@ -231,7 +254,7 @@ window.handleSave = async function(publish) {
   const alertError = document.getElementById('alert-error')
   const alertSuccess = document.getElementById('alert-success')
   alertError.classList.remove('show'); alertSuccess.classList.remove('show')
-  const oferta = { business_id: session.business_id, offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value || null, uses_count: 0 }
+  const oferta = { offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value || null, uses_count: 0 }
   if (tipoActual === 'pct_consumicion') { const pct = parseInt(document.getElementById('f-pct').value); if (!pct) { alertError.textContent = 'Introduce el porcentaje.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = document.getElementById('f-aplica').value; oferta.title = `${pct}% de descuento en ${oferta.applies_to}` }
   else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona` }
   else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.room_type = document.getElementById('f-hab').value; oferta.title = `Hab. ${oferta.room_type} · ${precio}€/persona/noche` }
@@ -239,14 +262,17 @@ window.handleSave = async function(publish) {
   else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = document.getElementById('f-serv').value.trim(); if (!pct || !serv) { alertError.textContent = 'Rellena descuento y servicio.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
   else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { alertError.textContent = 'Describe la oferta.'; alertError.classList.add('show'); return } oferta.title = txt }
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
-  const { error } = await sbClient.from('business_offers').insert(oferta)
-  if (error) { alertError.textContent = 'Error al guardar: ' + error.message; alertError.classList.add('show') }
-  else { alertSuccess.textContent = publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0) }
+  try {
+    await api('offer_create', oferta)
+    alertSuccess.textContent = publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0)
+  } catch (err) {
+    alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
+  }
   btn.disabled = false; btn.innerHTML = 'Publicar oferta'
 }
-window.toggleActive = async function(id, currentState) { await sbClient.from('business_offers').update({ is_active: !currentState }).eq('id', id); await loadOfertas() }
-window.deleteOferta = async function(id) { if (!confirm('¿Eliminar esta oferta?')) return; await sbClient.from('business_offers').delete().eq('id', id); await loadOfertas() }
-window.handleLogout = function() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+window.toggleActive = async function(id, currentState) { try { await api('offer_toggle', { id, is_active: !currentState }); await loadOfertas() } catch (e) { alert(e.message) } }
+window.deleteOferta = async function(id) { if (!confirm('¿Eliminar esta oferta?')) return; try { await api('offer_delete', { id }); await loadOfertas() } catch (e) { alert(e.message) } }
+window.handleLogout = handleLogout
 
 loadOfertas()
 </script>
