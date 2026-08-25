@@ -124,8 +124,32 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibW90b2NsdWJlcyIsImEiOiJjbXA2cmJxaTUwM3djMnJzZXlvMzBycGg0In0.dw_0jtLStDE_MyCAm6zOig'
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
-if (!session) window.location.href = 'login.html'
+if (!session || !session.token) { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
+async function api(action, payload = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/business-portal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-business-token': session.token
+    },
+    body: JSON.stringify({ action, payload })
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) { localStorage.removeItem('business_session'); window.location.href = 'login.html'; throw new Error('sesion caducada') }
+  if (!res.ok || data.error) throw new Error(data.error || 'Error de conexion')
+  return data
+}
+
+async function handleLogout() {
+  try { await api('logout') } catch (e) {}
+  localStorage.removeItem('business_session')
+  window.location.href = 'login.html'
+}
 
 let currentLat = 40.4168, currentLng = -3.7038
 let photos = [], selectedType = '', map, marker, biz
@@ -155,8 +179,8 @@ function toggleAccordion(groupId) {
 }
 
 async function loadPerfil() {
-  const { data } = await sbClient.from('rider_friendly_businesses').select('*').eq('id', session.business_id).single()
-  biz = data
+  const r = await api('profile_get')
+  biz = r.business
   if (!biz) return
 
   document.getElementById('biz-name-header').textContent = biz.name || ''
@@ -308,13 +332,16 @@ document.getElementById('file-input').addEventListener('change', async e => {
   const files = Array.from(e.target.files)
   for (const file of files) {
     if (file.size > 2 * 1024 * 1024) { alert('La foto ' + file.name + ' supera 2 MB.'); continue }
-    const ext = file.name.split('.').pop()
-    const path = `businesses/${session.business_id}/${Date.now()}.${ext}`
-    const { error } = await sbClient.storage.from('business-photos').upload(path, file, { upsert: true })
-    if (!error) {
-      const { data: url } = sbClient.storage.from('business-photos').getPublicUrl(path)
-      if (photos.length < 5) photos.push(url.publicUrl)
+    try {
+      // El servidor decide la ruta y firma la subida: la foto nace con dueno.
+      const slot = await api('photo_slot', { ext: file.name.split('.').pop() })
+      const { error } = await sbClient.storage.from('business-photos')
+        .uploadToSignedUrl(slot.path, slot.token, file)
+      if (error) throw new Error(error.message)
+      if (photos.length < 5) photos.push(slot.public_url)
       renderPhotos()
+    } catch (err) {
+      alert('No se pudo subir ' + file.name + ': ' + err.message)
     }
   }
   e.target.value = ''
@@ -331,25 +358,26 @@ async function handleSave() {
 
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
 
-  const { error } = await sbClient.from('rider_friendly_businesses').update({
-    name, type: selectedType,
-    description: document.getElementById('f-desc').value.trim(),
-    phone: document.getElementById('f-phone').value.trim(),
-    website: document.getElementById('f-web').value.trim(),
-    address: document.getElementById('f-address').value.trim(),
-    lat: currentLat, lng: currentLng, photos,
-    opening_time: document.getElementById('f-open').value,
-    closing_time: document.getElementById('f-close').value,
-    updated_at: new Date().toISOString()
-  }).eq('id', session.business_id)
-
-  if (error) { alertError.textContent = 'Error al guardar: ' + error.message; alertError.classList.add('show') }
-  else { alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0) }
+  try {
+    await api('profile_update', {
+      name, type: selectedType,
+      description: document.getElementById('f-desc').value.trim(),
+      phone: document.getElementById('f-phone').value.trim(),
+      website: document.getElementById('f-web').value.trim(),
+      address: document.getElementById('f-address').value.trim(),
+      lat: currentLat, lng: currentLng, photos,
+      opening_time: document.getElementById('f-open').value,
+      closing_time: document.getElementById('f-close').value
+    })
+    alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0)
+  } catch (err) {
+    alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
+  }
 
   btn.disabled = false; btn.innerHTML = 'Guardar cambios'
 }
 
-function handleLogout() { localStorage.removeItem('business_session'); window.location.href = 'login.html' }
+
 
 window.handleSave = handleSave
 window.handleLogout = handleLogout
