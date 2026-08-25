@@ -81,7 +81,12 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 </main>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
+// BIZPORTAL-JWT-1 (25-ago-2026): aqui vivia la clave ANTIGUA (eyJ...), que Supabase
+// tiene DESACTIVADA. Aguantaba porque business-portal iba con verify_jwt = true y el
+// portero aun la verificaba. Hoy esa funcion pasa a verify_jwt = false (la autentica
+// x-business-token contra business_sessions, no el JWT), asi que el peaje sobra y
+// entra la clave PUBLICABLE, que es la viva. Verificado pagina por pagina.
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
 
 function toggleEye(inputId,btnId){const input=document.getElementById(inputId);const btn=document.getElementById(btnId);if(input.type==="password"){input.type="text";btn.textContent="🙈"}else{input.type="password";btn.textContent="👁"}}
 async function handleRegister() {
@@ -118,8 +123,8 @@ async function handleRegister() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
       },
       body: JSON.stringify({ email, password, business_name: bizName })
     })
