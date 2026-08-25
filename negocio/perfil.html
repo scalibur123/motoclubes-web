@@ -122,7 +122,15 @@ input[type="file"]{display:none}
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibW90b2NsdWJlcyIsImEiOiJjbXA2cmJxaTUwM3djMnJzZXlvMzBycGg0In0.dw_0jtLStDE_MyCAm6zOig'
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// SEG7-FOTOS-25AGO: el cliente de Storage va con la clave PUBLICABLE, no con la
+// antigua. Storage es API REST, y las claves antiguas estan DESACTIVADAS
+// ("Legacy API keys are disabled"): con la vieja, subir una foto no podia funcionar
+// -- y el bucket business-photos tenia 0 objetos, que es justo lo que se esperaria.
+// OJO: el resto de la pagina (helper api()) sigue con SUPABASE_ANON_KEY A PROPOSITO.
+// Las Edge Functions SI aceptan la vieja y van con verify_jwt=false; se cambia una
+// cosa cada vez para que la medida signifique algo.
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
 
 // MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
