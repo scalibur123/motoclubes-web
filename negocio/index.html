@@ -81,8 +81,13 @@ main{max-width:800px;margin:0 auto;padding:28px 20px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4bWlyaHB3bWRtYXh5bmxzaGR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODc2MDcsImV4cCI6MjA5Mzc2MzYwN30.tCJKmAeG9A3ua1WJ5s166OvnIMalfS9SLOA23McirGc'
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// BIZPORTAL-JWT-1 (25-ago-2026): aqui vivia la clave ANTIGUA (eyJ...), que Supabase
+// tiene DESACTIVADA. Aguantaba porque business-portal iba con verify_jwt = true y el
+// portero aun la verificaba. Hoy esa funcion pasa a verify_jwt = false (la autentica
+// x-business-token contra business_sessions, no el JWT), asi que el peaje sobra y
+// entra la clave PUBLICABLE, que es la viva. Verificado pagina por pagina.
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
 
 // MC-BIZPORTAL-25AGO-2026: puerta unica. El business_id ya no vive en el navegador.
 const session = JSON.parse(localStorage.getItem('business_session') || 'null')
@@ -93,8 +98,8 @@ async function api(action, payload = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
       'x-business-token': session.token
     },
     body: JSON.stringify({ action, payload })
