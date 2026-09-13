@@ -47,7 +47,29 @@ img{max-width:100%;display:block}
   color:var(--texto-3);border:1px solid transparent;
 }
 .idiomas a.activo{color:var(--naranja);border-color:var(--naranja);background:var(--naranja-suave)}
-@media(max-width:760px){.barra nav a.oculta-movil{display:none}}
+
+/* Menú de móvil. Sin JavaScript: <details> se abre y se cierra solo.
+   Antes las secciones simplemente se ocultaban por debajo de 760 px, o sea que
+   en un teléfono la barra no llevaba a ningún sitio. */
+.menu{display:none;position:relative}
+.menu summary{
+  list-style:none;cursor:pointer;width:42px;height:42px;border-radius:11px;
+  border:1px solid var(--borde);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+}
+.menu summary::-webkit-details-marker{display:none}
+.menu summary span{display:block;width:17px;height:2px;background:var(--texto);border-radius:2px}
+.menu[open] summary{border-color:var(--naranja)}
+.menu-panel{
+  position:absolute;right:0;top:calc(100% + 10px);min-width:212px;
+  background:var(--tarjeta);border:1px solid var(--borde);border-radius:16px;
+  padding:8px;box-shadow:0 18px 46px rgba(0,0,0,.55);
+}
+.menu-panel a{
+  display:block;padding:12px 14px;border-radius:10px;font-size:15px;
+  font-weight:600;color:var(--texto-2);
+}
+.menu-panel a:hover,.menu-panel a:active{background:rgba(255,255,255,.06);color:var(--texto)}
 
 /* ---------- Portada: el casco que llega con humo ---------- */
 .portada{
@@ -166,3 +188,62 @@ footer a:hover{color:var(--naranja)}
 .dato b{display:block;font-size:21px;font-weight:800;letter-spacing:-.5px}
 .dato span{font-size:12px;color:var(--texto-3);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
 .cargando,.error{padding:60px 0;text-align:center;color:var(--texto-2)}
+
+/* ============================================================================
+   MÓVIL. La web se ve sobre todo en un teléfono, encima de una moto o en el
+   sofá: aquí se ajusta lo que en pantalla ancha funciona y en 380 px no.
+   ============================================================================ */
+
+/* Un ancla no puede quedar tapada por la barra pegajosa de 62 px. */
+section,[id]{scroll-margin-top:76px}
+
+/* Nada se desborda por un título largo o una URL. */
+h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
+
+/* Los botones se pulsan con el dedo, no con el ratón. */
+.boton,.idiomas a,.menu-panel a,footer a{-webkit-tap-highlight-color:rgba(255,122,26,.2)}
+
+@media(max-width:860px){
+  .tienda{min-width:0;flex:1 1 240px;max-width:340px}
+}
+
+@media(max-width:760px){
+  .barra nav a.solo-ancha{display:none}
+  .menu{display:block}
+  .barra nav{gap:8px}
+  .barra .envoltura{height:58px;gap:8px}
+  .marca{font-size:16px}
+  .marca img{width:27px;height:27px}
+  .idiomas{gap:2px;margin-left:0}
+  .idiomas a{padding:5px 7px;font-size:11px}
+
+  .envoltura{padding:0 18px}
+  section{padding:54px 0}
+  .portada{padding:58px 0 52px}
+  .escena{width:126px;height:126px;margin-bottom:20px}
+  .escena img{width:112px;height:112px;border-radius:26px}
+  .acciones{margin-top:26px;gap:10px}
+  .boton{padding:13px 20px;flex:1 1 auto;justify-content:center;min-height:48px}
+  .rejilla{margin-top:28px;gap:13px}
+  .tarjeta{padding:20px}
+  .cifras{grid-template-columns:1fr 1fr}
+
+  .ruta-cab{padding:30px 0 20px}
+  .trazado{padding:12px;margin-top:18px}
+  .datos{grid-template-columns:1fr 1fr;gap:10px}
+  .dato{padding:14px}
+  footer{padding:38px 0 46px}
+}
+
+/* Teléfonos estrechos de verdad. */
+@media(max-width:400px){
+  .envoltura{padding:0 15px}
+  .tiendas{flex-direction:column}
+  .tienda{width:100%;max-width:none}
+  .acciones .boton{width:100%}
+}
+
+/* El recorte inferior del iPhone no se come el pie. */
+@supports(padding:max(0px)){
+  footer{padding-bottom:max(46px,calc(env(safe-area-inset-bottom) + 34px))}
+}

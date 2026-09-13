@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MOTOCLUBes — La app que viaja contigo | Rutas, navegación y comunidad motera</title>
 <meta name="description" content="MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.">
 <meta name="theme-color" content="#0E0E0E">
@@ -38,11 +38,21 @@
       MOTOCLUB<span>es</span>
     </a>
     <nav>
-      <a href="#que-es" class="oculta-movil">Qué es</a>
-      <a href="#funciones" class="oculta-movil">Funciones</a>
-      <a href="#proyecto" class="oculta-movil">Proyecto</a>
-      <a href="negocio/" class="oculta-movil">Negocios</a>
+      <a href="#que-es" class="solo-ancha">Qué es</a>
+      <a href="#funciones" class="solo-ancha">Funciones</a>
+      <a href="#proyecto" class="solo-ancha">Proyecto</a>
+      <a href="negocio/" class="solo-ancha">Negocios</a>
       <div class="idiomas"><a href="/" hreflang="es" class="activo">ES</a><a href="/en/" hreflang="en">EN</a><a href="/ca/" hreflang="ca">CA</a></div>
+      <details class="menu">
+        <summary aria-label="Menú"><span></span><span></span><span></span></summary>
+        <div class="menu-panel">
+          <a href="#que-es">Qué es</a>
+          <a href="#funciones">Funciones</a>
+          <a href="#proyecto">Proyecto</a>
+          <a href="negocio/">Negocios</a>
+          <a href="#descarga">Descarga</a>
+        </div>
+      </details>
     </nav>
   </div>
 </header>
@@ -52,7 +62,7 @@
     <div class="escena">
       <span class="humo h1"></span><span class="humo h2"></span>
       <span class="humo h3"></span><span class="humo h4"></span>
-      <img src="img/helmet-512.png" alt="MOTOCLUBes" width="512" height="512" fetchpriority="high">
+      <img src="img/helmet-512.png" srcset="img/helmet-256.png 256w, img/helmet-512.png 512w" sizes="132px" alt="MOTOCLUBes" width="512" height="512" fetchpriority="high">
     </div>
     <h1>MOTOCLUB<span>es</span></h1>
     <p class="lema"><strong>La app que viaja contigo.</strong><br>Tu club. Tus rutas. Tu comunidad.</p>
@@ -143,6 +153,13 @@
     </div>
   </div>
 </footer>
+
+<script>
+/* Cerrar el menú al elegir una sección: si no, se queda abierto tapando la página. */
+document.querySelectorAll('.menu-panel a').forEach(function(a){
+  a.addEventListener('click', function(){ document.querySelector('.menu').removeAttribute('open'); });
+});
+</script>
 
 </body>
 </html>
