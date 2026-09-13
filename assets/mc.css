@@ -247,3 +247,44 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
 @supports(padding:max(0px)){
   footer{padding-bottom:max(46px,calc(env(safe-area-inset-bottom) + 34px))}
 }
+
+/* ---------- El bloque de por qué existe ---------- */
+.manifiesto{max-width:700px}
+.manifiesto p{color:var(--texto-2);font-size:16.5px;margin-bottom:16px}
+.firma{display:flex;align-items:center;gap:13px;margin-top:26px;padding-top:22px;border-top:1px solid var(--borde)}
+.firma img{width:46px;height:46px;border-radius:13px;flex:0 0 auto}
+.firma b{display:block;font-size:15px;font-weight:800}
+.firma span{font-size:13px;color:var(--texto-3)}
+
+/* ---------- Preguntas frecuentes ---------- */
+.faqs{margin-top:34px;display:grid;gap:11px}
+.faq{
+  background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);
+  overflow:hidden;
+}
+.faq[open]{border-color:rgba(255,122,26,.42)}
+.faq summary{
+  list-style:none;cursor:pointer;padding:20px 58px 20px 22px;position:relative;
+  font-size:16px;font-weight:700;letter-spacing:-.2px;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary i{
+  position:absolute;right:20px;top:50%;width:26px;height:26px;margin-top:-13px;
+  border:1px solid var(--borde);border-radius:9px;
+}
+.faq summary i::before,.faq summary i::after{
+  content:"";position:absolute;background:var(--naranja);border-radius:2px;
+  left:50%;top:50%;transition:.2s;
+}
+.faq summary i::before{width:11px;height:2px;margin:-1px 0 0 -5.5px}
+.faq summary i::after{width:2px;height:11px;margin:-5.5px 0 0 -1px}
+.faq[open] summary i{border-color:var(--naranja)}
+.faq[open] summary i::after{transform:rotate(90deg);opacity:0}
+.faq p{padding:0 22px 22px;color:var(--texto-2);font-size:15px;max-width:660px}
+
+@media(max-width:760px){
+  .faq summary{padding:17px 52px 17px 18px;font-size:15px}
+  .faq summary i{right:16px}
+  .faq p{padding:0 18px 18px;font-size:14.5px}
+  .manifiesto p{font-size:15.5px}
+}
