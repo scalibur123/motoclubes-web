@@ -1,0 +1,168 @@
+/* MOTOCLUBes — hoja de estilos de la web pública.
+   Identidad de la app: naranja #FF7A1A, fondo #0E0E0E, tipografía Manrope.
+   Un solo fichero para las tres versiones de idioma: el texto vive en cada HTML,
+   la forma vive aquí. Si se toca el diseño, se toca UNA vez. */
+
+:root{
+  --naranja:#FF7A1A;
+  --naranja-suave:rgba(255,122,26,.14);
+  --fondo:#0E0E0E;
+  --fondo-2:#151515;
+  --tarjeta:#191919;
+  --borde:rgba(255,255,255,.09);
+  --texto:#FFFFFF;
+  --texto-2:rgba(255,255,255,.62);
+  --texto-3:rgba(255,255,255,.34);
+  --radio:18px;
+  --ancho:1080px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--fondo);color:var(--texto);
+  -webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.envoltura{max-width:var(--ancho);margin:0 auto;padding:0 22px}
+
+/* ---------- Barra superior ---------- */
+.barra{
+  position:sticky;top:0;z-index:40;
+  background:rgba(14,14,14,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--borde);
+}
+.barra .envoltura{display:flex;align-items:center;gap:14px;height:62px}
+.marca{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.4px;font-size:17px}
+.marca img{width:30px;height:30px;border-radius:9px}
+.marca span{color:var(--naranja)}
+.barra nav{margin-left:auto;display:flex;align-items:center;gap:22px}
+.barra nav a{font-size:14px;color:var(--texto-2);font-weight:600}
+.barra nav a:hover{color:var(--texto)}
+.idiomas{display:flex;gap:4px;margin-left:8px}
+.idiomas a{
+  font-size:12px;font-weight:700;padding:5px 9px;border-radius:8px;
+  color:var(--texto-3);border:1px solid transparent;
+}
+.idiomas a.activo{color:var(--naranja);border-color:var(--naranja);background:var(--naranja-suave)}
+@media(max-width:760px){.barra nav a.oculta-movil{display:none}}
+
+/* ---------- Portada: el casco que llega con humo ---------- */
+.portada{
+  position:relative;text-align:center;padding:86px 0 74px;overflow:hidden;
+  background:radial-gradient(ellipse 70% 55% at 50% 0%,rgba(255,122,26,.15),transparent 70%);
+}
+.escena{position:relative;width:148px;height:148px;margin:0 auto 26px;display:flex;align-items:center;justify-content:center}
+.escena img{
+  width:132px;height:132px;border-radius:30px;position:relative;
+  box-shadow:0 22px 55px rgba(0,0,0,.6);
+  animation:mc-casco 1.1s cubic-bezier(.16,1,.3,1) both;
+}
+.humo{position:absolute;border-radius:50%;pointer-events:none;background:rgba(160,160,160,.65)}
+.h1{left:-20px;top:50%;width:42px;height:42px;transform:translateY(-50%);filter:blur(11px);animation:mc-humo 1.1s ease-out .35s both}
+.h2{left:-6px;top:36%;width:34px;height:34px;filter:blur(9px);animation:mc-humo 1s ease-out .5s both}
+.h3{left:6px;top:62%;width:30px;height:30px;filter:blur(8px);animation:mc-humo .95s ease-out .6s both}
+.h4{left:-30px;top:54%;width:26px;height:26px;filter:blur(7px);animation:mc-humo 1.05s ease-out .75s both}
+@keyframes mc-casco{0%{transform:translateX(-120vw)}100%{transform:translateX(0)}}
+@keyframes mc-humo{0%{opacity:0;transform:translateX(0) scale(.6)}15%{opacity:.55}100%{opacity:0;transform:translateX(-90px) scale(1.7)}}
+@keyframes mc-sube{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){
+  .escena img,.humo,.portada h1,.lema,.acciones,.aviso-beta{animation:none!important;opacity:1!important;transform:none!important}
+}
+
+.portada h1{
+  font-size:clamp(34px,7vw,58px);font-weight:800;letter-spacing:-1.6px;line-height:1.05;
+  animation:mc-sube .5s ease-out 1.05s both;
+}
+.portada h1 span{color:var(--naranja)}
+.lema{
+  margin:16px auto 0;max-width:520px;font-size:clamp(16px,2.4vw,19px);color:var(--texto-2);
+  animation:mc-sube .5s ease-out 1.2s both;
+}
+.lema strong{color:var(--texto);font-weight:700}
+.acciones{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px;animation:mc-sube .5s ease-out 1.35s both}
+.aviso-beta{
+  margin-top:22px;font-size:13px;color:var(--texto-3);
+  animation:mc-sube .5s ease-out 1.5s both;
+}
+
+/* ---------- Botones y distintivos de tienda ---------- */
+.boton{
+  display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:13px;
+  font-weight:700;font-size:15px;border:1px solid var(--borde);transition:.18s;
+}
+.boton-principal{background:var(--naranja);border-color:var(--naranja);color:#111}
+.boton-principal:hover{filter:brightness(1.1)}
+.boton-suave{background:transparent;color:var(--texto)}
+.boton-suave:hover{background:rgba(255,255,255,.06)}
+
+.tiendas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.tienda{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:196px;padding:11px 20px;border:1px solid var(--borde);border-radius:13px;
+  background:var(--fondo-2);cursor:default;
+}
+.tienda em{font-style:normal;font-size:11px;letter-spacing:1.1px;text-transform:uppercase;color:var(--naranja);font-weight:800}
+.tienda b{font-size:16px;font-weight:700;letter-spacing:-.3px}
+
+/* ---------- Secciones ---------- */
+section{padding:74px 0;border-top:1px solid var(--borde)}
+.rotulo{font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--naranja);font-weight:800;margin-bottom:12px}
+h2{font-size:clamp(25px,4.2vw,36px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:14px}
+.entradilla{color:var(--texto-2);max-width:620px;font-size:16px}
+
+.rejilla{display:grid;gap:16px;margin-top:38px}
+.rejilla-3{grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+.rejilla-4{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.tarjeta{
+  background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);
+  padding:24px;transition:.18s;
+}
+.tarjeta:hover{border-color:rgba(255,122,26,.4);transform:translateY(-2px)}
+.tarjeta .icono{font-size:24px;margin-bottom:12px;display:block}
+.tarjeta h3{font-size:17px;font-weight:800;margin-bottom:7px;letter-spacing:-.3px}
+.tarjeta p{font-size:14.5px;color:var(--texto-2)}
+.marca-proximo{
+  display:inline-block;margin-top:11px;font-size:10.5px;font-weight:800;letter-spacing:.9px;
+  text-transform:uppercase;color:var(--naranja);background:var(--naranja-suave);
+  padding:3px 9px;border-radius:999px;
+}
+
+.franja{background:var(--fondo-2)}
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:34px}
+.cifra{text-align:center;padding:22px 12px;border:1px solid var(--borde);border-radius:var(--radio)}
+.cifra b{display:block;font-size:30px;font-weight:800;color:var(--naranja);letter-spacing:-1px}
+.cifra span{font-size:13px;color:var(--texto-2)}
+
+.negocio{
+  display:grid;grid-template-columns:1.25fr .75fr;gap:32px;align-items:center;
+  background:linear-gradient(135deg,rgba(255,122,26,.11),transparent 62%);
+  border:1px solid rgba(255,122,26,.26);border-radius:26px;padding:38px;
+}
+@media(max-width:760px){.negocio{grid-template-columns:1fr;padding:28px}}
+
+/* ---------- Pie ---------- */
+footer{border-top:1px solid var(--borde);padding:48px 0 60px;background:var(--fondo-2)}
+.pie-rejilla{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:30px}
+@media(max-width:760px){.pie-rejilla{grid-template-columns:1fr;gap:24px}}
+footer h4{font-size:12px;letter-spacing:1.3px;text-transform:uppercase;color:var(--texto-3);font-weight:800;margin-bottom:12px}
+footer a{display:block;font-size:14px;color:var(--texto-2);padding:3px 0}
+footer a:hover{color:var(--naranja)}
+.empresa{margin-top:36px;padding-top:22px;border-top:1px solid var(--borde);font-size:12px;color:var(--texto-3);line-height:1.8}
+
+/* ---------- Página pública de ruta ---------- */
+.ruta-cab{padding:44px 0 28px}
+.ruta-cab h1{font-size:clamp(24px,5vw,36px);font-weight:800;letter-spacing:-1px;line-height:1.15}
+.ruta-meta{color:var(--texto-2);font-size:15px;margin-top:8px}
+.trazado{
+  background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);
+  padding:18px;margin-top:22px;
+}
+.trazado svg{width:100%;height:auto;display:block}
+.datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px;margin-top:20px}
+.dato{background:var(--tarjeta);border:1px solid var(--borde);border-radius:14px;padding:16px;text-align:center}
+.dato b{display:block;font-size:21px;font-weight:800;letter-spacing:-.5px}
+.dato span{font-size:12px;color:var(--texto-3);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+.cargando,.error{padding:60px 0;text-align:center;color:var(--texto-2)}

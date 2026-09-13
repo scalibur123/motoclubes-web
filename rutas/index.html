@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruta en MOTOCLUBes</title>
+<meta name="description" content="Mira el trazado, los datos y descarga el GPX de esta ruta compartida desde MOTOCLUBes, la app que viaja contigo.">
+<meta name="theme-color" content="#0E0E0E">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../img/helmet-256.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="MOTOCLUBes">
+<meta property="og:title" content="Una ruta compartida en MOTOCLUBes">
+<meta property="og:description" content="Mira el trazado, los datos y descarga el GPX. MOTOCLUBes: la app que viaja contigo.">
+<meta property="og:image" content="https://www.motoclubes.es/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/mc.css">
+</head>
+<body>
+
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="../">
+      <img src="../img/helmet-256.png" alt="MOTOCLUBes">
+      MOTOCLUB<span>es</span>
+    </a>
+    <nav><a href="../#descarga" class="oculta-movil">Descargar la app</a></nav>
+  </div>
+</header>
+
+<main class="envoltura" id="lienzo">
+  <div class="cargando" id="cargando">Cargando la ruta…</div>
+</main>
+
+<footer>
+  <div class="envoltura">
+    <div class="empresa" style="margin-top:0;border-top:none">
+      MOTOCLUBES TECH S.L. · <a href="../legal/aviso/" style="display:inline">Aviso legal</a> ·
+      <a href="../legal/privacidad/" style="display:inline">Privacidad</a> ·
+      <a href="mailto:admin@motoclubes.es" style="display:inline;color:var(--naranja)">admin@motoclubes.es</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Página pública de una ruta.
+   Entra por  /rutas/?id=<uuid>  — no por /rutas/<uuid>: GitHub Pages es estático y
+   una ruta inventada devolvería 404, que rompe la vista previa del enlace en WhatsApp
+   y en los foros. Con ?id= siempre hay un 200.
+   Los datos NO se leen de la tabla `routes` con la clave anónima: `routes` no tiene
+   ninguna política para `anon`. Se leen por la puerta estrecha `mc_ruta_publica(uuid)`,
+   que sólo devuelve rutas con is_public = true y sólo los campos de esta página. */
+
+var SB_URL = "https://yxmirhpwmdmaxynlshdx.supabase.co";
+var SB_KEY = "sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi";
+
+var lienzo = document.getElementById("lienzo");
+var id = new URLSearchParams(location.search).get("id");
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+function fallo(msg) {
+  lienzo.innerHTML =
+    '<div class="error"><p style="font-size:18px;font-weight:700;color:#fff;margin-bottom:10px">' +
+    esc(msg) + "</p>" +
+    '<p>Puede que la ruta ya no sea pública o que el enlace esté incompleto.</p>' +
+    '<p style="margin-top:24px"><a class="boton boton-principal" href="../">Ir a MOTOCLUBes</a></p></div>';
+}
+
+/* Todos los puntos de la ruta: primero las etapas (ruta de varios días),
+   si no las hay, los puntos sueltos, y si no, lo que se pueda sacar del GPX guardado. */
+function puntosDe(r) {
+  var out = [];
+  if (r.stages && r.stages.length) {
+    r.stages.forEach(function (s) {
+      if (Array.isArray(s.points)) s.points.forEach(function (p) { out.push(p); });
+    });
+  }
+  if (!out.length && Array.isArray(r.points)) out = r.points.slice();
+  if (!out.length && r.gpx) {
+    var re = /<(?:trkpt|wpt|rtept)\s+lat="([\-\d.]+)"\s+lon="([\-\d.]+)"/gi, m;
+    while ((m = re.exec(r.gpx))) out.push({ lat: parseFloat(m[1]), lng: parseFloat(m[2]) });
+  }
+  return out.filter(function (p) { return p && isFinite(p.lat) && isFinite(p.lng); });
+}
+
+/* Trazado en SVG puro: sin mapa base y por tanto sin cargas de Mapbox facturables
+   por cada persona que abra el enlace en un foro. Se ve la forma de la ruta, que es
+   lo que el motero quiere ver antes de descargarse el GPX. */
+function dibujar(pts) {
+  if (pts.length < 2) return "";
+  var W = 1000, H = 520, M = 26;
+  var latMin = 90, latMax = -90, lngMin = 180, lngMax = -180;
+  pts.forEach(function (p) {
+    if (p.lat < latMin) latMin = p.lat; if (p.lat > latMax) latMax = p.lat;
+    if (p.lng < lngMin) lngMin = p.lng; if (p.lng > lngMax) lngMax = p.lng;
+  });
+  var latMed = ((latMin + latMax) / 2) * Math.PI / 180;
+  var anchoGeo = Math.max((lngMax - lngMin) * Math.cos(latMed), 1e-9);
+  var altoGeo = Math.max(latMax - latMin, 1e-9);
+  var k = Math.min((W - 2 * M) / anchoGeo, (H - 2 * M) / altoGeo);
+  var dx = (W - anchoGeo * k) / 2, dy = (H - altoGeo * k) / 2;
+  function X(p) { return dx + (p.lng - lngMin) * Math.cos(latMed) * k; }
+  function Y(p) { return dy + (latMax - p.lat) * k; }
+
+  /* Con 30.000 puntos el SVG pesaría megas: se adelgaza a ~1.200 conservando extremos. */
+  var paso = Math.max(1, Math.floor(pts.length / 1200));
+  var fino = [];
+  for (var i = 0; i < pts.length; i += paso) fino.push(pts[i]);
+  if (fino[fino.length - 1] !== pts[pts.length - 1]) fino.push(pts[pts.length - 1]);
+
+  var d = fino.map(function (p, i) {
+    return (i ? "L" : "M") + X(p).toFixed(1) + " " + Y(p).toFixed(1);
+  }).join(" ");
+  var a = pts[0], b = pts[pts.length - 1];
+
+  return '<div class="trazado"><svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Trazado de la ruta">' +
+    '<path d="' + d + '" fill="none" stroke="#FF7A1A" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + X(a).toFixed(1) + '" cy="' + Y(a).toFixed(1) + '" r="10" fill="#FF7A1A" stroke="#0E0E0E" stroke-width="4"/>' +
+    '<circle cx="' + X(b).toFixed(1) + '" cy="' + Y(b).toFixed(1) + '" r="10" fill="#fff" stroke="#0E0E0E" stroke-width="4"/>' +
+    "</svg></div>";
+}
+
+function duracion(min) {
+  if (!min && min !== 0) return "—";
+  var h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h ? h + " h " + (m ? m + " min" : "") : m + " min";
+}
+
+function construirGpx(r, pts) {
+  if (r.gpx) return r.gpx;
+  var cab = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<gpx version="1.1" creator="MOTOCLUBes" xmlns="http://www.topografix.com/GPX/1/1">\n' +
+    "  <metadata><name>" + esc(r.title) + "</name>" +
+    '<link href="https://www.motoclubes.es"><text>MOTOCLUBes</text></link></metadata>\n' +
+    "  <trk><name>" + esc(r.title) + "</name><trkseg>\n";
+  var cuerpo = pts.map(function (p) {
+    return '    <trkpt lat="' + p.lat + '" lon="' + p.lng + '"></trkpt>';
+  }).join("\n");
+  return cab + cuerpo + "\n  </trkseg></trk>\n</gpx>\n";
+}
+
+function pintar(r) {
+  var pts = puntosDe(r);
+  var origen = r.municipio_inicio || r.provincia_inicio || "";
+  var destino = r.municipio_fin || r.provincia_fin || "";
+  var tramo = origen && destino ? esc(origen) + " → " + esc(destino) : esc(origen || destino);
+  var autor = r.autor ? "Compartida por " + esc(r.autor) : "Compartida en MOTOCLUBes";
+
+  var datos = [
+    [r.km != null ? Number(r.km).toFixed(0) + " km" : "—", "Distancia"],
+    [duracion(r.moving_time_minutes != null ? r.moving_time_minutes : r.duration_minutes), "Tiempo"],
+    [r.curves_count ? r.curves_count : "—", "Curvas"],
+    [r.elevation_gain_m != null ? r.elevation_gain_m + " m" : "—", "Desnivel"],
+    [r.dias && r.dias > 1 ? r.dias + " días" : "1 día", "Duración"]
+  ].map(function (x) {
+    return '<div class="dato"><b>' + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></div>";
+  }).join("");
+
+  lienzo.innerHTML =
+    '<div class="ruta-cab"><h1>' + esc(r.title) + "</h1>" +
+    '<p class="ruta-meta">' + (tramo ? tramo + " · " : "") + autor + "</p></div>" +
+    dibujar(pts) +
+    '<div class="datos">' + datos + "</div>" +
+    (r.description ? '<p class="entradilla" style="margin-top:24px">' + esc(r.description) + "</p>" : "") +
+    '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
+      (pts.length ? '<a class="boton boton-principal" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
+      '<a class="boton boton-suave" href="motoclubes://ruta/' + esc(r.id) + '">Abrir en la app</a>' +
+      '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
+    "</div>" +
+    '<p class="aviso-beta" style="margin:18px 0 60px">El GPX se descarga sin cuenta y sin registro. ' +
+    'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>';
+
+  var b = document.getElementById("bajar");
+  if (b) b.addEventListener("click", function (e) {
+    e.preventDefault();
+    var blob = new Blob([construirGpx(r, pts)], { type: "application/gpx+xml" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (r.title || "ruta").replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, "").trim().replace(/\s+/g, "_") + ".gpx";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  });
+}
+
+if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
+  fallo("No hay ninguna ruta en este enlace.");
+} else {
+  fetch(SB_URL + "/rest/v1/rpc/mc_ruta_publica", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY },
+    body: JSON.stringify({ p_id: id })
+  })
+    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+    .then(function (r) {
+      if (!r || !r.id) { fallo("Esta ruta no está disponible."); return; }
+      document.title = r.title + " · MOTOCLUBes";
+      pintar(r);
+    })
+    .catch(function () { fallo("No hemos podido cargar la ruta."); });
+}
+</script>
+</body>
+</html>
