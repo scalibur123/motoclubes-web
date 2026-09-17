@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Invitación a un grupo · MOTOCLUBes</title>
+<meta name="description" content="Te han invitado a un grupo de MOTOCLUBes, la app para rodar en grupo.">
+<meta name="theme-color" content="#0E0E0E">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../img/helmet-256.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MOTOCLUBes">
+<meta property="og:title" content="Te invitan a un grupo en MOTOCLUBes">
+<meta property="og:description" content="Únete al grupo y rodad juntos: salidas, mapa en directo y voz de grupo.">
+<meta property="og:image" content="https://www.motoclubes.es/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/mc.css">
+<style>
+  .inv { max-width: 460px; margin: 32px auto; background: #EDE0D0; border-radius: 28px; padding: 22px; color: #1a1a1a; }
+  .inv .foto { width: 100%; aspect-ratio: 16/9; border-radius: 18px; background: #d9c8b4 center/cover; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .inv .quien { margin-top: 16px; font-size: 14px; color: #5b4a3a; }
+  .inv h1 { margin: 2px 0 0; font-size: 28px; line-height: 1.15; }
+  .inv .datos { font-size: 13px; color: #6b5a4a; margin-top: 4px; }
+  .inv .boton { display: block; margin-top: 20px; text-align: center; background: #F97316; color: #fff; font-weight: 700; padding: 14px; border-radius: 999px; text-decoration: none; }
+  .inv .nota { margin-top: 16px; font-size: 13px; color: #5b4a3a; line-height: 1.45; }
+  .inv .aviso { margin-top: 12px; font-size: 14px; color: #b45309; }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="../">
+      <img src="../img/helmet-256.png" alt="MOTOCLUBes">
+      MOTOCLUB<span>es</span>
+    </a>
+    <nav><a href="../#descarga">Descargar la app</a></nav>
+  </div>
+</header>
+
+<main class="envoltura" id="lienzo">
+  <div class="cargando">Cargando la invitación…</div>
+</main>
+
+<footer>
+  <div class="envoltura">
+    <div class="empresa" style="margin-top:0;border-top:none">
+      MOTOCLUBES TECH S.L. · <a href="../legal/aviso/" style="display:inline">Aviso legal</a> ·
+      <a href="../legal/privacidad/" style="display:inline">Privacidad</a> ·
+      <a href="mailto:admin@motoclubes.es" style="display:inline;color:var(--naranja)">admin@motoclubes.es</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* INVITAR-WHATSAPP-ENLACE-1 (17-sep-2026). Página del enlace de «Invitar por WhatsApp».
+   Entra por /invitacion/?id=<uuid> (no /invitacion/<uuid>: GitHub Pages es estático y daría 404,
+   igual que en /rutas/). Si la app está instalada, iOS y Android abren la app directamente por
+   el AASA y assetlinks.json; esta página solo la ve quien no la tiene o si el sistema no la abre.
+   Los datos salen de la puerta estrecha mc_invitacion_ver(uuid): grupo, foto, miembros y quién
+   invita, sin la etiqueta privada del que invita. La app aún no está en las tiendas públicas. */
+
+var SB_URL = "https://yxmirhpwmdmaxynlshdx.supabase.co";
+var SB_KEY = "sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi";
+var lienzo = document.getElementById("lienzo");
+var id = new URLSearchParams(location.search).get("id");
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+function fallo(msg) {
+  lienzo.innerHTML = '<div class="inv"><h1>' + esc(msg) + '</h1><p class="nota">Pide a quien te invitó que te mande otro enlace.</p></div>';
+}
+
+function pintar(v) {
+  var foto = v.foto ? ' style="background-image:url(' + esc(v.foto) + ')"' : '';
+  var abrir = "motoclubes://invitacion/" + encodeURIComponent(id);
+  var estado = v.estado === "requested"
+    ? '<p class="aviso">Pendiente de que el líder te deje entrar.</p>'
+    : v.estado !== "pending" ? '<p class="aviso">Esta invitación ya se ha usado.</p>' : '';
+  lienzo.innerHTML =
+    '<div class="inv">' +
+      '<div class="foto"' + foto + '>' + (v.foto ? '' : '🏍️') + '</div>' +
+      '<div class="quien">' + (v.invita ? esc(v.invita) + ' te invita a unirte a' : 'Te invitan a unirte a') + '</div>' +
+      '<h1>' + esc(v.grupo) + '</h1>' +
+      '<div class="datos">' + esc(v.miembros || 0) + ' miembros · ' + (v.visibilidad === "public" ? "Público" : "Privado") + '</div>' +
+      estado +
+      '<a class="boton" href="' + abrir + '">Abrir en MOTOCLUBes</a>' +
+      '<p class="nota">Si no se abre, es que aún no tienes la app. MOTOCLUBes está en pruebas con riders reales: ' +
+      'pide a ' + (v.invita ? esc(v.invita) : 'quien te invitó') + ' que te dé acceso y, cuando la instales, vuelve a tocar el enlace del mensaje.</p>' +
+    '</div>';
+}
+
+if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
+  fallo("No hay ninguna invitación en este enlace.");
+} else {
+  fetch(SB_URL + "/rest/v1/rpc/mc_invitacion_ver", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY },
+    body: JSON.stringify({ p_id: id })
+  })
+    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+    .then(function (v) {
+      if (!v || !v.grupo) { fallo("Esta invitación ya no existe."); return; }
+      document.title = v.grupo + " · Invitación · MOTOCLUBes";
+      pintar(v);
+    })
+    .catch(function () { fallo("No hemos podido cargar la invitación."); });
+}
+</script>
+</body>
+</html>
