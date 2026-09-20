@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>La app por dentro · MOTOCLUBes</title>
+<meta name="description" content="MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.">
+<meta name="theme-color" content="#0E0E0E">
+<link rel="canonical" href="https://www.motoclubes.es/">
+<link rel="alternate" hreflang="es" href="https://www.motoclubes.es/"><link rel="alternate" hreflang="en" href="https://www.motoclubes.es/en/"><link rel="alternate" hreflang="ca" href="https://www.motoclubes.es/ca/"><link rel="alternate" hreflang="fr" href="https://www.motoclubes.es/fr/"><link rel="alternate" hreflang="pt" href="https://www.motoclubes.es/pt/"><link rel="alternate" hreflang="x-default" href="https://www.motoclubes.es/">
+<link rel="icon" type="image/png" href="/img/helmet-256.png">
+<link rel="apple-touch-icon" href="/img/helmet-256.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MOTOCLUBes">
+<meta property="og:locale" content="es">
+<meta property="og:title" content="MOTOCLUBes — La app que viaja contigo | Rutas, navegación y comunidad motera">
+<meta property="og:description" content="MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.">
+<meta property="og:url" content="https://www.motoclubes.es/">
+<meta property="og:image" content="https://www.motoclubes.es/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MOTOCLUBes — La app que viaja contigo | Rutas, navegación y comunidad motera">
+<meta name="twitter:description" content="MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.">
+<meta name="twitter:image" content="https://www.motoclubes.es/img/og.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/mc.css?v=20sep4">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"MOTOCLUBES TECH S.L.","alternateName":"MOTOCLUBes","url":"https://www.motoclubes.es/","logo":"https://www.motoclubes.es/img/helmet-512.png","email":"soporte@motoclubes.es","address":{"@type":"PostalAddress","streetAddress":"Ronda Santa Eulàlia, Polígon Parc Industrial 36-37","addressLocality":"Pallejà","postalCode":"08780","addressRegion":"Barcelona","addressCountry":"ES"}}
+</script>
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Cuándo la puedo descargar?", "acceptedAnswer": {"@type": "Answer", "text": "Está terminando su fase de pruebas en carretera con riders reales. En cuanto esté publicada en App Store y en Google Play, los dos enlaces aparecerán en esta misma página."}}, {"@type": "Question", "name": "¿Necesito un intercomunicador de 400 €?", "acceptedAnswer": {"@type": "Answer", "text": "No. La voz del grupo va por los datos del móvil, así que vale cualquier auricular o intercomunicador Bluetooth que ya tengas en el casco, sea de la marca que sea. Y no depende del alcance del aparato: mientras haya cobertura, seguís hablando."}}, {"@type": "Question", "name": "¿Funciona con el móvil guardado y la pantalla bloqueada?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. La navegación sigue funcionando en segundo plano con el GPS activo, que es justo lo que hace falta cuando el teléfono va en el bolsillo o en el soporte con la pantalla apagada."}}, {"@type": "Question", "name": "¿Puedo traerme las rutas que ya tengo?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Importas tus GPX de siempre y te llevas las nuevas en GPX cuando quieras. Tus rutas son tuyas y salen por donde entraron."}}, {"@type": "Question", "name": "¿Todo el mundo ve dónde estoy?", "acceptedAnswer": {"@type": "Answer", "text": "No por defecto. El seguimiento en vivo solo funciona durante una salida, hay que activarlo en el grupo, y además cada rider tiene su propio interruptor en el perfil para no compartir su posición aunque el grupo lo tenga puesto."}}, {"@type": "Question", "name": "¿Es solo para clubes con chaleco y parches?", "acceptedAnswer": {"@type": "Answer", "text": "No. Vale igual para un club con su estructura que para cuatro amigos que salen a desayunar el domingo. Un grupo es simplemente la gente con la que ruedas."}}, {"@type": "Question", "name": "¿Y si mi grupo va con iPhone y con Android?", "acceptedAnswer": {"@type": "Answer", "text": "Da igual. La app es nativa en las dos plataformas y todo funciona entre ellas: el grupo, la salida, el mapa y la voz."}}, {"@type": "Question", "name": "¿Quién está detrás de esto?", "acceptedAnswer": {"@type": "Answer", "text": "MOTOCLUBES TECH S.L., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie."}}]}
+</script>
+</head>
+<body>
+
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="/./">
+      <img src="/img/helmet-256.png" alt="MOTOCLUBes">
+      MOTOCLUB<span>es</span>
+    </a>
+    <nav>
+      <a href="#que-es" class="solo-ancha">Qué es</a>
+      <a href="#funciones" class="solo-ancha">Funciones</a>
+      <a href="#proyecto" class="solo-ancha">Proyecto</a>
+      <a href="#preguntas" class="solo-ancha">Preguntas</a>
+      <a href="/negocio/" class="solo-ancha">Negocios</a>
+      <details class="idiomas"><summary aria-label="Idioma"><span>🇪🇸</span>ES</summary><div class="idiomas-panel"><a href="/" hreflang="es" class="activo"><span>🇪🇸</span>Español</a><a href="/en/" hreflang="en" class=""><span>🇬🇧</span>English</a><a href="/ca/" hreflang="ca" class=""><span><svg class="bandera-ca" viewBox="0 0 9 6" aria-hidden="true"><rect width="9" height="6" fill="#FCDD09"/><g fill="#DA121A"><rect y="0.75" width="9" height="0.75"/><rect y="2.25" width="9" height="0.75"/><rect y="3.75" width="9" height="0.75"/><rect y="5.25" width="9" height="0.75"/></g></svg></span>Català</a><a href="/fr/" hreflang="fr" class=""><span>🇫🇷</span>Français</a><a href="/pt/" hreflang="pt" class=""><span>🇵🇹</span>Português</a></div></details>
+      <details class="menu">
+        <summary aria-label="Menú"><span></span><span></span><span></span></summary>
+        <div class="menu-panel">
+          <a href="#que-es">Qué es</a>
+          <a href="#funciones">Funciones</a><a href="/por-dentro/">Por dentro</a>
+          <a href="#proyecto">Proyecto</a>
+          <a href="/negocio/">Negocios</a>
+          <a href="#preguntas">Preguntas</a>
+          <a href="#descarga">Descarga</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+
+<div class="portada">
+  <div class="envoltura">
+    <div class="escena">
+      <span class="humo h1"></span><span class="humo h2"></span>
+      <span class="humo h3"></span><span class="humo h4"></span>
+      <img src="/img/helmet-512.png" srcset="/img/helmet-256.png 256w, img/helmet-512.png 512w" sizes="132px" alt="MOTOCLUBes" width="512" height="512" fetchpriority="high">
+    </div>
+    <h1>MOTOCLUB<span>es</span></h1>
+    <p class="lema"><strong>La app que viaja contigo.</strong><br>Tu club. Tus rutas. Tu comunidad.</p>
+    <div class="acciones">
+      <a class="boton boton-principal" href="#funciones">Ver qué hace</a>
+      <a class="boton boton-suave" href="/negocio/">Soy un negocio</a>
+    </div>
+    <p class="aviso-beta">Estamos rodando la app con riders reales antes de abrirla al público.</p>
+  </div>
+</div>
+
+
+
+<section class="capturas pagina-capturas" id="capturas">
+  <div class="envoltura">
+    <p class="rotulo">La app por dentro</p>
+    <h2>Ocho pantallas de MOTOCLUBes funcionando, tal y como se ven en el móvil.</h2>
+    <div class="tira"><figure class="captura"><div class="marco"><img src="/img/capturas/inicio.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Todo a mano al abrir"></div><p><b>Todo a mano al abrir</b>Tus grupos, tus últimas rutas y lo que publica la comunidad.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/rutas.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Tus rutas"></div><p><b>Tus rutas</b>Individuales, de grupo y de varios días, con sus etapas.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/ficha.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Cada ruta, medida"></div><p><b>Cada ruta, medida</b>Kilómetros, tiempo, altitud, curvas contadas y los puertos que cruzas.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/gasolineras.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Gasolineras con precio"></div><p><b>Gasolineras con precio</b>Las de tu alrededor, con el precio de hoy y las baratas en verde.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/frontera.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Y al otro lado de la frontera"></div><p><b>Y al otro lado de la frontera</b>En Francia, con su bandera y el precio del E10.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/porto.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="España, Francia, Portugal y Andorra"></div><p><b>España, Francia, Portugal y Andorra</b>Más de 24.000, actualizadas cada mañana.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/foro.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="El foro de la comunidad"></div><p><b>El foro de la comunidad</b>Equipamiento, mecánica, rutas y lo que salga.</p></figure><figure class="captura"><div class="marco"><img src="/img/capturas/medallas.jpg?v=20sep4" width="760" height="950" loading="lazy" alt="Logros y retos"></div><p><b>Logros y retos</b>Kilómetros, medallas y el reto que llevas a medias.</p></figure></div>
+  </div>
+</section>
+<footer>
+  <div class="envoltura">
+    <div class="pie-rejilla">
+      <div>
+        <a class="marca" href="/./" style="margin-bottom:12px">
+          <img src="/img/helmet-256.png" alt="MOTOCLUBes">MOTOCLUB<span>es</span>
+        </a>
+        <p style="font-size:14px;color:var(--texto-2);max-width:320px">MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <a href="#funciones">Funciones</a>
+        <a href="/negocio/">Portal de negocios</a>
+        <a href="/baja/">Darse de baja</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="/legal/aviso/">Aviso legal</a><a href="/legal/privacidad/">Privacidad</a><a href="/legal/cookies/">Cookies</a><a href="/legal/terminos/">Términos</a><a href="/legal/foro/">Normas del foro</a>
+      </div>
+    </div>
+    <div class="empresa">
+      <strong style="color:var(--texto-2)">Contacto</strong> Soporte y dudas:
+      <a href="mailto:soporte@motoclubes.es" style="display:inline;color:var(--naranja)">soporte@motoclubes.es</a><br>
+      MOTOCLUBES TECH S.L. · Ronda Santa Eulàlia, Polígon Parc Industrial 36-37, 08780 Pallejà (Barcelona) · NIF B88765003
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Cerrar el menú al elegir una sección: si no, se queda abierto tapando la página. */
+document.querySelectorAll('.menu-panel a').forEach(function(a){
+  a.addEventListener('click', function(){ document.querySelector('.menu').removeAttribute('open'); });
+});
+</script>
+
+</body>
+</html>

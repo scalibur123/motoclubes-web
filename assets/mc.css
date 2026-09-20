@@ -354,3 +354,13 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
 .marco img{display:block;width:100%;height:auto}
 .captura p{margin-top:12px;font-size:13px;color:var(--texto-2);line-height:1.45}
 .captura b{display:block;color:var(--texto);font-weight:700;margin-bottom:2px;font-size:14.5px}
+
+/* MC-WEB-IDIOMAS-20SEP-2026: el emoji de bandera catalana (subdivision, 🏴 + tags)
+   NO lo dibuja Apple y se quedaba en blanco. Senyera en SVG, que se ve siempre. */
+.bandera-ca{width:17px;height:12px;border-radius:2px;display:block}
+.idiomas summary .bandera-ca{width:15px;height:10px}
+
+/* MC-WEB-PORDENTRO-20SEP-2026: las capturas salen del inicio y tienen pagina propia.
+   Mario: «me gustaba más antes sin imágenes; hay que ponerlas en otro menú». */
+.pagina-capturas{padding-top:56px;border-top:1px solid var(--borde)}
+.pagina-capturas .tira{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
