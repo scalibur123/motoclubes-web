@@ -337,20 +337,20 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
   .grupo-titulo{margin:34px 0 -4px;font-size:12px}
 }
 
-/* ---------- MC-WEB-CAPTURAS-20SEP-2026: las pantallas de la app ---------- */
+/* ---------- MC-WEB-CAPTURAS-20SEP-2026: las pantallas de la app ----------
+   🔴 Dos intentos fallidos antes de esto, y el motivo va escrito:
+   una captura de iPhone es 1206x2622, o sea MAS DEL DOBLE DE ALTA QUE ANCHA.
+   Metida en un marco de movil dentro de una columna estrecha no se lee nada.
+   Mario, viendolo publicado: «queda muy mal», dos veces.
+   La solucion no era el tamaño: es RECORTAR la captura a la parte que cuenta
+   (4:5, sin barra de estado ni barra de pestañas) y enseñarla grande y sin marco. */
 .capturas{padding-top:0;border-top:0}
-.tira{
-  display:flex;gap:18px;overflow-x:auto;padding:8px 2px 22px;
-  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-}
-.tira::-webkit-scrollbar{height:6px}
-.tira::-webkit-scrollbar-thumb{background:var(--borde);border-radius:3px}
-.captura{flex:0 0 auto;width:186px;scroll-snap-align:center;text-align:center}
+.tira{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));margin-top:34px}
+.captura{margin:0}
 .marco{
-  position:relative;border-radius:24px;padding:6px;background:#0c0c0e;
-  border:1px solid #27272b;box-shadow:0 16px 38px rgba(0,0,0,.6);
+  border-radius:16px;overflow:hidden;background:var(--tarjeta);
+  border:1px solid var(--borde);box-shadow:0 14px 34px rgba(0,0,0,.45);
 }
-.marco img{display:block;width:100%;border-radius:19px}
-.captura p{margin-top:12px;font-size:12px;color:var(--texto-2);line-height:1.4}
-.captura b{display:block;color:var(--texto);font-weight:700;margin-bottom:2px;font-size:13px}
-@media(max-width:760px){ .captura{width:176px} }
+.marco img{display:block;width:100%;height:auto}
+.captura p{margin-top:12px;font-size:13px;color:var(--texto-2);line-height:1.45}
+.captura b{display:block;color:var(--texto);font-weight:700;margin-bottom:2px;font-size:14.5px}
