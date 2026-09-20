@@ -340,17 +340,17 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
 /* ---------- MC-WEB-CAPTURAS-20SEP-2026: las pantallas de la app ---------- */
 .capturas{padding-top:0;border-top:0}
 .tira{
-  display:flex;gap:22px;overflow-x:auto;padding:8px 0 22px;
+  display:flex;gap:18px;overflow-x:auto;padding:8px 2px 22px;
   scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
 }
 .tira::-webkit-scrollbar{height:6px}
 .tira::-webkit-scrollbar-thumb{background:var(--borde);border-radius:3px}
-.captura{flex:0 0 auto;width:236px;scroll-snap-align:center;text-align:center}
+.captura{flex:0 0 auto;width:186px;scroll-snap-align:center;text-align:center}
 .marco{
-  position:relative;border-radius:30px;padding:8px;background:#0c0c0e;
-  border:1px solid #27272b;box-shadow:0 22px 50px rgba(0,0,0,.6);
+  position:relative;border-radius:24px;padding:6px;background:#0c0c0e;
+  border:1px solid #27272b;box-shadow:0 16px 38px rgba(0,0,0,.6);
 }
-.marco img{display:block;width:100%;border-radius:23px}
-.captura p{margin-top:14px;font-size:13px;color:var(--texto-2);line-height:1.45}
-.captura b{display:block;color:var(--texto);font-weight:700;margin-bottom:2px;font-size:14px}
-@media(max-width:760px){ .captura{width:208px} }
+.marco img{display:block;width:100%;border-radius:19px}
+.captura p{margin-top:12px;font-size:12px;color:var(--texto-2);line-height:1.4}
+.captura b{display:block;color:var(--texto);font-weight:700;margin-bottom:2px;font-size:13px}
+@media(max-width:760px){ .captura{width:176px} }
