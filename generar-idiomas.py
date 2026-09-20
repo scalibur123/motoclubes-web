@@ -306,11 +306,16 @@ def generar(destino, dic, codigo, locale):
     s = s.replace('<meta property="og:url" content="https://www.motoclubes.es/">',
                   f'<meta property="og:url" content="https://www.motoclubes.es/{codigo}/">')
     # Enlaces relativos: desde /fr/ y /pt/ hay que subir un nivel.
+    # 🔴 Y el srcset TAMBIEN: se olvido la primera vez y el casco de la portada no
+    # salia en ninguna de las dos, porque el navegador hace caso al srcset antes
+    # que al src. La expresion de abajo barre todo lo que quede relativo.
     for a, b in [('href="img/','href="/img/'), ('href="assets/','href="/assets/'),
                  ('src="img/','src="/img/'), ('href="negocio/','href="/negocio/'),
                  ('href="legal/','href="/legal/'), ('href="baja/','href="/baja/'),
                  ('href="rutas/','href="/rutas/')]:
         s = s.replace(a, b)
+    import re as _re
+    s = _re.sub(r'(src|href|srcset)="(?!https?:|/|#|mailto:)', lambda m: f'{m.group(1)}="/', s)
     # El selector: marcar el idioma activo
     s = s.replace('<summary aria-label="Idioma"><span>🇪🇸</span>ES</summary>',
                   f'<summary aria-label="Idioma"><span>{"🇫🇷" if codigo=="fr" else "🇵🇹"}</span>{codigo.upper()}</summary>')
