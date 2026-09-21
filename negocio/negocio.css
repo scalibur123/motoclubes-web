@@ -56,3 +56,8 @@ body.tema-claro{
 }
 body.tema-claro nav{background:#FFFFFF!important;border-bottom-color:var(--card)!important}
 body.tema-claro .rf-chip{background:#FFFFFF}
+
+/* MC-PORTAL-CASCO-21SEP-2026 (Mario: «desde el panel de negocio no puedo ir dándole al casco»):
+   el casco y «MOTOCLUBes» de la cabecera eran imagen y texto sueltos; ahora llevan a la portada. */
+.marca-portal{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.marca-portal:hover span{color:var(--orange)}
