@@ -1,0 +1,3 @@
+mc-geo.bin.gz · recorte de «IP to City Lite» de DB-IP (https://db-ip.com), licencia CC BY 4.0.
+IP Geolocation by DB-IP. Lo lee la función web-visita de MOTOCLUBes para saber país y ciudad
+aproximados de una visita sin guardar la IP. Se construye con db/geo_construir.py (repo motoclubes-v2).
