@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Revisar negocio</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E}
+body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:9px}
+header span{font-size:15px;font-weight:800;color:#fff}
+header .sep{color:rgba(255,255,255,.4);margin:0 4px}
+header .sub{font-size:13px;color:rgba(255,255,255,.8);font-weight:500}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--white);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.card-title{font-size:20px;font-weight:800;color:var(--black);margin-bottom:6px}
+.card-sub{font-size:14px;color:var(--gray);margin-bottom:28px;line-height:1.5}
+.card-sub a{color:var(--orange);text-decoration:none;font-weight:600}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:6px;letter-spacing:.3px}
+.field input{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--cream);border:1.5px solid var(--card);border-radius:10px;color:var(--black);transition:border-color .2s;outline:none}
+.field input:focus{border-color:var(--orange);background:var(--white)}
+.field input::placeholder{color:var(--gray-light)}
+.password-wrap{position:relative}
+.password-wrap input{padding-right:42px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-light);font-size:18px;padding:0;line-height:1}
+.btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
+.alert.error{background:rgba(229,62,62,.14);border:1px solid rgba(229,62,62,.35);color:var(--red)}
+.alert.show{display:block}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.card{max-width:560px}
+.rev-fila{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--card);font-size:14px}
+.rev-fila b{min-width:110px;color:var(--gray-light);font-weight:600}
+.rev-fila span{color:var(--black);flex:1;white-space:pre-line}
+.rev-fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.rev-fotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}
+.rev-serv{display:flex;flex-wrap:wrap;gap:6px}
+.rev-serv i{font-style:normal;background:var(--cream);border:1px solid var(--card);border-radius:50px;padding:4px 10px;font-size:12px}
+</style>
+<link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
+</head>
+<body>
+<header>
+  <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+  <span>MOTOCLUBes</span><span class="sep">·</span><span class="sub">Revisar negocio</span>
+</header>
+<main>
+  <!-- MC-RF-REVISION-21SEP-2026 (RF-REVISION-1): aquí llega el botón «Revisar y activar» del correo
+       «Ficha lista para revisar» que recibe soporte@. Dos pasos a propósito: abrir no activa. -->
+  <div class="card">
+    <div class="alert error" id="alert-error"></div>
+    <div id="cargando" style="color:var(--gray);font-size:14px">Cargando la ficha…</div>
+    <div id="ficha" style="display:none"></div>
+    <div id="ok-view" style="display:none;text-align:center">
+      <div style="font-size:44px;margin-bottom:12px">✅</div>
+      <div class="card-title" id="ok-titulo"></div>
+      <div class="card-sub" style="margin-top:8px">Ya sale en la app como negocio adherido y le hemos mandado un correo para contárselo.</div>
+    </div>
+  </div>
+</main>
+<script>
+const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
+const token = new URLSearchParams(location.search).get('t') || ''
+const esc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+function error(txt) { const a = document.getElementById('alert-error'); a.textContent = txt; a.classList.add('show') }
+async function llamar(action) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/business-review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+    body: JSON.stringify({ action, token })
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || 'No se ha podido completar.')
+  return data
+}
+function fila(k, v) { return v ? `<div class="rev-fila"><b>${k}</b><span>${esc(v)}</span></div>` : '' }
+async function cargar() {
+  document.getElementById('cargando').style.display = 'none'
+  if (!token) return error('Este enlace no es válido.')
+  let d
+  try { d = await llamar('ver') } catch (e) { return error(e.message) }
+  const n = d.negocio
+  const aviso = n.activo ? '<div class="alert show" style="background:rgba(61,187,78,.14);color:#8FE0A5">Este negocio ya está activo.</div>'
+    : d.usado ? '<div class="alert error show">Este enlace ya se usó.</div>'
+    : d.caducado ? '<div class="alert error show">Este enlace ha caducado.</div>' : ''
+  document.getElementById('ficha').innerHTML = `
+    <div class="card-title">${esc(n.nombre)}</div>
+    <div class="card-sub">${esc([n.categoria || n.tipo, n.municipio].filter(Boolean).join(' · '))}</div>
+    ${aviso}
+    ${n.fotos.length ? `<div class="rev-fotos">${n.fotos.map(u => `<img src="${esc(u)}" alt="">`).join('')}</div>` : ''}
+    ${fila('Tipo', n.tipo)}${fila('Categoría', n.categoria)}${fila('Dirección', n.direccion)}
+    ${fila('Teléfono', n.telefono)}${fila('Web', n.web)}${fila('Horario', n.horario)}${fila('Descripción', n.descripcion)}
+    ${n.servicios.length ? `<div class="rev-fila"><b>Servicios</b><span class="rev-serv">${n.servicios.map(s => `<i>${esc(s)}</i>`).join('')}</span></div>` : ''}
+    ${fila('Otros servicios', n.servicios_otros)}${fila('Correo', n.correo)}
+    ${n.lat != null ? `<div class="rev-fila"><b>Ubicación</b><span><a href="https://www.google.com/maps?q=${n.lat},${n.lng}" target="_blank" style="color:var(--orange);font-weight:600">Ver el punto en el mapa</a></span></div>` : ''}
+    ${!n.activo && !d.usado && !d.caducado ? '<button class="btn" id="btn-activar" style="margin-top:20px">Activar negocio</button>' : ''}`
+  document.getElementById('ficha').style.display = 'block'
+  const b = document.getElementById('btn-activar')
+  if (b) b.addEventListener('click', async () => {
+    b.disabled = true; b.innerHTML = '<div class="spinner"></div> Activando...'
+    try {
+      const r = await llamar('activar')
+      document.getElementById('ficha').style.display = 'none'
+      document.getElementById('ok-titulo').textContent = `${r.nombre} ya está en el mapa`
+      document.getElementById('ok-view').style.display = 'block'
+    } catch (e) { error(e.message); b.disabled = false; b.innerHTML = 'Activar negocio' }
+  })
+}
+cargar()
+</script>
+</body>
+</html>

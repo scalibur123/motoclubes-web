@@ -9,7 +9,7 @@
 <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#D9B79A;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
 body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
 header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .header-left{display:flex;align-items:center;gap:10px}
@@ -37,21 +37,21 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .acc-group{border:1.5px solid var(--card);border-radius:12px;margin-bottom:8px;overflow:hidden}
 .acc-header{padding:13px 16px;font-size:13px;font-weight:600;color:var(--black);cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--white);user-select:none;transition:background .15s}
 .acc-header:hover{background:var(--cream)}
-.acc-header.open{background:rgba(255,122,26,.14);color:#FFA25C}
+.acc-header.open{background:rgba(255,122,26,.14);color:#B85000}
 .acc-header .arrow{font-size:11px;transition:transform .2s;color:var(--gray-light)}
 .acc-header.open .arrow{transform:rotate(180deg)}
 .acc-body{display:none;padding:12px 16px;background:var(--cream);border-top:1px solid var(--card)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--card);background:var(--white);color:var(--gray);cursor:pointer;transition:all .15s;user-select:none}
 .chip:hover{border-color:var(--orange);color:var(--orange)}
-.chip.sel{background:rgba(255,122,26,.14);border-color:var(--orange);color:#FFA25C}
+.chip.sel{background:rgba(255,122,26,.14);border-color:var(--orange);color:#B85000}
 .escape-box{display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px dashed var(--card);border-radius:10px;padding:12px 14px;margin-top:8px}
 .escape-box span{font-size:12px;color:var(--gray);flex:1;line-height:1.5}
 .escape-box a{color:var(--orange);font-weight:600;text-decoration:none;white-space:nowrap}
 #map{width:100%;height:min(62vh,560px);min-height:340px;border-radius:12px;margin-bottom:6px;cursor:crosshair}
 .map-botones{display:flex;gap:8px;margin:0 0 10px}
 .map-hint{font-size:11px;color:var(--gray-light);display:flex;align-items:center;gap:4px;margin-bottom:14px}
-.photos-guide{background:rgba(255,122,26,.14);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#D9B79A;line-height:1.6}
+.photos-guide{background:rgba(255,122,26,.14);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#6B4423;line-height:1.6}
 .photos-guide strong{font-weight:700;display:block;margin-bottom:4px}
 .guide-row{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
 .guide-item{display:flex;align-items:center;gap:5px;font-size:12px}
@@ -68,9 +68,9 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .photo-slot .slot-icon{font-size:20px}
 .photo-delete{position:absolute;top:6px;right:6px;width:22px;height:22px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 input[type="file"]{display:none}
-.preview-label{font-size:11px;font-weight:700;color:#FFA25C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.preview-label{font-size:11px;font-weight:700;color:#B85000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 .app-card{border-radius:14px;overflow:hidden;border:1px solid var(--card);max-width:280px}
-.app-card-img{height:100px;background:linear-gradient(135deg,#2A2A2A,#141414);position:relative;display:flex;align-items:flex-end;padding:10px}
+.app-card-img{height:100px;background:linear-gradient(135deg,#EDE7DF,#DCD3C8);position:relative;display:flex;align-items:flex-end;padding:10px}
 .app-card-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.55))}
 .app-card-txt{position:relative;z-index:1}
 .app-card-name{font-size:13px;font-weight:700;color:#fff}
@@ -96,7 +96,7 @@ input[type="file"]{display:none}
 <link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
 <script src="negocio.js"></script>
 </head>
-<body>
+<body class="tema-claro"><!-- MC-PORTAL-CLARO-21SEP-2026 -->
 <header>
   <div class="header-left">
     <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">

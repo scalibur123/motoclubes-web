@@ -38,3 +38,21 @@ a{color:inherit}
 .dir-sug-item b{display:block;font-size:14px;font-weight:600}
 .dir-sug-item span{display:block;font-size:12px;color:var(--gray-light);margin-top:2px}
 .dir-sug-vacio{padding:10px 14px;font-size:13px;color:var(--gray-light)}
+
+/* MC-PORTAL-CLARO-21SEP-2026 (Mario: «en oscuro es complicado para rellenar datos»).
+   La entrada (login, alta, contraseña, revisión) sigue oscura como la web; DENTRO del panel
+   (index, perfil, ofertas, escáner) va en claro con los detalles en naranja. La cabecera se queda
+   oscura en todas: es la marca. Se activa con <body class="tema-claro">. */
+body.tema-claro{
+  --cream:#F7F5F2;          /* fondo de página y de los campos */
+  --white:#FFFFFF;          /* tarjetas */
+  --card:#E7E1D9;           /* bordes y fichas */
+  --black:#161412;          /* texto */
+  --gray:#5C5750;--gray-light:#8C857C;
+  --brown:#6B4423;
+  --red:#D63A3A;--green:#2F9E4A;
+  color-scheme:light;
+  background:var(--cream);
+}
+body.tema-claro nav{background:#FFFFFF!important;border-bottom-color:var(--card)!important}
+body.tema-claro .rf-chip{background:#FFFFFF}
