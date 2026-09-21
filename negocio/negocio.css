@@ -1,0 +1,31 @@
+/* MC-PORTAL-OSCURO-21SEP-2026 (ficha RF-NEGOCIO-1) · el portal de negocios con la identidad
+   de la web pública: fondo #0E0E0E, tarjetas #191919, texto blanco, naranja #FF7A1A, Manrope.
+   Las seis páginas nacieron en mayo con fondo crema y marrón y nadie eligió ese aspecto.
+   Todas usan las MISMAS variables, así que se redefinen aquí una vez, después de su <style>.
+   Medido antes de cambiarlas: --white solo se usa como fondo y --black solo como texto. */
+:root{
+  --orange:#FF7A1A;--orange-dark:#E06510;
+  --cream:#0E0E0E;          /* fondo de página y de los campos */
+  --white:#191919;          /* tarjetas */
+  --card:#2A2A2A;           /* bordes y fichas */
+  --black:#FFFFFF;          /* texto */
+  --gray:#B3B3B3;--gray-light:#7D7D7D;
+  --brown:#D9B79A;
+  --red:#FF6B6B;--green:#3DBB4E;
+  color-scheme:dark;
+}
+body{color:var(--black)}
+header{background:rgba(14,14,14,.92)!important;border-bottom:1px solid rgba(255,255,255,.09);backdrop-filter:blur(14px)}
+header .brand{color:#fff}
+.btn-logout{background:rgba(255,255,255,.08)!important}
+.btn-logout:hover{background:rgba(255,255,255,.16)!important}
+nav{background:#141414!important;border-bottom-color:rgba(255,255,255,.09)!important}
+a{color:inherit}
+
+/* Chips de tipo y casillas de servicios (registro y perfil). */
+.rf-chips{display:flex;flex-wrap:wrap;gap:8px}
+.rf-chip{background:var(--cream);color:var(--black);border:1.5px solid var(--card);border-radius:50px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+.rf-chip.sel{background:var(--orange);border-color:var(--orange);color:#fff}
+.rf-servicios{display:flex;flex-direction:column;gap:10px}
+.rf-servicio{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--black);cursor:pointer}
+.rf-servicio input{width:18px;height:18px;accent-color:var(--orange);flex-shrink:0}

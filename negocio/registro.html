@@ -31,7 +31,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .divider{border:none;border-top:1px solid var(--card);margin:20px 0}
 .info-box{background:var(--cream);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--gray);line-height:1.6;display:flex;align-items:flex-start;gap:8px}
 .alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
-.alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
+.alert.error{background:rgba(229,62,62,.14);border:1px solid rgba(229,62,62,.35);color:var(--red)}
 .alert.show{display:block}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -41,6 +41,8 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .success-screen p{font-size:14px;color:var(--gray);line-height:1.6}
 .password-wrap{position:relative;display:block}.password-wrap input{padding-right:42px}.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-light);font-size:18px;padding:0;line-height:1}
 </style>
+<link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
+<script src="negocio.js"></script>
 </head>
 <body>
 <header>
@@ -54,15 +56,18 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       <div class="card-sub">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></div>
       <div class="alert error" id="alert-error"></div>
       <div class="field"><label>NOMBRE DEL NEGOCIO</label><input type="text" id="biz-name" placeholder="Ej: Casa Pepe — Asador de montaña"></div>
+      <!-- MC-RF-NEGOCIO-21SEP-2026: el tipo es obligatorio y es el que pinta el mapa -->
+      <div class="field"><label>¿QUÉ TIPO DE NEGOCIO ES?</label><div class="rf-chips" id="tipos"></div></div>
+      <div class="field"><label>¿Y EXACTAMENTE? <span style="font-weight:500;color:var(--gray-light)">(opcional)</span></label><input type="text" id="categoria" list="categorias" maxlength="60" placeholder="Casa rural, asador, taller de motos…"><datalist id="categorias"></datalist></div>
       <div class="field"><label>EMAIL DE CONTACTO</label><input type="email" id="email" placeholder="correo@tunegocio.es" autocomplete="email"></div>
       <div class="field"><label>CONTRASEÑA</label><div class="password-wrap"><input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password','eye1')" id="eye1">👁</button></div><div class="field-hint">Mínimo 8 caracteres</div></div>
       <div class="field"><label>REPITE LA CONTRASEÑA</label><div class="password-wrap"><input type="password" id="password2" placeholder="••••••••" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password2','eye2')" id="eye2">👁</button></div></div>
-      <div style="background:#FFF0E6;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
-        <div style="font-size:13px;font-weight:700;color:#B85000;margin-bottom:10px;">¿Cómo funciona Rider Friendly?</div>
+      <div style="background:rgba(255,122,26,.14);border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#FFA25C;margin-bottom:10px;">¿Cómo funciona Rider Friendly?</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div><div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Completa tu perfil</strong> — apareces en el mapa de MOTOCLUBes.</div></div>
-          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div><div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Añade ofertas si quieres</strong> — los riders obtienen un QR para canjearlas.</div></div>
-          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div><div style="font-size:12px;color:#6B4423;line-height:1.5;"><strong>Escanea su QR</strong> desde motoclubes.es/negocio/scanner cuando lleguen.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div><div style="font-size:12px;color:#D9B79A;line-height:1.5;"><strong>Completa tu perfil</strong> — lo revisamos y sales en el mapa de MOTOCLUBes como negocio adherido.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div><div style="font-size:12px;color:#D9B79A;line-height:1.5;"><strong>Añade ofertas si quieres</strong> — los riders obtienen un QR para canjearlas.</div></div>
+          <div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:22px;height:22px;background:#FF7A1A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div><div style="font-size:12px;color:#D9B79A;line-height:1.5;"><strong>Escanea su QR</strong> desde motoclubes.es/negocio/scanner cuando lleguen.</div></div>
         </div>
       </div>
       <button class="btn" id="btn-register" onclick="handleRegister()">Crear cuenta</button>
@@ -75,7 +80,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
     <div class="success-screen" id="success-view">
       <div class="icon">📧</div>
       <h2>¡Cuenta creada!</h2>
-      <p>Hemos enviado un email de bienvenida a <strong id="confirm-email"></strong>.<br><br>Ya puedes <a href="login.html" style="color:#FF7A1A;font-weight:700">iniciar sesión</a> en tu panel.</p>
+      <p>Hemos enviado un email de bienvenida a <strong id="confirm-email"></strong>.<br><br>Entra en tu panel y completa la ficha. La revisamos y te avisamos cuando salga en el mapa.<br><br><a href="login.html" style="color:#FF7A1A;font-weight:700">Iniciar sesión</a></p>
     </div>
   </div>
 </main>
@@ -89,6 +94,14 @@ const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
 
 function toggleEye(inputId,btnId){const input=document.getElementById(inputId);const btn=document.getElementById(btnId);if(input.type==="password"){input.type="text";btn.textContent="🙈"}else{input.type="password";btn.textContent="👁"}}
+// MC-RF-NEGOCIO-21SEP-2026: chips de tipo y sugerencias de categoría (listas en negocio.js)
+let tipoElegido = ''
+window.addEventListener('DOMContentLoaded', () => {
+  mcChipsTipo(document.getElementById('tipos'), '', (v) => {
+    tipoElegido = v
+    mcCategorias(document.getElementById('categorias'), v)
+  })
+})
 async function handleRegister() {
   const bizName = document.getElementById('biz-name').value.trim()
   const email = document.getElementById('email').value.trim()
@@ -101,6 +114,11 @@ async function handleRegister() {
 
   if (!bizName || !email || !password || !password2) {
     alertError.textContent = 'Por favor rellena todos los campos.'
+    alertError.classList.add('show')
+    return
+  }
+  if (!tipoElegido) {
+    alertError.textContent = 'Elige qué tipo de negocio es.'
     alertError.classList.add('show')
     return
   }
@@ -126,7 +144,8 @@ async function handleRegister() {
         'apikey': SUPABASE_PUBLISHABLE_KEY,
         'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
       },
-      body: JSON.stringify({ email, password, business_name: bizName })
+      body: JSON.stringify({ email, password, business_name: bizName, type: tipoElegido,
+                             category: document.getElementById('categoria').value.trim() })
     })
 
     const data = await res.json()

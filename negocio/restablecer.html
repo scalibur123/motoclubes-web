@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Contraseña nueva</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E}
+body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;gap:10px}
+header img{width:32px;height:32px;border-radius:9px}
+header span{font-size:15px;font-weight:800;color:#fff}
+header .sep{color:rgba(255,255,255,.4);margin:0 4px}
+header .sub{font-size:13px;color:rgba(255,255,255,.8);font-weight:500}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--white);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.card-title{font-size:20px;font-weight:800;color:var(--black);margin-bottom:6px}
+.card-sub{font-size:14px;color:var(--gray);margin-bottom:28px;line-height:1.5}
+.card-sub a{color:var(--orange);text-decoration:none;font-weight:600}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:6px;letter-spacing:.3px}
+.field input{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--cream);border:1.5px solid var(--card);border-radius:10px;color:var(--black);transition:border-color .2s;outline:none}
+.field input:focus{border-color:var(--orange);background:var(--white)}
+.field input::placeholder{color:var(--gray-light)}
+.password-wrap{position:relative}
+.password-wrap input{padding-right:42px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-light);font-size:18px;padding:0;line-height:1}
+.btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
+.alert.error{background:rgba(229,62,62,.14);border:1px solid rgba(229,62,62,.35);color:var(--red)}
+.alert.show{display:block}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+<link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
+</head>
+<body>
+<header>
+  <img src="https://motoclubes.es/email-logo-helmet.png" alt="MOTOCLUBes">
+  <span>MOTOCLUBes</span><span class="sep">·</span><span class="sub">Panel de negocio</span>
+</header>
+<main>
+  <!-- MC-BIZRESET-21SEP-2026: aquí llega el enlace del correo «Tu contraseña del panel de negocio» -->
+  <div class="card">
+    <div id="form-view">
+      <div class="card-title">Contraseña nueva</div>
+      <div class="card-sub">Elige una contraseña de al menos 8 caracteres.</div>
+      <div class="alert error" id="alert-error"></div>
+      <div class="field"><label>CONTRASEÑA NUEVA</label><div class="password-wrap"><input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password','eye1')" id="eye1">👁</button></div></div>
+      <div class="field"><label>REPÍTELA</label><div class="password-wrap"><input type="password" id="password2" placeholder="••••••••" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password2','eye2')" id="eye2">👁</button></div></div>
+      <button class="btn" id="btn-guardar" onclick="guardar()">Guardar contraseña</button>
+    </div>
+    <div id="ok-view" style="display:none;text-align:center">
+      <div style="font-size:44px;margin-bottom:12px">✅</div>
+      <div class="card-title">Contraseña cambiada</div>
+      <div class="card-sub" style="margin-top:8px">Ya puedes entrar con la nueva.</div>
+      <a class="btn" href="login.html" style="text-decoration:none">Iniciar sesión</a>
+    </div>
+  </div>
+</main>
+<script>
+const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi'
+const token = new URLSearchParams(location.search).get('t') || ''
+
+function toggleEye(inputId, btnId) {
+  const input = document.getElementById(inputId)
+  const btn = document.getElementById(btnId)
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈' }
+  else { input.type = 'password'; btn.textContent = '👁' }
+}
+function error(txt) {
+  const a = document.getElementById('alert-error'); a.textContent = txt; a.classList.add('show')
+}
+if (!token) error('Este enlace no es válido. Pide otro desde «¿Olvidaste tu contraseña?» en la página de entrada.')
+
+async function guardar() {
+  document.getElementById('alert-error').classList.remove('show')
+  const p1 = document.getElementById('password').value
+  const p2 = document.getElementById('password2').value
+  if (!token) return error('Este enlace no es válido. Pide otro.')
+  if (p1.length < 8) return error('La contraseña debe tener al menos 8 caracteres.')
+  if (p1 !== p2) return error('Las contraseñas no coinciden.')
+  const btn = document.getElementById('btn-guardar')
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/business-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ action: 'restablecer', token, password: p1 })
+    })
+    const data = await res.json()
+    if (!res.ok || data.error) { error(data.error || 'No se ha podido cambiar la contraseña.'); btn.disabled = false; btn.innerHTML = 'Guardar contraseña'; return }
+    // Las sesiones abiertas se han cerrado en el servidor; la de este navegador también.
+    localStorage.removeItem('business_session')
+    document.getElementById('form-view').style.display = 'none'
+    document.getElementById('ok-view').style.display = 'block'
+  } catch (e) {
+    error('Sin conexión. Inténtalo de nuevo en un momento.'); btn.disabled = false; btn.innerHTML = 'Guardar contraseña'
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') guardar() })
+</script>
+</body>
+</html>

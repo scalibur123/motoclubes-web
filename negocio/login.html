@@ -31,11 +31,12 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .btn:hover{background:var(--orange-dark);transform:translateY(-1px)}
 .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none;line-height:1.5}
-.alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
+.alert.error{background:rgba(229,62,62,.14);border:1px solid rgba(229,62,62,.35);color:var(--red)}
 .alert.show{display:block}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
+<link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
 </head>
 <body>
 <header>
@@ -59,6 +60,14 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       </div>
     </div>
     <button class="btn" id="btn-login" onclick="handleLogin()">Entrar al panel</button>
+    <!-- MC-BIZRESET-21SEP-2026: no existía forma de recuperar la contraseña -->
+    <div style="text-align:center;margin-top:16px"><a href="#" id="olvide-link" onclick="mostrarOlvide(event)" style="color:var(--orange);font-size:13px;font-weight:600;text-decoration:none">¿Olvidaste tu contraseña?</a></div>
+    <div id="olvide" style="display:none;margin-top:18px;border-top:1px solid var(--card);padding-top:18px">
+      <div style="font-size:14px;color:var(--gray);margin-bottom:12px;line-height:1.5">Escribe el correo de tu cuenta y te mandamos un enlace para poner una contraseña nueva.</div>
+      <div class="field"><input type="email" id="email-olvide" placeholder="correo@tunegocio.es" autocomplete="email"></div>
+      <button class="btn" id="btn-olvide" onclick="pedirEnlace()">Enviarme el enlace</button>
+      <div id="olvide-ok" style="display:none;margin-top:14px;font-size:13px;color:var(--gray);line-height:1.6"></div>
+    </div>
   </div>
 </main>
 <script>
@@ -100,7 +109,40 @@ async function handleLogin() {
     alertError.textContent = 'Error de conexión: ' + e.message; alertError.classList.add('show'); btn.disabled = false; btn.innerHTML = 'Entrar al panel'
   }
 }
-document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin() })
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return
+  if (document.activeElement && document.activeElement.id === 'email-olvide') pedirEnlace()
+  else handleLogin()
+})
+
+// MC-BIZRESET-21SEP-2026 · «¿Olvidaste tu contraseña?». La respuesta es SIEMPRE la misma,
+// exista o no el correo: así nadie puede averiguar qué negocios están dados de alta.
+function mostrarOlvide(e) {
+  e.preventDefault()
+  document.getElementById('olvide').style.display = 'block'
+  document.getElementById('email-olvide').value = document.getElementById('email').value.trim()
+  document.getElementById('email-olvide').focus()
+}
+async function pedirEnlace() {
+  const email = document.getElementById('email-olvide').value.trim()
+  const btn = document.getElementById('btn-olvide')
+  const ok = document.getElementById('olvide-ok')
+  if (!email) { document.getElementById('email-olvide').focus(); return }
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Enviando...'
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/business-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ action: 'solicitar', email })
+    })
+    ok.textContent = 'Si ese correo tiene una cuenta, te acabamos de mandar el enlace. Mira también en correo no deseado. Caduca en una hora.'
+    ok.style.display = 'block'
+  } catch (e) {
+    ok.textContent = 'Sin conexión. Inténtalo de nuevo en un momento.'
+    ok.style.display = 'block'
+  }
+  btn.disabled = false; btn.innerHTML = 'Enviarme el enlace'
+}
 </script>
 </body>
 </html>

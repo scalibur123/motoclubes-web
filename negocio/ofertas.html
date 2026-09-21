@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#6B4423;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
+:root{--orange:#FF7A1A;--orange-dark:#E06510;--brown:#D9B79A;--cream:#F5EFE8;--card:#EBE0D2;--black:#111111;--gray:#555555;--gray-light:#888888;--white:#FFFFFF;--red:#E53E3E;--green:#38A169}
 body{font-family:'Manrope',sans-serif;background:var(--cream);min-height:100vh}
 header{background:var(--orange);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .header-left{display:flex;align-items:center;gap:10px}
@@ -30,7 +30,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .oferta-meta{font-size:11px;color:var(--gray-light);margin-top:2px}
 .oferta-actions{display:flex;gap:6px;align-items:center}
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
-.badge.on{background:#EAF3DE;color:#3B6D11}
+.badge.on{background:rgba(61,187,78,.16);color:#9BD66B}
 .badge.off{background:var(--cream);color:var(--gray)}
 .icon-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:4px;border-radius:6px;transition:background .15s;color:var(--gray)}
 .icon-btn:hover{background:var(--cream)}
@@ -49,7 +49,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .tipo-row:last-child{border-bottom:none}
 .tipo-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--card);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .tipo-radio.sel{border-color:var(--orange);background:var(--orange)}
-.tipo-radio.sel::after{content:'';width:6px;height:6px;background:#fff;border-radius:50%}
+.tipo-radio.sel::after{content:'';width:6px;height:6px;background:var(--white);border-radius:50%}
 .tipo-lbl{font-size:13px;color:var(--black);flex:1}
 .tipo-sub{font-size:11px;color:var(--gray-light)}
 .checks-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
@@ -58,9 +58,9 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .check-box.sel{background:var(--orange);border-color:var(--orange)}
 .check-box.sel::after{content:'✓';font-size:10px;color:#fff;font-weight:700}
 .check-lbl{font-size:13px;color:var(--black)}
-.preview-box{background:#FFF0E6;border-radius:12px;padding:14px 16px;margin-top:16px}
-.preview-box-label{font-size:10px;font-weight:700;color:#B85000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.preview-box-txt{font-size:14px;color:#6B4423;font-weight:600;line-height:1.5}
+.preview-box{background:rgba(255,122,26,.14);border-radius:12px;padding:14px 16px;margin-top:16px}
+.preview-box-label{font-size:10px;font-weight:700;color:#FFA25C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.preview-box-txt{font-size:14px;color:#D9B79A;font-weight:600;line-height:1.5}
 .btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
 .btn-primary{background:var(--orange);color:#fff;border:none;padding:11px 24px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:6px}
 .btn-primary:hover{background:var(--orange-dark)}
@@ -70,8 +70,8 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .btn-new{background:var(--orange);color:#fff;border:none;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:20px}
 .btn-new:hover{background:var(--orange-dark)}
 .alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
-.alert.error{background:#FFF5F5;border:1px solid #FED7D7;color:var(--red)}
-.alert.success{background:#F0FFF4;border:1px solid #C6F6D5;color:var(--green)}
+.alert.error{background:rgba(229,62,62,.14);border:1px solid rgba(229,62,62,.35);color:var(--red)}
+.alert.success{background:rgba(61,187,78,.14);border:1px solid rgba(61,187,78,.35);color:var(--green)}
 .alert.show{display:block}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -79,6 +79,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .campos{display:none}
 .campos.visible{display:block}
 </style>
+<link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
 </head>
 <body>
 <header>
