@@ -48,7 +48,8 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .escape-box{display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px dashed var(--card);border-radius:10px;padding:12px 14px;margin-top:8px}
 .escape-box span{font-size:12px;color:var(--gray);flex:1;line-height:1.5}
 .escape-box a{color:var(--orange);font-weight:600;text-decoration:none;white-space:nowrap}
-#map{width:100%;height:220px;border-radius:12px;margin-bottom:6px}
+#map{width:100%;height:min(62vh,560px);min-height:340px;border-radius:12px;margin-bottom:6px;cursor:crosshair}
+.map-botones{display:flex;gap:8px;margin:0 0 10px}
 .map-hint{font-size:11px;color:var(--gray-light);display:flex;align-items:center;gap:4px;margin-bottom:14px}
 .photos-guide{background:rgba(255,122,26,.14);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#D9B79A;line-height:1.6}
 .photos-guide strong{font-weight:700;display:block;margin-bottom:4px}
@@ -214,20 +215,19 @@ async function loadPerfil() {
         <input type="text" id="f-address" value="${biz.address||''}" placeholder="Ej: Ctra. M-611 km 32, Miraflores de la Sierra">
         <div class="field-hint">Si la dirección no aparece en el mapa, ajusta el pin manualmente.</div>
       </div>
+      <div class="map-botones">
+        <button type="button" class="rf-chip" id="btn-satelite">Ver satélite</button>
+        <button type="button" class="rf-chip" id="btn-al-pin">Ir al pin</button>
+      </div>
       <div id="map"></div>
-      <div class="map-hint">☝️ Arrastra el pin a tu posición exacta.</div>
+      <div class="map-hint">Toca el mapa donde está la puerta de tu negocio, o arrastra el pin. Es el punto exacto al que irán los riders.</div>
     </div>
     <div class="section-block">
       <div class="section-label">Fotos</div>
+      <!-- MC-PORTAL-MAPA-21SEP-2026: los ✅/❌ (Exterior, Terraza, Logo, Plato) no se entendían. -->
       <div class="photos-guide">
         <strong>Foto de portada</strong>
-        Usa una foto del exterior o entorno del local.
-        <div class="guide-row">
-          <div class="guide-item"><span class="guide-ok">✅</span> Exterior</div>
-          <div class="guide-item"><span class="guide-ok">✅</span> Terraza</div>
-          <div class="guide-item"><span class="guide-no">❌</span> Logo</div>
-          <div class="guide-item"><span class="guide-no">❌</span> Plato</div>
-        </div>
+        Es la que ven los riders en el mapa. Mejor una foto del exterior o de la terraza, que se reconozca el sitio al llegar. Evita logos y fotos de platos.
       </div>
       <div class="photos-grid" id="photos-grid"></div>
       <div class="field-hint" id="foto-hint">Máx. 5 fotos · se reducen solas al subirlas</div>
@@ -270,23 +270,77 @@ async function loadPerfil() {
     document.getElementById('preview-desc').textContent = e.target.value || 'Descripción'
     document.getElementById('char-count').textContent = e.target.value.length
   })
-  document.getElementById('f-address').addEventListener('change', async e => {
-    const q = e.target.value.trim()
-    if (!q) return
-    const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${MAPBOX_TOKEN}&country=es&limit=1`)
-    const json = await res.json()
-    if (json.features?.length) {
-      const [lng, lat] = json.features[0].center
-      currentLat = lat; currentLng = lng
-      map.flyTo({ center: [lng, lat], zoom: 14 })
-      marker.setLngLat([lng, lat])
-    }
+  // MC-PORTAL-BUSCADOR-21SEP-2026: el campo de dirección era un buscador a ciegas — solo
+  // buscaba al SALIR de la casilla y se quedaba con el primer resultado sin enseñar nada.
+  // Mario escribió «cantavieja» y el mapa no se movió. Ahora sugiere mientras se escribe
+  // (pueblos, calles con número y negocios) y al elegir coloca el pin, que luego se afina.
+  const inDir = document.getElementById('f-address')
+  const sug = document.createElement('div')
+  sug.className = 'dir-sug'
+  inDir.insertAdjacentElement('afterend', sug)
+  let tDir = null, pedido = 0
+  const cerrarSug = () => { sug.innerHTML = ''; sug.style.display = 'none' }
+  inDir.setAttribute('autocomplete', 'off')
+  inDir.addEventListener('input', () => {
+    clearTimeout(tDir)
+    const q = inDir.value.trim()
+    if (q.length < 3) return cerrarSug()
+    tDir = setTimeout(async () => {
+      const yo = ++pedido
+      try {
+        const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(q)}` +
+          `&country=es,fr,pt,ad&language=es&limit=6&autocomplete=true` +
+          `&types=address,street,place,locality,neighborhood,postcode&access_token=${MAPBOX_TOKEN}`
+        const j = await (await fetch(url)).json()
+        if (yo !== pedido) return   // llegó tarde: ya se escribió otra cosa
+        const feats = (j.features || [])
+        if (!feats.length) { sug.innerHTML = '<div class="dir-sug-vacio">Sin resultados. Coloca el pin a mano en el mapa.</div>'; sug.style.display = 'block'; return }
+        sug.innerHTML = feats.map((f, i) => {
+          const p = f.properties || {}
+          return `<button type="button" class="dir-sug-item" data-i="${i}"><b>${esc(p.name || '')}</b><span>${esc(p.place_formatted || '')}</span></button>`
+        }).join('')
+        sug.style.display = 'block'
+        sug.querySelectorAll('.dir-sug-item').forEach(b => b.addEventListener('click', () => {
+          const f = feats[Number(b.dataset.i)]
+          const [lng, lat] = f.geometry.coordinates
+          const p = f.properties || {}
+          inDir.value = p.full_address || [p.name, p.place_formatted].filter(Boolean).join(', ')
+          currentLat = lat; currentLng = lng
+          const fino = ['address', 'street', 'poi'].includes(p.feature_type)
+          map.flyTo({ center: [lng, lat], zoom: fino ? 17 : 14 })
+          marker.setLngLat([lng, lat])
+          cerrarSug()
+        }))
+      } catch (e) { cerrarSug() }
+    }, 300)
   })
+  inDir.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug() })
+  document.addEventListener('click', e => { if (e.target !== inDir && !sug.contains(e.target)) cerrarSug() })
 
   mapboxgl.accessToken = MAPBOX_TOKEN
-  map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/streets-v12', center: [currentLng, currentLat], zoom: biz.lat ? 14 : 5 })
+  map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/streets-v12', center: [currentLng, currentLat], zoom: biz.lat ? 16 : 5 })
   marker = new mapboxgl.Marker({ color: '#FF7A1A', draggable: true }).setLngLat([currentLng, currentLat]).addTo(map)
   marker.on('dragend', () => { const pos = marker.getLngLat(); currentLat = pos.lat; currentLng = pos.lng })
+  // MC-PORTAL-MAPA-21SEP-2026 (Mario, 21-sep: «el mapa no sirve de nada como está hecho»):
+  // era un recuadro de 220 px sin botones y el pin solo se podía arrastrar; si se perdía de
+  // vista no había forma de volver. Ahora: más alto, acercar/alejar, pantalla completa,
+  // tocar el mapa pone el pin, satélite para acertar con la puerta e «Ir al pin».
+  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
+  map.addControl(new mapboxgl.FullscreenControl(), 'top-right')
+  map.on('click', e => {
+    currentLat = e.lngLat.lat; currentLng = e.lngLat.lng
+    marker.setLngLat([currentLng, currentLat])
+  })
+  let satelite = false
+  document.getElementById('btn-satelite').addEventListener('click', () => {
+    satelite = !satelite
+    map.setStyle(satelite ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12')
+    document.getElementById('btn-satelite').textContent = satelite ? 'Ver callejero' : 'Ver satélite'
+    document.getElementById('btn-satelite').classList.toggle('sel', satelite)
+  })
+  document.getElementById('btn-al-pin').addEventListener('click', () => {
+    map.flyTo({ center: [currentLng, currentLat], zoom: Math.max(map.getZoom(), 16) })
+  })
 
   renderPhotos()
 }
