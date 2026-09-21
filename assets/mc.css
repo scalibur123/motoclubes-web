@@ -364,3 +364,25 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
    Mario: «me gustaba más antes sin imágenes; hay que ponerlas en otro menú». */
 .pagina-capturas{padding-top:56px;border-top:1px solid var(--borde)}
 .pagina-capturas .tira{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+
+/* ---------- Avísame (WEB-ANALITICA-1, 21-sep-2026) ---------- */
+.avisame{max-width:520px;margin:40px auto 0;padding:26px 22px;border:1px solid var(--borde);
+  border-radius:var(--radio);background:var(--tarjeta);text-align:left}
+.avisame h3{font-size:19px;margin-bottom:6px}
+.avisame p.avisame-texto{color:var(--texto-2);font-size:15px;margin-bottom:16px}
+.avisame-fila{display:flex;gap:10px;flex-wrap:wrap}
+.avisame input[type=email]{flex:1 1 220px;min-height:48px;padding:12px 14px;border-radius:13px;
+  border:1px solid var(--borde);background:var(--fondo-2);color:var(--texto);font:inherit;font-size:16px}
+.avisame input[type=email]:focus{outline:none;border-color:var(--naranja)}
+.avisame button{cursor:pointer;justify-content:center;min-height:48px;font:inherit;font-weight:700}
+.avisame button[disabled]{opacity:.6;cursor:default}
+.avisame label{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--texto-2);margin-top:12px;line-height:1.5}
+.avisame label input{margin-top:3px;accent-color:var(--naranja);width:17px;height:17px;flex:none}
+.avisame label a{color:var(--naranja)}
+.avisame-plataformas{display:none;gap:18px;margin-left:27px}
+.avisame-plataformas.visible{display:flex}
+.avisame-plataformas label{margin-top:8px}
+.avisame-trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.avisame-msg{margin-top:14px;font-size:14px;min-height:1em}
+.avisame-msg.ok{color:#7BD88F}.avisame-msg.error{color:#FF8A7A}
+.aviso-beta a{color:var(--naranja);font-weight:700;white-space:nowrap}

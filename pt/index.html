@@ -24,7 +24,7 @@
 <meta name="twitter:description" content="MOTOCLUBes é a app para motards: planeia rotas, navega com GPS pensado para a mota, anda em grupo com intercomunicador e partilha as tuas rotas com a comunidade.">
 <meta name="twitter:image" content="https://www.motoclubes.es/img/og.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/mc.css?v=20sep7">
+<link rel="stylesheet" href="/assets/mc.css?v=21sep1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"MOTOCLUBES TECH S.L.","alternateName":"MOTOCLUBes","url":"https://www.motoclubes.es/","logo":"https://www.motoclubes.es/img/helmet-512.png","email":"soporte@motoclubes.es","address":{"@type":"PostalAddress","streetAddress":"Ronda Santa Eulàlia, Polígon Parc Industrial 36-37","addressLocality":"Pallejà","postalCode":"08780","addressRegion":"Barcelona","addressCountry":"ES"}}
 </script>
@@ -75,7 +75,7 @@
       <a class="boton boton-principal" href="#funciones">Ver o que faz</a>
       <a class="boton boton-suave" href="/negocio/">Tenho um negócio</a>
     </div>
-    <p class="aviso-beta">Estamos a testar a app na estrada com motards reais antes de a abrir ao público.</p>
+    <p class="aviso-beta">Estamos a testar a app na estrada com motards reais antes de a abrir ao público. <a href="#avisame">Avisa-me quando sair →</a></p>
   </div>
 </div>
 
@@ -152,6 +152,24 @@
       <div class="tienda"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="tienda-logo"><path d="M16.37 12.78c.02-2.3 1.88-3.4 1.96-3.45-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.54.02-2.96.9-3.75 2.28-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.39 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.68ZM14.1 5.98c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.28Z"/></svg><span class="tienda-txt"><em>Em breve na</em><b>App Store</b></span></div>
       <div class="tienda"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="tienda-logo"><path d="M3.6 2.4c-.25.26-.4.66-.4 1.18v16.84c0 .52.15.92.4 1.18l.09.08 9.43-9.43v-.22L3.69 2.6l-.09-.2Z" fill="#00D4FF"/><path d="m16.25 15.42-3.13-3.13v-.22l3.13-3.13.07.04 3.71 2.11c1.06.6 1.06 1.58 0 2.19l-3.71 2.1-.07.04Z" fill="#FFCE00"/><path d="m16.32 15.38-3.2-3.2-9.52 9.52c.35.37.92.42 1.57.05l11.15-6.37Z" fill="#FF3A44"/><path d="M16.32 8.98 5.17 2.61c-.65-.37-1.22-.32-1.57.05l9.52 9.52 3.2-3.2Z" fill="#00F076"/></svg><span class="tienda-txt"><em>Em breve na</em><b>Google Play</b></span></div>
     </div>
+  
+    <form class="avisame" id="avisame-form" novalidate data-ok="Feito! Enviámos-te um e-mail: carrega no link para confirmar." data-err="Não foi possível enviar. Tenta novamente daqui a pouco." data-err-email="Verifica o e-mail, parece que não está bem escrito." data-err-acepta="Marca a caixa de privacidade para te podermos avisar.">
+      <span id="avisame"></span>
+      <h3>A app está em testes fechados</h3>
+      <p class="avisame-texto">Deixa-nos o teu e-mail e avisamos-te no dia em que sair.</p>
+      <div class="avisame-fila">
+        <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="tu@email.pt" aria-label="O teu e-mail" required>
+        <button type="submit" class="boton boton-principal">Avisa-me</button>
+      </div>
+      <label><input type="checkbox" name="probar"> Quero experimentá-la antes, como tester</label>
+      <div class="avisame-plataformas">
+        <label><input type="radio" name="plat" value="ios" checked> iPhone</label>
+        <label><input type="radio" name="plat" value="android"> Android</label>
+      </div>
+      <label><input type="checkbox" name="acepta"> <span>Li e aceito a <a href="/legal/privacidad/">política de privacidade</a></span></label>
+      <div class="avisame-trampa" aria-hidden="true"><input type="text" name="web" tabindex="-1" autocomplete="off"></div>
+      <p class="avisame-msg" role="status"></p>
+    </form>
   </div>
 </section>
 
@@ -192,5 +210,6 @@ document.querySelectorAll('.menu-panel a').forEach(function(a){
 </script>
 
 <script src="/assets/visita.js" defer></script>
+<script src="/assets/avisame.js" defer></script>
 </body>
 </html>
