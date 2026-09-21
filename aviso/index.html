@@ -17,39 +17,43 @@
 </head>
 <body>
 <!-- WEB-ANALITICA-1 (21-sep-2026): aquí llega el enlace del correo «Confirma tu correo».
-     ?t=TOKEN confirma · ?baja=TOKEN da de baja. Los textos van en 5 idiomas según el navegador. -->
+     ?t=TOKEN confirma · ?baja=TOKEN da de baja. Los textos van en 5 idiomas según el navegador.
+     🔴 ABRIR EL ENLACE NO CONFIRMA NADA: hace falta pulsar el botón (PLAYBOOK §191). Los antivirus de
+     correo abren los enlaces para revisarlos; si confirmar fuera abrir, un correo apuntado por otro
+     quedaría confirmado sin que su dueño hiciera nada. -->
 <div class="envoltura">
   <div class="caja-aviso">
     <img src="/img/helmet-256.png" alt="MOTOCLUBes">
     <h1 id="titulo">…</h1>
     <p id="texto"></p>
-    <a class="boton boton-principal" href="/" id="volver">motoclubes.es</a>
+    <button class="boton boton-principal" id="accion" style="display:none;cursor:pointer;font:inherit;font-weight:700;margin:0 auto 14px"></button>
+    <a class="boton boton-suave" href="/" id="volver">motoclubes.es</a>
   </div>
 </div>
 <script>
 (function () {
   var T = {
-    es: { esp: 'Un momento…', ok: '¡Correo confirmado!', okt: 'Te avisaremos el día que MOTOCLUBes salga en App Store y Google Play.',
+    es: { esp: 'Un momento…', pre: 'Confirma tu correo', pret: 'Pulsa el botón y listo.', btn: 'Confirmar mi correo', pbaja: '¿Darte de baja?', btnbaja: 'Darme de baja', ok: '¡Correo confirmado!', okt: 'Te avisaremos el día que MOTOCLUBes salga en App Store y Google Play.',
           ya: 'Ya estaba confirmado', yat: 'No tienes que hacer nada más: te avisaremos cuando salga.',
           baja: 'Te hemos dado de baja', bajat: 'No te escribiremos más. Si cambias de idea, vuelve a apuntarte en la web.',
           mal: 'Este enlace no vale', malt: 'Puede que haya caducado. Vuelve a apuntarte en la web y te mandamos otro.',
           err: 'Algo ha fallado', errt: 'Inténtalo de nuevo en un momento.' },
-    en: { esp: 'One moment…', ok: 'Email confirmed!', okt: 'We’ll let you know the day MOTOCLUBes is out on the App Store and Google Play.',
+    en: { esp: 'One moment…', pre: 'Confirm your email', pret: 'Tap the button and you’re done.', btn: 'Confirm my email', pbaja: 'Unsubscribe?', btnbaja: 'Unsubscribe me', ok: 'Email confirmed!', okt: 'We’ll let you know the day MOTOCLUBes is out on the App Store and Google Play.',
           ya: 'Already confirmed', yat: 'Nothing else to do: we’ll let you know when it’s out.',
           baja: 'You’ve been unsubscribed', bajat: 'We won’t write to you again. If you change your mind, sign up again on the website.',
           mal: 'This link isn’t valid', malt: 'It may have expired. Sign up again on the website and we’ll send you a new one.',
           err: 'Something went wrong', errt: 'Please try again in a moment.' },
-    ca: { esp: 'Un moment…', ok: 'Correu confirmat!', okt: 'T’avisarem el dia que MOTOCLUBes surti a l’App Store i a Google Play.',
+    ca: { esp: 'Un moment…', pre: 'Confirma el teu correu', pret: 'Prem el botó i ja està.', btn: 'Confirmar el meu correu', pbaja: 'Donar-te de baixa?', btnbaja: 'Donar-me de baixa', ok: 'Correu confirmat!', okt: 'T’avisarem el dia que MOTOCLUBes surti a l’App Store i a Google Play.',
           ya: 'Ja estava confirmat', yat: 'No has de fer res més: t’avisarem quan surti.',
           baja: 'T’hem donat de baixa', bajat: 'No t’escriurem més. Si canvies d’idea, torna-t’hi a apuntar a la web.',
           mal: 'Aquest enllaç no és vàlid', malt: 'Potser ha caducat. Torna-t’hi a apuntar a la web i te n’enviarem un altre.',
           err: 'Alguna cosa ha fallat', errt: 'Torna-ho a provar d’aquí a un moment.' },
-    fr: { esp: 'Un instant…', ok: 'E-mail confirmé !', okt: 'Nous vous préviendrons le jour où MOTOCLUBes sortira sur l’App Store et Google Play.',
+    fr: { esp: 'Un instant…', pre: 'Confirmez votre e-mail', pret: 'Appuyez sur le bouton, c’est tout.', btn: 'Confirmer mon e-mail', pbaja: 'Vous désinscrire ?', btnbaja: 'Me désinscrire', ok: 'E-mail confirmé !', okt: 'Nous vous préviendrons le jour où MOTOCLUBes sortira sur l’App Store et Google Play.',
           ya: 'Déjà confirmé', yat: 'Rien d’autre à faire : nous vous préviendrons à la sortie.',
           baja: 'Vous êtes désinscrit', bajat: 'Nous ne vous écrirons plus. Si vous changez d’avis, réinscrivez-vous sur le site.',
           mal: 'Ce lien n’est pas valide', malt: 'Il a peut-être expiré. Réinscrivez-vous sur le site et nous vous en enverrons un autre.',
           err: 'Une erreur est survenue', errt: 'Réessayez dans un instant.' },
-    pt: { esp: 'Um momento…', ok: 'E-mail confirmado!', okt: 'Avisamos-te no dia em que a MOTOCLUBes sair na App Store e no Google Play.',
+    pt: { esp: 'Um momento…', pre: 'Confirma o teu e-mail', pret: 'Carrega no botão e está feito.', btn: 'Confirmar o meu e-mail', pbaja: 'Cancelar a inscrição?', btnbaja: 'Cancelar a inscrição', ok: 'E-mail confirmado!', okt: 'Avisamos-te no dia em que a MOTOCLUBes sair na App Store e no Google Play.',
           ya: 'Já estava confirmado', yat: 'Não tens de fazer mais nada: avisamos-te quando sair.',
           baja: 'Cancelámos a tua inscrição', bajat: 'Não te voltamos a escrever. Se mudares de ideias, inscreve-te de novo no site.',
           mal: 'Este link não é válido', malt: 'Pode ter expirado. Inscreve-te de novo no site e enviamos-te outro.',
@@ -60,10 +64,16 @@
   document.documentElement.lang = T[l] ? l : 'es';
   if (T[l] && l !== 'es') document.getElementById('volver').href = '/' + l + '/';
   var poner = function (a, b) { document.getElementById('titulo').textContent = t[a]; document.getElementById('texto').textContent = t[b]; };
-  poner('esp', 'esp');
   var q = new URLSearchParams(location.search);
   var baja = q.get('baja'), tk = baja || q.get('t') || '';
   if (!/^[0-9a-f]{64}$/i.test(tk)) return poner('mal', 'malt');
+  var boton = document.getElementById('accion');
+  poner(baja ? 'pbaja' : 'pre', baja ? 'bajat' : 'pret');
+  if (baja) document.getElementById('texto').textContent = '';
+  boton.textContent = t[baja ? 'btnbaja' : 'btn'];
+  boton.style.display = 'inline-flex';
+  boton.addEventListener('click', function () {
+  boton.disabled = true; poner('esp', 'esp');
   fetch('https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-aviso', {
     method: 'POST', headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ t: baja ? 'baja' : 'confirmar', token: tk.toLowerCase() })
@@ -73,7 +83,9 @@
       if (x.s !== 200) return poner('err', 'errt');
       if (baja) return poner('baja', 'bajat');
       poner(x.j.estado === 'ya' ? 'ya' : 'ok', x.j.estado === 'ya' ? 'yat' : 'okt');
-    }).catch(function () { poner('err', 'errt'); });
+    }).catch(function () { poner('err', 'errt'); })
+    .then(function () { boton.style.display = 'none'; });
+  });
 })();
 </script>
 <script src="/assets/visita.js" defer></script>
