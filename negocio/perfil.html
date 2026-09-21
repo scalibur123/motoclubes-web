@@ -191,7 +191,7 @@ async function loadPerfil() {
     </div>
     <div class="section-block">
       <div class="section-label">Para moteros</div>
-      <div class="rf-servicios">${MC_SERVICIOS.map(sv => `<label class="rf-servicio"><input type="checkbox" class="f-serv" value="${sv.v}" ${(biz.servicios_moto||[]).includes(sv.v)?'checked':''}> ${sv.l}</label>`).join('')}</div>
+      <div class="rf-servicios" id="servicios"></div>
       <div class="field" style="margin-top:14px"><label>OTROS SERVICIOS <span>(opcional)</span></label>
         <textarea id="f-otros" rows="2" maxlength="300" placeholder="Ej: cambio de aceite, grúa, secador de cascos…">${esc(biz.servicios_otros||'')}</textarea>
         <div class="field-hint">Los revisamos y, si interesan a más riders, los añadimos como casilla. ¿Dudas? <a href="mailto:soporte@motoclubes.es" style="color:var(--orange)">soporte@motoclubes.es</a></div></div>
@@ -260,6 +260,7 @@ async function loadPerfil() {
 
   mcChipsTipo(document.getElementById('tipos'), selectedType, (v) => selectType(v))
   mcCategorias(document.getElementById('categorias'), selectedType)
+  mcServicios(document.getElementById('servicios'), selectedType, biz.servicios_moto || [])
   document.getElementById('f-cat').addEventListener('input', () => {
     document.getElementById('preview-cat').textContent = etiquetaTipo()
   })
@@ -377,7 +378,10 @@ let uploadSlot = 0
 window.triggerUpload = function(slot) { uploadSlot = slot; document.getElementById('file-input').click() }
 window.removePhoto = function(idx) { photos.splice(idx, 1); renderPhotos() }
 window.selectType = function(type) {
+  // Al cambiar de tipo se conservan marcadas las casillas que también tiene el nuevo tipo.
+  const marcadas = [...document.querySelectorAll('.f-serv:checked')].map(c => c.value)
   selectedType = type
+  mcServicios(document.getElementById('servicios'), type, marcadas)
   mcCategorias(document.getElementById('categorias'), type)
   document.getElementById('preview-cat').textContent = etiquetaTipo()
 }
