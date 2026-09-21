@@ -82,6 +82,7 @@ input[type="file"]{display:none}
 .btn-primary{background:var(--orange);color:#fff;border:none;padding:11px 28px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:6px}
 .btn-primary:hover{background:var(--orange-dark)}
 .btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary.sin-cambios{background:var(--card);color:var(--gray-light);opacity:1}
 .btn-outline{background:transparent;color:var(--brown);border:1.5px solid var(--card);padding:11px 22px;border-radius:50px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
 .btn-outline:hover{border-color:var(--brown);background:var(--card)}
 .alert{padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
@@ -467,6 +468,31 @@ document.getElementById('file-input').addEventListener('change', async e => {
   e.target.value = ''
 })
 
+// MC-PORTAL-SUCIO-21SEP-2026 (Mario: «si no he hecho ningún cambio, no debería quedar naranja»).
+// El botón va gris y sin poder pulsarse mientras la ficha es igual a lo guardado, y naranja en
+// cuanto algo cambia: textos, tipo, casillas, pin del mapa o fotos. Se compara una «foto» del
+// formulario, cada medio segundo: así entra TODO lo que cambie, venga de donde venga.
+let guardado = null
+function fotoFormulario() {
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : '' }
+  return JSON.stringify({
+    n: v('f-name'), t: selectedType, c: v('f-cat'), o: v('f-otros'), d: v('f-desc'), p: v('f-phone'),
+    w: v('f-web'), a: v('f-address'), ab: v('f-open'), ci: v('f-close'),
+    s: [...document.querySelectorAll('.f-serv:checked')].map(c => c.value).sort(),
+    la: Number(currentLat).toFixed(6), ln: Number(currentLng).toFixed(6), f: photos,
+  })
+}
+function refrescarBoton() {
+  const btn = document.getElementById('btn-save')
+  if (!btn || !document.getElementById('f-name') || btn.dataset.guardando) return
+  if (guardado === null) guardado = fotoFormulario()
+  const hay = fotoFormulario() !== guardado
+  btn.disabled = !hay
+  btn.classList.toggle('sin-cambios', !hay)
+  btn.textContent = hay ? 'Guardar cambios' : 'Sin cambios'
+}
+setInterval(refrescarBoton, 500)
+
 async function handleSave() {
   const btn = document.getElementById('btn-save')
   const alertError = document.getElementById('alert-error')
@@ -476,7 +502,8 @@ async function handleSave() {
   const name = document.getElementById('f-name').value.trim()
   if (!name) { alertError.textContent = 'El nombre del negocio es obligatorio.'; alertError.classList.add('show'); window.scrollTo(0,0); return }
 
-  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
+  btn.disabled = true; btn.dataset.guardando = '1'; btn.innerHTML = '<div class="spinner"></div> Guardando...'
+  const loQueSeGuarda = fotoFormulario()
 
   try {
     if (!selectedType) throw new Error('elige qué tipo de negocio es')
@@ -495,11 +522,14 @@ async function handleSave() {
       closing_time: document.getElementById('f-close').value
     })
     alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0)
+    guardado = loQueSeGuarda
   } catch (err) {
     alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
   }
 
+  delete btn.dataset.guardando
   btn.disabled = false; btn.innerHTML = 'Guardar cambios'
+  refrescarBoton()
 }
 
 
