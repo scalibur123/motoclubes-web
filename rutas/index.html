@@ -18,6 +18,18 @@
 <meta name="twitter:card" content="summary_large_image">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/mc.css">
+<!-- 🗺️ WEB-RUTA-MAPA-1 (22-sep): mapa de verdad debajo del trazado. Misma libreria y version que negocio/perfil.html. -->
+<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js"></script>
+<style>
+  .mapa-real{padding:0;overflow:hidden;height:62vh;min-height:320px;max-height:560px}
+  .mapa-real .mapboxgl-canvas{outline:none}
+  .pin-ab{display:flex;align-items:center;gap:6px;pointer-events:none}
+  .pin-ab b{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font:800 13px Manrope,system-ui,sans-serif;color:#fff;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .pin-ab span{background:rgba(255,255,255,.95);color:#111;font:700 13px Manrope,system-ui,sans-serif;
+    padding:3px 8px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.25);white-space:nowrap}
+</style>
 </head>
 <body>
 
@@ -129,6 +141,73 @@ function dibujar(pts) {
     "</svg></div>";
 }
 
+/* 🗺️ WEB-RUTA-MAPA-1 (22-sep). Mario, viendo esta pagina: «es una pantalla negra [...] el mapa tiene que verse [...]
+   si la costa está a la derecha, debería aparecer Valencia; si Teruel está arriba, debería aparecer Teruel, aunque no
+   pase, pero para ubicarme». Hasta hoy era solo el SVG de arriba, a proposito, para no pagar cargas de Mapbox por
+   visita; Mario decide pagarlas (50.000 al mes gratis; ver COSTES). El SVG se queda como PLAN B si el mapa no carga.
+   📌 El trazo va en MORADO, como la ficha de la app: sobre el estilo de calles Mapbox pinta las autovias en naranja
+   y un trazo naranja se pierde (FICHA-NARANJA-1).
+   📌 `cooperativeGestures`: en el movil, un dedo hace scroll de la pagina y dos dedos mueven el mapa. */
+var MAPBOX_TOKEN = "pk.eyJ1IjoibW90b2NsdWJlcyIsImEiOiJjbXA2cmJxaTUwM3djMnJzZXlvMzBycGg0In0.dw_0jtLStDE_MyCAm6zOig";
+var COLOR_RUTA = "#7C3AED";
+
+function pinAB(letra, nombre, color) {
+  var el = document.createElement("div");
+  el.className = "pin-ab";
+  el.innerHTML = '<b style="background:' + color + '">' + letra + "</b>" + (nombre ? "<span>" + esc(nombre) + "</span>" : "");
+  return el;
+}
+
+function mapaReal(r, pts) {
+  var caja = document.getElementById("mapa");
+  if (!caja) return;
+  function planB() { caja.outerHTML = dibujar(pts); }
+  if (typeof mapboxgl === "undefined" || pts.length < 2) { planB(); return; }
+  try {
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    var paso = Math.max(1, Math.floor(pts.length / 2500));
+    var fino = [];
+    for (var i = 0; i < pts.length; i += paso) fino.push([pts[i].lng, pts[i].lat]);
+    var ult = pts[pts.length - 1];
+    fino.push([ult.lng, ult.lat]);
+    var bounds = fino.reduce(function (b, c) { return b.extend(c); }, new mapboxgl.LngLatBounds(fino[0], fino[0]));
+    var map = new mapboxgl.Map({
+      container: caja,
+      style: "mapbox://styles/mapbox/streets-v12",
+      bounds: bounds,
+      fitBoundsOptions: { padding: 50, maxZoom: 13 },
+      cooperativeGestures: true,
+      attributionControl: false
+    });
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }));
+    var cargado = false;
+    map.on("error", function () { if (!cargado) { try { map.remove(); } catch (e) {} planB(); } });
+    map.on("load", function () {
+      cargado = true;
+      map.addSource("ruta", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: fino } } });
+      map.addLayer({ id: "ruta-borde", type: "line", source: "ruta", layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#ffffff", "line-width": 8 } });
+      map.addLayer({ id: "ruta", type: "line", source: "ruta", layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": COLOR_RUTA, "line-width": 4.5 } });
+      var a = pts[0], b = pts[pts.length - 1];
+      var ini = r.municipio_inicio || r.provincia_inicio || "Salida";
+      var fin = r.municipio_fin || r.provincia_fin || "Llegada";
+      var mismoSitio = Math.abs(a.lat - b.lat) < 0.002 && Math.abs(a.lng - b.lng) < 0.002;
+      if (mismoSitio) {
+        new mapboxgl.Marker({ element: pinAB("A·B", ini, "#16A34A"), anchor: "left", offset: [-13, 0] }).setLngLat([a.lng, a.lat]).addTo(map);
+      } else {
+        new mapboxgl.Marker({ element: pinAB("A", ini, "#16A34A"), anchor: "left", offset: [-13, 0] }).setLngLat([a.lng, a.lat]).addTo(map);
+        new mapboxgl.Marker({ element: pinAB("B", fin, "#DC2626"), anchor: "left", offset: [-13, 0] }).setLngLat([b.lng, b.lat]).addTo(map);
+      }
+    });
+    // Si en 12 s no ha llegado el mapa (sin cobertura, bloqueo), plan B: el dibujo de siempre.
+    setTimeout(function () { if (!cargado) { try { map.remove(); } catch (e) {} planB(); } }, 12000);
+  } catch (e) {
+    planB();
+  }
+}
+
 function duracion(min) {
   if (!min && min !== 0) return "—";
   var h = Math.floor(min / 60), m = Math.round(min % 60);
@@ -168,7 +247,7 @@ function pintar(r) {
   lienzo.innerHTML =
     '<div class="ruta-cab"><h1>' + esc(r.title) + "</h1>" +
     '<p class="ruta-meta">' + (tramo ? tramo + " · " : "") + autor + "</p></div>" +
-    dibujar(pts) +
+    (pts.length >= 2 ? '<div class="trazado mapa-real" id="mapa"></div>' : "") + // WEB-RUTA-MAPA-1
     '<div class="datos">' + datos + "</div>" +
     (r.description ? '<p class="entradilla" style="margin-top:24px">' + esc(r.description) + "</p>" : "") +
     '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
@@ -178,6 +257,8 @@ function pintar(r) {
     "</div>" +
     '<p class="aviso-beta" style="margin:18px 0 60px">El GPX se descarga sin cuenta y sin registro. ' +
     'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>';
+
+  mapaReal(r, pts); // WEB-RUTA-MAPA-1
 
   var b = document.getElementById("bajar");
   if (b) b.addEventListener("click", function (e) {
