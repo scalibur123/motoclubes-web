@@ -55,6 +55,12 @@
   .lista a{color:inherit;text-decoration:none;display:flex;align-items:center;gap:12px;width:100%}
   .lista li.actual{background:var(--naranja-suave)}
   .lista li.actual .km{color:var(--naranja)}
+  /* WEB-ABRIR-APP-1 · en el ordenador: QR para abrir la ruta en el teléfono */
+  .al-movil{display:flex;gap:20px;align-items:center;margin-top:18px;padding:18px;border:1px solid var(--borde);
+    border-radius:14px;background:var(--tarjeta)}
+  .al-movil[hidden]{display:none}
+  .al-movil .qr{background:#fff;border-radius:10px;padding:6px;line-height:0;flex-shrink:0}
+  .al-movil p{color:var(--texto-2);font-size:14px;margin:6px 0 12px}
 </style>
 </head>
 <body>
@@ -527,9 +533,10 @@ function pintar(r) {
     (r.description ? '<p class="entradilla" style="margin-top:24px">' + esc(r.description) + "</p>" : "") +
     '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
       (pts.length ? '<a class="boton boton-principal" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
-      (esMovil() ? '<a class="boton boton-suave" id="abrirApp" href="motoclubes://ruta/' + esc(r.id) + '">Abrir en la app</a>' : "") + // WEB-ABRIR-APP-1
+      '<a class="boton boton-suave" id="abrirApp" href="' + (esMovil() ? "motoclubes://ruta/" + esc(r.id) : "#") + '">Abrir en la app</a>' + // WEB-ABRIR-APP-1
       '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
     "</div>" +
+    '<div id="alMovil" class="al-movil" hidden></div>' + // WEB-ABRIR-APP-1: en el ordenador, cómo llevarla al teléfono
     '<p class="aviso-beta" style="margin:18px 0 0">El GPX se descarga sin cuenta y sin registro, con las paradas dentro. ' +
     'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>' +
     htmlEtapas(r) +                                   // WEB-RUTA-DETALLE-1
@@ -550,8 +557,40 @@ function pintar(r) {
   // válida». La app solo existe en el teléfono, así que el botón solo sale en iPhone/Android. Y si en el teléfono la app
   // no está instalada, a los 1,5 s (la página sigue delante) se va a la parte de descargar en vez de quedarse en el aviso.
   var ab = document.getElementById("abrirApp");
-  if (ab) ab.addEventListener("click", function () {
-    setTimeout(function () { if (!document.hidden) location.href = "../#descarga"; }, 1500);
+  if (ab) ab.addEventListener("click", function (e) {
+    if (esMovil()) {
+      setTimeout(function () { if (!document.hidden) location.href = "../#descarga"; }, 1500);
+      return;
+    }
+    // Mario (25-sep): «si tengo la app [...] lo que debe decir es ábrelo o envíate el enlace al teléfono». En el ordenador,
+    // en vez del aviso de Safari, un código QR para abrir esta misma página con la cámara del móvil y copiar el enlace.
+    e.preventDefault();
+    var caja = document.getElementById("alMovil");
+    if (!caja) return;
+    if (!caja.hidden) { caja.hidden = true; return; }
+    var enlace = "https://www.motoclubes.es/rutas/?id=" + encodeURIComponent(r.id);
+    caja.innerHTML = '<div class="qr" id="qrRuta"></div><div><b>La app está en tu teléfono.</b>' +
+      '<p>Apunta la cámara del móvil a este código: se abre esta ruta en el teléfono y desde ahí, «Abrir en la app».</p>' +
+      '<button type="button" class="boton boton-suave" id="copiarEnlace">Copiar el enlace</button></div>';
+    caja.hidden = false;
+    var pintarQr = function () {
+      try { var q = qrcode(0, "M"); q.addData(enlace); q.make(); document.getElementById("qrRuta").innerHTML = q.createSvgTag(4, 8); }
+      catch (err) { document.getElementById("qrRuta").remove(); }
+    };
+    if (typeof qrcode === "function") pintarQr();
+    else {
+      var sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+      sc.onload = pintarQr;
+      sc.onerror = function () { var q = document.getElementById("qrRuta"); if (q) q.remove(); };
+      document.head.appendChild(sc);
+    }
+    document.getElementById("copiarEnlace").addEventListener("click", function () {
+      var btn = this;
+      var ok = function () { btn.textContent = "Enlace copiado ✓"; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(enlace).then(ok, function () { prompt("Copia el enlace:", enlace); });
+      else prompt("Copia el enlace:", enlace);
+    });
   });
 
   var b = document.getElementById("bajar");
