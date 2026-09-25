@@ -590,7 +590,7 @@ function pintar(r) {
       return hacerVideoRuta(r, pts, paradas, ps, {
         progreso: function (f, cv) {
           if (!vista.firstChild) vista.appendChild(cv);
-          estado.textContent = "Grabando… " + Math.round(f * 15) + " s de 15";
+          estado.textContent = "Grabando… " + Math.round(f * VIDEO.DUR) + " s de " + VIDEO.DUR;
         }
       });
     }).then(function (res) {

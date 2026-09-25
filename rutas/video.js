@@ -2,15 +2,18 @@
    Mario: «si podemos construir algo para publicar en Instagram, que lo convierta en reel [...] que te pueda guardar un
    fichero [...] para darle publicidad a MOTOCLUBes y a las rutas que haga». Guion aprobado por él:
      0–2 s   nombre de la ruta y «807 km · 2 días» sobre el mapa, con el casco
-     2–10 s  la línea se dibuja y el casco avanza; contador de km; aparecen puertos (con altura) y paradas
-     10–13 s resumen: km, tiempo, desnivel, puertos, el más alto
-     13–15 s cierre: casco, «MOTOCLUBes · La app que viaja contigo», motoclubes.es
-   Vertical 1080×1920, ~15 s, sin música (se pone en Instagram). Se graba el lienzo con MediaRecorder: MP4 en Safari.
+     2–16 s  la línea se dibuja y el casco avanza; contador de km; aparecen puertos (con altura) y paradas
+     16–19 s resumen: km, tiempo, desnivel, puertos, el más alto
+     19–22 s cierre: casco, «MOTOCLUBes · La app que viaja contigo», motoclubes.es
+   (tiempos en VIDEO; primera versión 15 s, alargada a 22 s a petición de Mario el mismo día)
+   Vertical 1080×1920, sin música (se pone en Instagram, que tiene la música con licencia). Se graba el lienzo con MediaRecorder: MP4 en Safari.
    Fondo: UNA imagen estática de Mapbox (outdoors) por vídeo; el trazado se proyecta encima con la misma Mercator.
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, tipoDe, MAPBOX_TOKEN.
    ⚠️ Mientras Mario lo revisa, el botón solo sale con ?video=1 en la dirección (lo vemos antes, dijo). */
 
-var VIDEO = { W: 1080, H: 1920, FPS: 30, DUR: 15 };
+// 🔄 25-sep, Mario tras verlo («una pasada»): «un poco más lento». El dibujo pasa de 8 a 14 s y el vídeo de 15 a 22 s.
+// Todos los tiempos salen de aquí: si se vuelve a tocar el ritmo, solo se cambia este bloque.
+var VIDEO = { W: 1080, H: 1920, FPS: 30, DUR: 22, T_DIBUJO: [2, 16], T_RESUMEN: [16, 19], T_CIERRE: 19 };
 
 function mercX(lng) { return (lng + 180) / 360; }
 function mercY(lat) {
@@ -106,7 +109,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, alTerminar) {
         ctx.fillStyle = g2; ctx.fillRect(0, H - 560, W, 560);
 
         // trazado: de 2 a 10 s
-        var f = tramo(t, 2, 10);
+        var f = tramo(t, VIDEO.T_DIBUJO[0], VIDEO.T_DIBUJO[1]);
         var kmHasta = f * total, n = 1;
         while (n < acum.length && acum[n] <= kmHasta) n++;
         ctx.lineJoin = "round"; ctx.lineCap = "round";
@@ -155,7 +158,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, alTerminar) {
 
         // casco en la cabeza de la línea (2–10 s) o en la salida antes
         var c = f > 0 ? cuadro.cabeza : P[0];
-        if (c && t < 10.5) ctx.drawImage(casco, c.x - 44, c.y - 44, 88, 88);
+        if (c && t < VIDEO.T_DIBUJO[1] + 0.5) ctx.drawImage(casco, c.x - 44, c.y - 44, 88, 88);
 
         // título arriba
         var ta = tramo(t, 0, 0.8);
@@ -165,13 +168,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, alTerminar) {
         ctx.globalAlpha = 1;
 
         // contador abajo (2–10 s)
-        if (t >= 1.5 && t < 10.5) {
+        if (t >= VIDEO.T_DIBUJO[0] - 0.5 && t < VIDEO.T_DIBUJO[1] + 0.5) {
           textoSombra(ctx, "km " + fmtMiles(kmVisto), W / 2, H - 250, "800 96px Manrope, system-ui, sans-serif", "#fff");
           textoSombra(ctx, (puertos.filter(function (p) { return p.km <= kmVisto; }).length) + " puertos", W / 2, H - 160, "700 44px Manrope, system-ui, sans-serif", "rgba(255,255,255,.85)");
         }
 
         // resumen (10–13 s)
-        var rs = tramo(t, 10, 10.6) * (1 - tramo(t, 12.6, 13.1));
+        var rs = tramo(t, VIDEO.T_RESUMEN[0], VIDEO.T_RESUMEN[0] + 0.6) * (1 - tramo(t, VIDEO.T_RESUMEN[1] - 0.4, VIDEO.T_RESUMEN[1] + 0.1));
         if (rs > 0) {
           ctx.globalAlpha = rs;
           pildora(ctx, 90, 620, W - 180, 760, 40, "rgba(14,14,14,.86)");
@@ -194,7 +197,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, alTerminar) {
         }
 
         // cierre (13–15 s)
-        var ci = tramo(t, 13, 13.6);
+        var ci = tramo(t, VIDEO.T_CIERRE, VIDEO.T_CIERRE + 0.6);
         if (ci > 0) {
           ctx.globalAlpha = ci;
           ctx.fillStyle = "rgba(14,14,14,.92)"; ctx.fillRect(0, 0, W, H);
