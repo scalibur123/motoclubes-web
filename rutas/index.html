@@ -190,6 +190,7 @@ function enMapa(fn) { if (MAPA && MAPA_LISTO) fn(MAPA); else PENDIENTES_MAPA.pus
 function pinesParadas(map, lista) {
   lista.forEach(function (p) {
     if (p.inicio || p.fin) return; // A y B ya tienen su pin
+    if (p.w.waypointType === "puerto") return; // PUERTOS-UNA-CUENTA-1: los pinta pinesPuertos, una vez
     var el = document.createElement("div");
     el.className = "pin-parada";
     el.style.background = p.t.c;
@@ -203,9 +204,9 @@ function pinesPuertos(map, ps) {
   ps.forEach(function (p) {
     var el = document.createElement("div");
     el.className = "pin-puerto";
-    el.innerHTML = "<i>🏔️</i><span>" + esc(p.name) + " · " + fmtMiles(p.ele) + " m</span>";
+    el.innerHTML = "<i>🏔️</i><span>" + esc(p.name) + (p.ele != null ? " · " + fmtMiles(p.ele) + " m" : "") + "</span>";
     var pop = new mapboxgl.Popup({ offset: 16, closeButton: false })
-      .setHTML('<b style="color:#111">' + esc(p.name) + '</b><br><span style="color:#555">' + fmtMiles(p.ele) + " m · km " + fmtMiles(p.km) + "</span>");
+      .setHTML('<b style="color:#111">' + esc(p.name) + '</b><br><span style="color:#555">' + (p.ele != null ? fmtMiles(p.ele) + " m · " : "") + "km " + fmtMiles(p.km) + "</span>");
     new mapboxgl.Marker({ element: el, anchor: "top", offset: [0, -12] }).setLngLat([p.lng, p.lat]).setPopup(pop).addTo(map);
   });
   // Los nombres solo con el mapa acercado (zoom 9 o más): alejado se pisan unos a otros.
@@ -337,24 +338,39 @@ function tramoCerca(t, p) {
    que la ficha de la app (`puertos-ruta.ts`, `PUERTO_MIN_ELE` y `PUERTO_MAX_KM`): tabla `puertos`, de 800 m para
    arriba, a 300 m o menos del trazado, en orden de paso. `anon` lee `puertos` (medido el 25-sep: GRANT + RLS). */
 var PUERTO_MIN_ELE = 800, PUERTO_MAX_KM = 0.3;
-function puertosEnRuta(t) {
+/* 🆕 PUERTOS-UNA-CUENTA-1 (25-sep). Mario, con La ruta del silencio: «pone puertos por los que pasa, cinco [...] y en
+   paradas solo pone un puerto. Eso no tiene mucho sentido». Eran dos cuentas distintas: los puertos que la TABLA ve sobre la
+   carretera (800 m o más) y las paradas que el rider marcó como 🏔️. Ahora hay UNA lista de puertos: los de la tabla MÁS
+   los que marcó el rider (cualquier altura; la altura sale del puerto de la tabla más cercano, a 500 m o menos), sin
+   repetir el mismo sitio. Y el contador de Paradas ya no cuenta puertos: tienen su bloque. */
+function puertosEnRuta(t, paradas) {
   if (t.length < 2) return Promise.resolve([]);
+  var suyos = (paradas || []).filter(function (p) { return p.w && p.w.waypointType === "puerto"; });
   var la1 = 90, la2 = -90, lo1 = 180, lo2 = -180;
   t.forEach(function (p) { la1 = Math.min(la1, p.lat); la2 = Math.max(la2, p.lat); lo1 = Math.min(lo1, p.lng); lo2 = Math.max(lo2, p.lng); });
   var m = 0.012;
-  var q = "select=id,name,lat,lng,ele&ele=gte." + PUERTO_MIN_ELE +
+  var q = "select=id,name,lat,lng,ele&ele=not.is.null" +
           "&lat=gte." + (la1 - m) + "&lat=lte." + (la2 + m) + "&lng=gte." + (lo1 - m) + "&lng=lte." + (lo2 + m) + "&limit=5000";
   return fetch(SB_URL + "/rest/v1/puertos?" + q, { headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY } })
     .then(function (res) { return res.ok ? res.json() : []; })
+    .catch(function () { return []; })
     .then(function (filas) {
+      filas = Array.isArray(filas) ? filas : [];
       var acum = kmAcum(t), out = [];
-      (Array.isArray(filas) ? filas : []).forEach(function (pu) {
+      filas.forEach(function (pu) {
+        if (pu.ele < PUERTO_MIN_ELE) return;
         var c = tramoCerca(t, pu);
         if (c.km <= PUERTO_MAX_KM) out.push({ name: pu.name, ele: pu.ele, lat: pu.lat, lng: pu.lng, km: acum[c.i] || 0 });
       });
+      suyos.forEach(function (p) {
+        var w = p.w;
+        if (out.some(function (o) { return hav(o, w) < 0.5; })) return; // ya está: es el mismo puerto
+        var cerca = null, dmin = 0.5;
+        filas.forEach(function (pu) { var d = hav(pu, w); if (d < dmin) { dmin = d; cerca = pu; } });
+        out.push({ name: p.nombre || (cerca && cerca.name) || "Puerto", ele: cerca ? cerca.ele : null, lat: w.lat, lng: w.lng, km: p.km });
+      });
       return out.sort(function (a, b) { return a.km - b.km; });
-    })
-    .catch(function () { return []; });
+    });
 }
 
 /* Las paradas con su km, en orden de la ruta. */
@@ -371,7 +387,7 @@ function paradasConKm(r, pts) {
 function htmlParadas(lista) {
   if (!lista.length) return "";
   var cuenta = {};
-  lista.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType) cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; });
+  lista.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto") cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; }); // PUERTOS-UNA-CUENTA-1: los puertos, en su bloque
   var chips = ORDEN_TIPOS.filter(function (k) { return cuenta[k]; })
     .map(function (k) { return "<span>" + TIPOS[k].e + " " + cuenta[k] + " · " + esc(TIPOS[k].l) + "</span>"; }).join("");
   var filas = lista.map(function (p) {
@@ -386,13 +402,16 @@ function htmlParadas(lista) {
 
 function htmlPuertos(ps) {
   if (!ps.length) return "";
+  var alt = function (e) { return e != null ? fmtMiles(e) + " m" : ""; };
   var filas = ps.map(function (p) {
     return '<li><span class="km">km ' + fmtMiles(p.km) + '</span><span class="ico">🏔️</span><span class="nom">' +
-      esc(p.name) + '</span><span class="alt">' + fmtMiles(p.ele) + " m</span></li>";
+      esc(p.name) + '</span><span class="alt">' + alt(p.ele) + "</span></li>";
   }).join("");
-  var alto = ps.reduce(function (a, b) { return b.ele > a.ele ? b : a; }, ps[0]);
+  var conAlt = ps.filter(function (p) { return p.ele != null; });
+  var alto = conAlt.reduce(function (a, b) { return !a || b.ele > a.ele ? b : a; }, null);
+  // PUERTOS-UNA-CUENTA-1: la lista junta los de la tabla (800 m o más sobre la carretera) y los que marcó el rider.
   return '<h2>Puertos por los que pasa</h2><p class="sub">' + ps.length + (ps.length === 1 ? " puerto" : " puertos") +
-    " de 800 m o más sobre la carretera. El más alto: " + esc(alto.name) + " (" + fmtMiles(alto.ele) + " m).</p>" +
+    (alto ? ". El más alto: " + esc(alto.name) + " (" + alt(alto.ele) + ")." : ".") + "</p>" +
     '<ul class="lista">' + filas + "</ul>";
 }
 
@@ -515,7 +534,7 @@ function pintar(r) {
 
   mapaReal(r, pts); // WEB-RUTA-MAPA-1
   enMapa(function (map) { pinesParadas(map, paradas); });
-  puertosEnRuta(pts).then(function (ps) {
+  puertosEnRuta(pts, paradas).then(function (ps) { // PUERTOS-UNA-CUENTA-1: con los que marcó el rider
     var caja = document.getElementById("puertos");
     if (caja) { if (ps.length) caja.innerHTML = htmlPuertos(ps); else caja.remove(); }
     if (ps.length) enMapa(function (map) { pinesPuertos(map, ps); });
