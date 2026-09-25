@@ -420,9 +420,11 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       cuadro(0);
       if (avisar.lienzo) avisar.lienzo(cv);
       rec.start(250);
-      return new Promise(function (ok) {
+      return new Promise(function (ok, no) {
         var i = 0, total = Math.ceil(G.DUR * VIDEO.FPS), dt = 1000 / VIDEO.FPS;
         function paso() {
+          // VIDEO-CERRAR-1: si la persona cierra la capa a media grabación, se para aquí y no sigue gastando batería
+          if (avisar.cancelado && avisar.cancelado()) { try { rec.stop(); } catch (e) {} no(new Error("cancelado")); return; }
           if (t0 === null) t0 = performance.now();
           var t = i / VIDEO.FPS;
           cuadro(Math.min(t, G.DUR));
