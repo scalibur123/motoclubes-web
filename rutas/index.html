@@ -61,6 +61,11 @@
   .al-movil[hidden]{display:none}
   .al-movil .qr{background:#fff;border-radius:10px;padding:6px;line-height:0;flex-shrink:0}
   .al-movil p{color:var(--texto-2);font-size:14px;margin:6px 0 12px}
+  /* VIDEO-RUTA-1 · la capa del vídeo */
+  .capa-video{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+  .caja-video{background:var(--tarjeta);border:1px solid var(--borde);border-radius:18px;padding:18px;max-width:420px;width:100%;text-align:center}
+  .caja-video .vista canvas,.caja-video .vista video{width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#000}
+  .caja-video p{color:var(--texto-2);font-size:14px;margin:12px 0}
 </style>
 </head>
 <body>
@@ -535,6 +540,7 @@ function pintar(r) {
       (pts.length ? '<a class="boton boton-suave" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
       '<a class="boton boton-suave" id="abrirApp" href="' + (esMovil() ? "motoclubes://ruta/" + esc(r.id) : "#") + '">Abrir en la app</a>' + // WEB-ABRIR-APP-1
       '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
+      (new URLSearchParams(location.search).get("video") === "1" ? '<a class="boton boton-suave" id="hacerVideo" href="#">🎬 Vídeo para Instagram</a>' : "") + // VIDEO-RUTA-1 (en revisión)
     "</div>" +
     '<div id="alMovil" class="al-movil" hidden></div>' + // WEB-ABRIR-APP-1: en el ordenador, cómo llevarla al teléfono
     '<p class="aviso-beta" style="margin:18px 0 0">El GPX se descarga sin cuenta y sin registro, con las paradas dentro. ' +
@@ -547,7 +553,8 @@ function pintar(r) {
 
   mapaReal(r, pts); // WEB-RUTA-MAPA-1
   enMapa(function (map) { pinesParadas(map, paradas); });
-  puertosEnRuta(pts, paradas).then(function (ps) { // PUERTOS-UNA-CUENTA-1: con los que marcó el rider
+  var puertosListos = puertosEnRuta(pts, paradas); // VIDEO-RUTA-1: el vídeo usa la misma lista
+  puertosListos.then(function (ps) { // PUERTOS-UNA-CUENTA-1: con los que marcó el rider
     var caja = document.getElementById("puertos");
     if (caja) { if (ps.length) caja.innerHTML = htmlPuertos(ps); else caja.remove(); }
     if (ps.length) enMapa(function (map) { pinesPuertos(map, ps); });
@@ -563,6 +570,48 @@ function pintar(r) {
     bt.addEventListener("click", function () {
       Array.prototype.forEach.call(acciones, function (o) { o.classList.remove("boton-principal"); o.classList.add("boton-suave"); });
       bt.classList.remove("boton-suave"); bt.classList.add("boton-principal");
+    });
+  });
+
+  // 🆕 VIDEO-RUTA-1: el vídeo vertical para Instagram (video.js). Se ve el lienzo mientras se graba y al acabar se descarga
+  // o, en el iPhone, se comparte directamente (menú del sistema → Instagram).
+  var hv = document.getElementById("hacerVideo");
+  if (hv) hv.addEventListener("click", function (e) {
+    e.preventDefault();
+    if (typeof hacerVideoRuta !== "function") return;
+    var capa = document.createElement("div");
+    capa.className = "capa-video";
+    capa.innerHTML = '<div class="caja-video"><div class="vista" id="vistaVideo"></div><p id="estadoVideo">Preparando el mapa…</p>' +
+      '<div class="acciones" id="accVideo" style="justify-content:center"></div></div>';
+    document.body.appendChild(capa);
+    var estado = document.getElementById("estadoVideo"), vista = document.getElementById("vistaVideo"), acc = document.getElementById("accVideo");
+    var cerrar = function () { capa.remove(); };
+    puertosListos.then(function (ps) {
+      return hacerVideoRuta(r, pts, paradas, ps, {
+        progreso: function (f, cv) {
+          if (!vista.firstChild) vista.appendChild(cv);
+          estado.textContent = "Grabando… " + Math.round(f * 15) + " s de 15";
+        }
+      });
+    }).then(function (res) {
+      var urlV = URL.createObjectURL(res.blob);
+      var nombre = (r.title || "ruta").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "." + res.ext;
+      vista.innerHTML = '<video src="' + urlV + '" controls playsinline autoplay muted loop></video>';
+      estado.textContent = res.ext === "mp4" ? "Listo. Súbelo a Instagram como reel y ponle música allí." :
+        "Listo, pero este navegador lo guarda en WebM y Instagram lo quiere en MP4: hazlo desde Safari.";
+      acc.innerHTML = '<a class="boton boton-principal" href="' + urlV + '" download="' + nombre + '">⬇ Descargar vídeo</a>' +
+        '<a class="boton boton-suave" href="#" id="compVideo" hidden>Compartir</a><a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
+      var fich = new File([res.blob], nombre, { type: res.blob.type });
+      var comp = document.getElementById("compVideo");
+      if (navigator.canShare && navigator.canShare({ files: [fich] })) {
+        comp.hidden = false;
+        comp.addEventListener("click", function (ev) { ev.preventDefault(); navigator.share({ files: [fich], title: r.title }).catch(function () {}); });
+      }
+      document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
+    }).catch(function (err) {
+      estado.textContent = "No se ha podido hacer el vídeo: " + String((err && err.message) || err);
+      acc.innerHTML = '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
+      document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     });
   });
 
@@ -648,6 +697,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
+<script src="video.js" defer></script><!-- VIDEO-RUTA-1 -->
 <script src="/assets/visita.js" defer></script>
 </body>
 </html>
