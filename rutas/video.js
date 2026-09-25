@@ -16,7 +16,7 @@
    v5: zoom fundiendo niveles, fotogramas a paso fijo, más lento (km/15 s), abajo solo paradas de verdad y puertos.
    v4 (FOTOS-SALIDA-1): tras alejarse, las fotos de la salida (r.fotos de mc_ruta_publica), 2,6 s cada una.
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, MAPBOX_TOKEN.
-   ⚠️ Mientras Mario lo revisa, el botón solo sale con ?video=1 en la dirección. */
+   🟢 25-sep: revisado por Mario en v5 y puesto a la vista de todos en la página de cada ruta pública. */
 
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
