@@ -532,7 +532,7 @@ function pintar(r) {
     '<div class="datos">' + datos + "</div>" +
     (r.description ? '<p class="entradilla" style="margin-top:24px">' + esc(r.description) + "</p>" : "") +
     '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
-      (pts.length ? '<a class="boton boton-principal" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
+      (pts.length ? '<a class="boton boton-suave" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
       '<a class="boton boton-suave" id="abrirApp" href="' + (esMovil() ? "motoclubes://ruta/" + esc(r.id) : "#") + '">Abrir en la app</a>' + // WEB-ABRIR-APP-1
       '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
     "</div>" +
@@ -556,6 +556,16 @@ function pintar(r) {
   // 🆕 WEB-ABRIR-APP-1 (25-sep). Probado por Mario en el Mac: «Safari no puede abrir la página porque la dirección no es
   // válida». La app solo existe en el teléfono, así que el botón solo sale en iPhone/Android. Y si en el teléfono la app
   // no está instalada, a los 1,5 s (la página sigue delante) se va a la parte de descargar en vez de quedarse en el aviso.
+  // 🆕 WEB-BOTONES-1 (25-sep). Mario: «lo de naranja y los dos botones en blanco no tiene mucho sentido: el naranja debería
+  // ser donde estuvieras». Los tres botones salen iguales y se pone naranja el que se acaba de pulsar.
+  var acciones = lienzo.querySelectorAll(".acciones .boton");
+  Array.prototype.forEach.call(acciones, function (bt) {
+    bt.addEventListener("click", function () {
+      Array.prototype.forEach.call(acciones, function (o) { o.classList.remove("boton-principal"); o.classList.add("boton-suave"); });
+      bt.classList.remove("boton-suave"); bt.classList.add("boton-principal");
+    });
+  });
+
   var ab = document.getElementById("abrirApp");
   if (ab) ab.addEventListener("click", function (e) {
     if (esMovil()) {
