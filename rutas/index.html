@@ -29,6 +29,31 @@
     font:800 13px Manrope,system-ui,sans-serif;color:#fff;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
   .pin-ab span{background:rgba(255,255,255,.95);color:#111;font:700 13px Manrope,system-ui,sans-serif;
     padding:3px 8px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.25);white-space:nowrap}
+  /* 🆕 WEB-RUTA-DETALLE-1 (25-sep) · paradas, puertos y etapas */
+  .pin-parada{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:13px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer}
+  .pin-puerto{display:flex;flex-direction:column;align-items:center;pointer-events:none}
+  .pin-puerto i{width:24px;height:24px;border-radius:50%;background:#7C3AED;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-style:normal;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .pin-puerto span{margin-top:2px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.92);color:#111;
+    font:700 11px/1.3 Manrope,system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .bloque{margin-top:34px}
+  .bloque h2{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
+  .bloque .sub{font-size:13px;color:var(--texto-2);margin-bottom:12px}
+  .contadores{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .contadores span{background:var(--tarjeta);border:1px solid var(--borde);border-radius:999px;padding:6px 12px;
+    font-size:14px;font-weight:700}
+  .lista{list-style:none;padding:0;margin:0;border:1px solid var(--borde);border-radius:14px;overflow:hidden}
+  .lista li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--borde);
+    background:var(--tarjeta);font-size:15px}
+  .lista li:first-child{border-top:none}
+  .lista .km{min-width:62px;color:var(--texto-2);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .lista .ico{width:28px;text-align:center;font-size:17px}
+  .lista .nom{flex:1;min-width:0}
+  .lista .alt{color:var(--texto-2);font-weight:700;font-size:14px;white-space:nowrap}
+  .lista a{color:inherit;text-decoration:none;display:flex;align-items:center;gap:12px;width:100%}
+  .lista li.actual{background:var(--naranja-suave)}
+  .lista li.actual .km{color:var(--naranja)}
 </style>
 </head>
 <body>
@@ -158,6 +183,30 @@ function pinAB(letra, nombre, color) {
   return el;
 }
 
+/* 🆕 WEB-RUTA-DETALLE-1: el mapa queda a mano para ponerle las paradas y, cuando lleguen, los puertos. */
+var MAPA = null, MAPA_LISTO = false, PENDIENTES_MAPA = [];
+function enMapa(fn) { if (MAPA && MAPA_LISTO) fn(MAPA); else PENDIENTES_MAPA.push(fn); }
+function pinesParadas(map, lista) {
+  lista.forEach(function (p) {
+    if (p.inicio || p.fin) return; // A y B ya tienen su pin
+    var el = document.createElement("div");
+    el.className = "pin-parada";
+    el.style.background = p.t.c;
+    el.textContent = p.t.e;
+    var pop = new mapboxgl.Popup({ offset: 16, closeButton: false })
+      .setHTML('<b style="color:#111">' + esc(p.nombre) + '</b><br><span style="color:#555">km ' + fmtMiles(p.km) + "</span>");
+    new mapboxgl.Marker({ element: el }).setLngLat([p.w.lng, p.w.lat]).setPopup(pop).addTo(map);
+  });
+}
+function pinesPuertos(map, ps) {
+  ps.forEach(function (p) {
+    var el = document.createElement("div");
+    el.className = "pin-puerto";
+    el.innerHTML = "<i>🏔️</i><span>" + esc(p.name) + " · " + fmtMiles(p.ele) + " m</span>";
+    new mapboxgl.Marker({ element: el, anchor: "top", offset: [0, -12] }).setLngLat([p.lng, p.lat]).addTo(map);
+  });
+}
+
 function mapaReal(r, pts) {
   var caja = document.getElementById("mapa");
   if (!caja) return;
@@ -183,8 +232,11 @@ function mapaReal(r, pts) {
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
     var cargado = false;
     map.on("error", function () { if (!cargado) { try { map.remove(); } catch (e) {} planB(); } });
+    MAPA = map;
     map.on("load", function () {
       cargado = true;
+      MAPA_LISTO = true;
+      setTimeout(function () { PENDIENTES_MAPA.splice(0).forEach(function (fn) { try { fn(map); } catch (e) {} }); }, 0);
       map.addSource("ruta", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: fino } } });
       map.addLayer({ id: "ruta-borde", type: "line", source: "ruta", layout: { "line-join": "round", "line-cap": "round" },
         paint: { "line-color": "#ffffff", "line-width": 8 } });
@@ -208,18 +260,167 @@ function mapaReal(r, pts) {
   }
 }
 
+/* 🆕 WEB-RUTA-DETALLE-1 (25-sep, 74.ª). Mario: «que puedan ver [...] la ruta editada con el detalle de todas las
+   gasolineras, restaurantes, puertos». Decidido con él: se ENSEÑA TODO (pines, contadores y lista con nombres):
+   en el foro BMWMOTOS le tienen que poder decir qué puerto falta y cuál sobra.
+   ⚠️ COPIA DELIBERADA de `WAYPOINT_TYPES` (motoclubes-v2 `src/lib/waypoint-types.ts`), como la del correo
+   (`notify-salida`): esta web no puede importar `src/`. Si se toca allí, se toca aquí.
+   Las paradas llegan YA FILTRADAS de `mc_ruta_publica` (regla `paradasUtiles`, en la base). */
+var TIPOS = {
+  gasolinera:    { e: "⛽",  c: "#FF7A1A", l: "Gasolinera" },
+  restaurante:   { e: "🍽️", c: "#FF7A1A", l: "Restaurante" },
+  hotel:         { e: "🏨",  c: "#FF7A1A", l: "Hotel" },
+  camping:       { e: "⛺",  c: "#FF7A1A", l: "Camping" },
+  mirador:       { e: "👁️", c: "#F59E0B", l: "Mirador" },
+  taller:        { e: "🔧",  c: "#FF7A1A", l: "Taller" },
+  hospital:      { e: "➕",  c: "#E5354A", l: "Hospital" },
+  lugar_interes: { e: "📷",  c: "#F59E0B", l: "Lugar de interés" },
+  puerto:        { e: "🏔️", c: "#7C3AED", l: "Puerto" }
+};
+var ORDEN_TIPOS = ["gasolinera", "restaurante", "hotel", "camping", "puerto", "mirador", "lugar_interes", "taller", "hospital"];
+var PASADA = { e: "📍", c: "#FF7A1A", l: "Punto de pasada" };
+function tipoDe(w) { return TIPOS[w && w.waypointType] || PASADA; }
+function nombreParada(w, i, n) {
+  var t = String((w && w.name) || "").trim();
+  if (/^Punto\s+\d+$/i.test(t)) t = "";
+  return t || (i === 0 ? "Salida" : i === n - 1 ? "Llegada" : tipoDe(w).l);
+}
+function fmtMiles(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+
+/* Km en los que cae cada punto: mismo cálculo que la app (`puertos-ruta.ts`: contra SEGMENTOS, pasada gruesa y
+   fina). Gratis: sale del trazado ya descargado. */
+function hav(a, b) {
+  var R = 6371, r = Math.PI / 180;
+  var x = Math.pow(Math.sin((b.lat - a.lat) * r / 2), 2) +
+          Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.pow(Math.sin((b.lng - a.lng) * r / 2), 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+function kmAcum(t) {
+  var out = [0];
+  for (var i = 1; i < t.length; i++) out.push(out[i - 1] + hav(t[i - 1], t[i]));
+  return out;
+}
+function kmSeg(p, a, b) {
+  var k = 111.32, c = Math.cos(p.lat * Math.PI / 180);
+  var ax = (a.lng - p.lng) * c * k, ay = (a.lat - p.lat) * k, bx = (b.lng - p.lng) * c * k, by = (b.lat - p.lat) * k;
+  var dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  var t = l2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+  return Math.hypot(ax + t * dx, ay + t * dy);
+}
+function tramoCerca(t, p) {
+  if (t.length < 2) return { i: 0, km: Infinity };
+  var paso = Math.max(1, Math.floor(t.length / 2000)), mi = 0, md = Infinity, i, d;
+  for (i = 0; i < t.length - 1; i += paso) {
+    d = kmSeg(p, t[i], t[Math.min(i + paso, t.length - 1)]);
+    if (d < md) { md = d; mi = i; }
+  }
+  if (paso > 1) {
+    var desde = Math.max(0, mi - 2 * paso), hasta = Math.min(t.length - 1, mi + 3 * paso);
+    for (i = desde; i < hasta; i++) { d = kmSeg(p, t[i], t[i + 1]); if (d < md) { md = d; mi = i; } }
+  }
+  return { i: mi, km: md };
+}
+
+/* 🆕 RUTA-PUERTOS-LEYENDA-1 (25-sep, 74.ª). Los puertos por los que pasa la carretera, con su altura. Misma regla
+   que la ficha de la app (`puertos-ruta.ts`, `PUERTO_MIN_ELE` y `PUERTO_MAX_KM`): tabla `puertos`, de 800 m para
+   arriba, a 300 m o menos del trazado, en orden de paso. `anon` lee `puertos` (medido el 25-sep: GRANT + RLS). */
+var PUERTO_MIN_ELE = 800, PUERTO_MAX_KM = 0.3;
+function puertosEnRuta(t) {
+  if (t.length < 2) return Promise.resolve([]);
+  var la1 = 90, la2 = -90, lo1 = 180, lo2 = -180;
+  t.forEach(function (p) { la1 = Math.min(la1, p.lat); la2 = Math.max(la2, p.lat); lo1 = Math.min(lo1, p.lng); lo2 = Math.max(lo2, p.lng); });
+  var m = 0.012;
+  var q = "select=id,name,lat,lng,ele&ele=gte." + PUERTO_MIN_ELE +
+          "&lat=gte." + (la1 - m) + "&lat=lte." + (la2 + m) + "&lng=gte." + (lo1 - m) + "&lng=lte." + (lo2 + m) + "&limit=5000";
+  return fetch(SB_URL + "/rest/v1/puertos?" + q, { headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY } })
+    .then(function (res) { return res.ok ? res.json() : []; })
+    .then(function (filas) {
+      var acum = kmAcum(t), out = [];
+      (Array.isArray(filas) ? filas : []).forEach(function (pu) {
+        var c = tramoCerca(t, pu);
+        if (c.km <= PUERTO_MAX_KM) out.push({ name: pu.name, ele: pu.ele, lat: pu.lat, lng: pu.lng, km: acum[c.i] || 0 });
+      });
+      return out.sort(function (a, b) { return a.km - b.km; });
+    })
+    .catch(function () { return []; });
+}
+
+/* Las paradas con su km, en orden de la ruta. */
+function paradasConKm(r, pts) {
+  var ps = Array.isArray(r.paradas) ? r.paradas : [];
+  if (!ps.length || pts.length < 2) return [];
+  var acum = kmAcum(pts), n = ps.length;
+  return ps.map(function (w, i) {
+    var km = i === 0 ? 0 : (acum[tramoCerca(pts, w).i] || 0);
+    return { w: w, i: i, km: km, t: tipoDe(w), nombre: nombreParada(w, i, n), inicio: i === 0, fin: i === n - 1 && n > 1 };
+  });
+}
+
+function htmlParadas(lista) {
+  if (!lista.length) return "";
+  var cuenta = {};
+  lista.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType) cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; });
+  var chips = ORDEN_TIPOS.filter(function (k) { return cuenta[k]; })
+    .map(function (k) { return "<span>" + TIPOS[k].e + " " + cuenta[k] + " · " + esc(TIPOS[k].l) + "</span>"; }).join("");
+  var filas = lista.map(function (p) {
+    var ico = p.inicio ? (p.w.waypointType ? p.t.e : "") + "🏁" : p.fin ? (p.w.waypointType ? p.t.e : "") + "🚩" : p.t.e;
+    return '<li><span class="km">' + (p.inicio ? "km 0" : "km " + fmtMiles(p.km)) + '</span><span class="ico">' + ico +
+      '</span><span class="nom">' + esc(p.nombre) + "</span></li>";
+  }).join("");
+  return '<section class="bloque"><h2>Paradas</h2>' +
+    (chips ? '<div class="contadores" style="margin:0 0 14px">' + chips + "</div>" : "") +
+    '<ul class="lista">' + filas + "</ul></section>";
+}
+
+function htmlPuertos(ps) {
+  if (!ps.length) return "";
+  var filas = ps.map(function (p) {
+    return '<li><span class="km">km ' + fmtMiles(p.km) + '</span><span class="ico">🏔️</span><span class="nom">' +
+      esc(p.name) + '</span><span class="alt">' + fmtMiles(p.ele) + " m</span></li>";
+  }).join("");
+  var alto = ps.reduce(function (a, b) { return b.ele > a.ele ? b : a; }, ps[0]);
+  return '<h2>Puertos por los que pasa</h2><p class="sub">' + ps.length + (ps.length === 1 ? " puerto" : " puertos") +
+    " de 800 m o más sobre la carretera. El más alto: " + esc(alto.name) + " (" + fmtMiles(alto.ele) + " m).</p>" +
+    '<ul class="lista">' + filas + "</ul>";
+}
+
+/* Las otras etapas: las de la salida de grupo o las de la multietapa. Solo llegan las PÚBLICAS. */
+function htmlEtapas(r) {
+  var s = r.salida && Array.isArray(r.salida.etapas) && r.salida.etapas.length > 1 ? r.salida : null;
+  var me = !s && Array.isArray(r.multietapa) && r.multietapa.length > 1 ? r.multietapa : null;
+  if (!s && !me) return "";
+  var items = s ? s.etapas.map(function (e) { return { id: e.id, rot: "Día " + e.dia, title: e.title, km: e.km }; })
+                : me.map(function (e) { return { id: e.id, rot: e.etapa ? "Etapa " + e.etapa : "Completa", title: e.title, km: e.km }; });
+  var filas = items.map(function (e) {
+    var yo = e.id === r.id;
+    return '<li class="' + (yo ? "actual" : "") + '"><a href="?id=' + esc(e.id) + '"><span class="km">' + esc(e.rot) +
+      '</span><span class="nom">' + esc(e.title) + '</span><span class="alt">' + (e.km != null ? fmtMiles(e.km) + " km" : "") +
+      "</span></a></li>";
+  }).join("");
+  return '<section class="bloque"><h2>' + (s ? "Etapas de «" + esc(s.nombre) + "»" : "Etapas") + "</h2>" +
+    '<ul class="lista">' + filas + "</ul></section>";
+}
+
 function duracion(min) {
   if (!min && min !== 0) return "—";
   var h = Math.floor(min / 60), m = Math.round(min % 60);
   return h ? h + " h " + (m ? m + " min" : "") : m + " min";
 }
 
+/* 🆕 WEB-RUTA-DETALLE-1: el GPX lleva las paradas como <wpt>, como el de la app (`ruta-gpx.ts`). Antes devolvía
+   `routes.gpx` si existía (solo lo rellena una GRABACIÓN) y si no, la línea pelada: el forero de TomTom o de Garmin
+   se bajaba la ruta sin una gasolinera ni un puerto (FORO-BMWMOTOS-1). */
 function construirGpx(r, pts) {
-  if (r.gpx) return r.gpx;
+  var paradas = Array.isArray(r.paradas) ? r.paradas : [];
+  var wpts = paradas.map(function (w, i) {
+    return '  <wpt lat="' + w.lat + '" lon="' + w.lng + '"><name>' + esc(nombreParada(w, i, paradas.length)) +
+      '</name><type>' + esc(tipoDe(w).l) + '</type></wpt>';
+  }).join("\n");
   var cab = '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<gpx version="1.1" creator="MOTOCLUBes" xmlns="http://www.topografix.com/GPX/1/1">\n' +
     "  <metadata><name>" + esc(r.title) + "</name>" +
     '<link href="https://www.motoclubes.es"><text>MOTOCLUBes</text></link></metadata>\n' +
+    (wpts ? wpts + "\n" : "") +
     "  <trk><name>" + esc(r.title) + "</name><trkseg>\n";
   var cuerpo = pts.map(function (p) {
     return '    <trkpt lat="' + p.lat + '" lon="' + p.lng + '"></trkpt>';
@@ -229,6 +430,7 @@ function construirGpx(r, pts) {
 
 function pintar(r) {
   var pts = puntosDe(r);
+  var paradas = paradasConKm(r, pts); // WEB-RUTA-DETALLE-1
   var origen = r.municipio_inicio || r.provincia_inicio || "";
   var destino = r.municipio_fin || r.provincia_fin || "";
   var tramo = origen && destino ? esc(origen) + " → " + esc(destino) : esc(origen || destino);
@@ -255,10 +457,20 @@ function pintar(r) {
       '<a class="boton boton-suave" href="motoclubes://ruta/' + esc(r.id) + '">Abrir en la app</a>' +
       '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
     "</div>" +
-    '<p class="aviso-beta" style="margin:18px 0 60px">El GPX se descarga sin cuenta y sin registro. ' +
-    'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>';
+    '<p class="aviso-beta" style="margin:18px 0 0">El GPX se descarga sin cuenta y sin registro, con las paradas dentro. ' +
+    'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>' +
+    htmlEtapas(r) +                                   // WEB-RUTA-DETALLE-1
+    '<section class="bloque" id="puertos"></section>' + // RUTA-PUERTOS-LEYENDA-1 (se rellena al llegar)
+    htmlParadas(paradas) +                            // WEB-RUTA-DETALLE-1
+    '<div style="height:60px"></div>';
 
   mapaReal(r, pts); // WEB-RUTA-MAPA-1
+  enMapa(function (map) { pinesParadas(map, paradas); });
+  puertosEnRuta(pts).then(function (ps) {
+    var caja = document.getElementById("puertos");
+    if (caja) { if (ps.length) caja.innerHTML = htmlPuertos(ps); else caja.remove(); }
+    if (ps.length) enMapa(function (map) { pinesPuertos(map, ps); });
+  });
 
   var b = document.getElementById("bajar");
   if (b) b.addEventListener("click", function (e) {
