@@ -419,6 +419,42 @@ function duracion(min) {
   return h ? h + " h " + (m ? m + " min" : "") : m + " min";
 }
 
+/* 🆕 GPX-ALIGERAR-1 (25-sep). El GPX de La ruta del silencio salía con 29.032 puntos (1,5 MB) y hay navegadores que
+   recortan los tracks muy largos (por lo que sabemos, varios Garmin se quedan en unos 10.000). Mario: «no lo dejes y
+   hagámoslo ahora». Se quitan los puntos que no cambian la forma: ninguno se aparta más de 5 m de la carretera.
+   Medido con ese mismo fichero: 29.032 → 6.365 puntos, 806,5 → 804,4 km. Si aun así pasa de 9.000, se afloja la
+   tolerancia (hasta 20 m). La MISMA regla está en la app (`src/lib/ruta-gpx.ts`): si se toca aquí, se toca allí. */
+/* Ramer–Douglas–Peucker iterativo, distancias en metros sobre un plano local (vale para tramos de carretera). */
+function aligerarTraza(pts, tolM) {
+  var n = pts.length;
+  if (n < 3) return pts.slice();
+  var lat0 = pts[0].lat * Math.PI / 180, kx = 111320 * Math.cos(lat0), ky = 110540;
+  var x = new Float64Array(n), y = new Float64Array(n);
+  for (var i = 0; i < n; i++) { x[i] = pts[i].lng * kx; y[i] = pts[i].lat * ky; }
+  var keep = new Uint8Array(n); keep[0] = 1; keep[n - 1] = 1;
+  var pila = [[0, n - 1]];
+  while (pila.length) {
+    var t = pila.pop(), a = t[0], b = t[1];
+    if (b - a < 2) continue;
+    var dx = x[b] - x[a], dy = y[b] - y[a], l2 = dx * dx + dy * dy, dmax = -1, imax = -1;
+    for (var j = a + 1; j < b; j++) {
+      var px = x[j] - x[a], py = y[j] - y[a], d;
+      if (l2 === 0) d = px * px + py * py;
+      else { var u = Math.max(0, Math.min(1, (px * dx + py * dy) / l2)); var ex = px - u * dx, ey = py - u * dy; d = ex * ex + ey * ey; }
+      if (d > dmax) { dmax = d; imax = j; }
+    }
+    if (dmax > tolM * tolM) { keep[imax] = 1; pila.push([a, imax], [imax, b]); }
+  }
+  var out = [];
+  for (var k = 0; k < n; k++) if (keep[k]) out.push(pts[k]);
+  return out;
+}
+function trazaParaGpx(pts) {
+  var tol = 5, o = aligerarTraza(pts, tol);
+  while (o.length > 9000 && tol < 20) { tol = tol * 1.5; o = aligerarTraza(pts, tol); }
+  return o;
+}
+
 /* 🆕 WEB-RUTA-DETALLE-1: el GPX lleva las paradas como <wpt>, como el de la app (`ruta-gpx.ts`). Antes devolvía
    `routes.gpx` si existía (solo lo rellena una GRABACIÓN) y si no, la línea pelada: el forero de TomTom o de Garmin
    se bajaba la ruta sin una gasolinera ni un puerto (FORO-BMWMOTOS-1). */
@@ -434,7 +470,7 @@ function construirGpx(r, pts) {
     '<link href="https://www.motoclubes.es"><text>MOTOCLUBes</text></link></metadata>\n' +
     (wpts ? wpts + "\n" : "") +
     "  <trk><name>" + esc(r.title) + "</name><trkseg>\n";
-  var cuerpo = pts.map(function (p) {
+  var cuerpo = trazaParaGpx(pts).map(function (p) { // GPX-ALIGERAR-1
     return '    <trkpt lat="' + p.lat + '" lon="' + p.lng + '"></trkpt>';
   }).join("\n");
   return cab + cuerpo + "\n  </trkseg></trk>\n</gpx>\n";
