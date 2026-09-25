@@ -588,10 +588,9 @@ function pintar(r) {
     var cerrar = function () { capa.remove(); };
     puertosListos.then(function (ps) {
       return hacerVideoRuta(r, pts, paradas, ps, {
-        progreso: function (f, cv) {
-          if (!vista.firstChild) vista.appendChild(cv);
-          estado.textContent = "Grabando… " + Math.round(f * VIDEO.DUR) + " s de " + VIDEO.DUR;
-        }
+        cargando: function (n, de) { estado.textContent = "Preparando el mapa… " + n + " de " + de; },
+        lienzo: function (cv) { vista.appendChild(cv); },
+        progreso: function (t, dur) { estado.textContent = "Grabando… " + Math.min(Math.round(t), Math.round(dur)) + " s de " + Math.round(dur); }
       });
     }).then(function (res) {
       var urlV = URL.createObjectURL(res.blob);
