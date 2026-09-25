@@ -496,18 +496,34 @@ function pintar(r) {
 if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
   fallo("No hay ninguna ruta en este enlace.");
 } else {
-  fetch(SB_URL + "/rest/v1/rpc/mc_ruta_publica", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: "Bearer " + SB_KEY },
-    body: JSON.stringify({ p_id: id })
-  })
-    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+  /* 🆕 WEB-RUTA-CARGA-1 (25-sep). Mario vio «No hemos podido cargar la ruta» dos veces seguidas en una ruta pública
+     que un minuto antes cargaba; la misma petición abierta a mano (GET, con la clave en la dirección) SÍ contestó.
+     Ahora: (1) GET con la clave publicable en la dirección y SIN cabeceras propias — sin la consulta previa del
+     navegador (CORS), que es una pieza menos que puede fallar; es exactamente la dirección que funcionó; (2) si falla,
+     UN reintento a los 1,5 s; (3) si vuelve a fallar, el código del error en pequeño, para saber qué ha pasado
+     en vez de adivinarlo. La función es STABLE: PostgREST la acepta por GET. */
+  var urlRuta = SB_URL + "/rest/v1/rpc/mc_ruta_publica?p_id=" + encodeURIComponent(id) + "&apikey=" + encodeURIComponent(SB_KEY);
+  var pedir = function () {
+    return fetch(urlRuta).then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
+  };
+  pedir()
+    .catch(function () { return new Promise(function (ok) { setTimeout(ok, 1500); }).then(pedir); })
     .then(function (r) {
       if (!r || !r.id) { fallo("Esta ruta no está disponible."); return; }
       document.title = r.title + " · MOTOCLUBes";
       pintar(r);
     })
-    .catch(function () { fallo("No hemos podido cargar la ruta."); });
+    .catch(function (e) {
+      fallo("No hemos podido cargar la ruta.");
+      var p = document.createElement("p");
+      p.style.cssText = "margin-top:14px;font-size:12px;color:var(--texto-3)";
+      p.textContent = "Detalle: " + String((e && e.message) || e);
+      var caja = lienzo.querySelector(".error");
+      if (caja) caja.appendChild(p);
+    });
 }
 </script>
 <script src="/assets/visita.js" defer></script>
