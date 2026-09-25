@@ -32,7 +32,8 @@
   /* 🆕 WEB-RUTA-DETALLE-1 (25-sep) · paradas, puertos y etapas */
   .pin-parada{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-size:13px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer}
-  .pin-puerto{display:flex;flex-direction:column;align-items:center;pointer-events:none}
+  .pin-puerto{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+  .sin-etiquetas .pin-puerto span{display:none} /* con el mapa alejado los nombres se pisan (visto el 25-sep): se ven al acercar o tocando */
   .pin-puerto i{width:24px;height:24px;border-radius:50%;background:#7C3AED;display:flex;align-items:center;
     justify-content:center;font-size:12px;font-style:normal;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
   .pin-puerto span{margin-top:2px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.92);color:#111;
@@ -203,8 +204,15 @@ function pinesPuertos(map, ps) {
     var el = document.createElement("div");
     el.className = "pin-puerto";
     el.innerHTML = "<i>🏔️</i><span>" + esc(p.name) + " · " + fmtMiles(p.ele) + " m</span>";
-    new mapboxgl.Marker({ element: el, anchor: "top", offset: [0, -12] }).setLngLat([p.lng, p.lat]).addTo(map);
+    var pop = new mapboxgl.Popup({ offset: 16, closeButton: false })
+      .setHTML('<b style="color:#111">' + esc(p.name) + '</b><br><span style="color:#555">' + fmtMiles(p.ele) + " m · km " + fmtMiles(p.km) + "</span>");
+    new mapboxgl.Marker({ element: el, anchor: "top", offset: [0, -12] }).setLngLat([p.lng, p.lat]).setPopup(pop).addTo(map);
   });
+  // Los nombres solo con el mapa acercado (zoom 9 o más): alejado se pisan unos a otros.
+  var caja = map.getContainer();
+  function etiquetas() { caja.classList.toggle("sin-etiquetas", map.getZoom() < 9); }
+  etiquetas();
+  map.on("zoomend", etiquetas);
 }
 
 function mapaReal(r, pts) {
@@ -367,9 +375,9 @@ function htmlParadas(lista) {
     return '<li><span class="km">' + (p.inicio ? "km 0" : "km " + fmtMiles(p.km)) + '</span><span class="ico">' + ico +
       '</span><span class="nom">' + esc(p.nombre) + "</span></li>";
   }).join("");
-  return '<section class="bloque"><h2>Paradas</h2>' +
+  return '<div class="bloque"><h2>Paradas</h2>' +
     (chips ? '<div class="contadores" style="margin:0 0 14px">' + chips + "</div>" : "") +
-    '<ul class="lista">' + filas + "</ul></section>";
+    '<ul class="lista">' + filas + "</ul></div>";
 }
 
 function htmlPuertos(ps) {
@@ -397,8 +405,8 @@ function htmlEtapas(r) {
       '</span><span class="nom">' + esc(e.title) + '</span><span class="alt">' + (e.km != null ? fmtMiles(e.km) + " km" : "") +
       "</span></a></li>";
   }).join("");
-  return '<section class="bloque"><h2>' + (s ? "Etapas de «" + esc(s.nombre) + "»" : "Etapas") + "</h2>" +
-    '<ul class="lista">' + filas + "</ul></section>";
+  return '<div class="bloque"><h2>' + (s ? "Etapas de «" + esc(s.nombre) + "»" : "Etapas") + "</h2>" +
+    '<ul class="lista">' + filas + "</ul></div>";
 }
 
 function duracion(min) {
@@ -460,7 +468,8 @@ function pintar(r) {
     '<p class="aviso-beta" style="margin:18px 0 0">El GPX se descarga sin cuenta y sin registro, con las paradas dentro. ' +
     'Para navegarla con indicaciones, rodarla en grupo y hablar por el intercom, hace falta la app.</p>' +
     htmlEtapas(r) +                                   // WEB-RUTA-DETALLE-1
-    '<section class="bloque" id="puertos"></section>' + // RUTA-PUERTOS-LEYENDA-1 (se rellena al llegar)
+    '<div class="bloque" id="puertos"></div>' + // RUTA-PUERTOS-LEYENDA-1 (se rellena al llegar). DIV y no SECTION: mc.css da a
+                                                //  todo <section> 74 px de relleno y raya arriba (huecos vistos por Mario, 25-sep)
     htmlParadas(paradas) +                            // WEB-RUTA-DETALLE-1
     '<div style="height:60px"></div>';
 
