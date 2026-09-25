@@ -13,12 +13,13 @@
    CÓMO: el mapa se pinta con TESELAS de Mapbox (Static Tiles API, estilo outdoors) descargadas ANTES de grabar, para que
    ningún fotograma salga a medio cargar: se simula la cámara entera, se apuntan las teselas que va a ver y se bajan. Luego
    se graba el lienzo en tiempo real con MediaRecorder (MP4 en Safari). Sin música: se pone en Instagram (con licencia).
+   v4 (FOTOS-SALIDA-1): tras alejarse, las fotos de la salida (r.fotos de mc_ruta_publica), 2,6 s cada una.
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, MAPBOX_TOKEN.
    ⚠️ Mientras Mario lo revisa, el botón solo sale con ?video=1 en la dirección. */
 
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
-  T_VISTA: 2.5, T_ZOOM: 2.2, T_TARJETA: 1.8, T_ALEJAR: 2.2, T_RESUMEN: 3.2, T_CIERRE: 3,
+  T_VISTA: 2.5, T_ZOOM: 2.2, T_TARJETA: 1.8, T_ALEJAR: 2.2, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3,
   DIBUJO_MIN: 18, DIBUJO_MAX: 34, KM_POR_S: 24,   // el dibujo dura km/24 s, entre 18 y 34 s
   ESTILO: "outdoors-v12"
 };
@@ -53,7 +54,8 @@ function pildora(ctx, x, y, w, h, r, fondo) {
 function recortar(txt, n) { txt = String(txt || ""); return txt.length > n ? txt.slice(0, n - 1) + "…" : txt; }
 
 /* ------------------------------------------------------------------ el guion: días, tiempos y cámara */
-function guion(r, pts, paradas, puertos) {
+function guion(r, pts, paradas, puertos, fotos) {
+  fotos = fotos || [];
   var fino = aligerarTraza(pts, 12);
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
   var totalOrig = kmAcum(pts).slice(-1)[0] || total;
@@ -107,6 +109,8 @@ function guion(r, pts, paradas, puertos) {
     tramos.push({ tipo: "dibujo", dia: d, a: t, b: t += tDibujo * (limites[d + 1] - limites[d]) / total });
   }
   tramos.push({ tipo: "alejar", a: t, b: t += VIDEO.T_ALEJAR });
+  // 🆕 FOTOS-SALIDA-1: tras la ruta, las fotos de los que fueron (Mario: «primero poner la ruta, luego poner las fotos»)
+  fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
   tramos.push({ tipo: "resumen", a: t, b: t += VIDEO.T_RESUMEN });
   tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
   var DUR = t;
@@ -128,7 +132,7 @@ function guion(r, pts, paradas, puertos) {
   }
   function camara(t) {
     var tr = tramoEn(t);
-    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre") return { c: cFit, z: zFit };
+    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") return interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet);
     if (tr.tipo === "alejar") return interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit);
     return { c: sigue(kmCabeza(t)), z: zDet };
@@ -170,33 +174,46 @@ function urlTesela(k) {
 function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   avisar = avisar || {};
   var W = VIDEO.W, H = VIDEO.H;
-  var G = guion(r, pts, paradas, puertos);
+  var G = null, fotosIm = [];
   var titulo = r.title || "Ruta en MOTOCLUBes";
-  var kmRuta = r.km != null ? Number(r.km) : G.total;
-  var dias = G.dias > 1 ? G.dias + " días" : (r.dias && r.dias > 1 ? r.dias + " días" : "1 día");
+  var kmRuta = r.km != null ? Number(r.km) : null; // sin km en la ruta, se toma el del trazado cuando esté el guion
+  var dias = ""; // se calcula con el guion, cuando ya están las fotos
   var minutos = r.moving_time_minutes != null ? r.moving_time_minutes : r.duration_minutes;
   var conAlt = puertos.filter(function (p) { return p.ele != null; });
   var alto = conAlt.reduce(function (a, b) { return !a || b.ele > a.ele ? b : a; }, null);
   var paradasVideo = paradas.filter(function (p) { return !p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto"; });
 
-  // 1) qué teselas va a ver la cámara, simulándola entera
+  // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
+  var fotosR = Array.isArray(r.fotos) ? r.fotos.slice(0, 30) : [];
   var cache = {}, lista = [];
-  for (var s = 0; s <= G.DUR; s += 0.1) {
-    tilesVisibles(G.camara(s)).forEach(function (k) { var id = k.L + "/" + k.x + "/" + k.y; if (!cache[id]) { cache[id] = null; lista.push(k); } });
-  }
+  var fotosListas = Promise.all(fotosR.map(function (f) {
+    return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor }; }).catch(function () { return null; });
+  })).then(function (rs) {
+    fotosIm = rs.filter(Boolean);
+    G = guion(r, pts, paradas, puertos, fotosIm);
+    // 1) qué teselas va a ver la cámara, simulándola entera
+    for (var s = 0; s <= G.DUR; s += 0.1) {
+      tilesVisibles(G.camara(s)).forEach(function (k) { var id = k.L + "/" + k.x + "/" + k.y; if (!(id in cache)) { cache[id] = null; lista.push(k); } });
+    }
+  });
   // 2) bajarlas antes de grabar (6 a la vez)
   var hechas = 0;
   function bajar(k) {
     return cargarImagen(urlTesela(k)).then(function (im) { cache[k.L + "/" + k.x + "/" + k.y] = im; })
       .catch(function () {}).then(function () { hechas++; if (avisar.cargando) avisar.cargando(hechas, lista.length); });
   }
-  var cola = lista.slice();
+  var cola = null;
   function trabajador() { var k = cola.shift(); return k ? bajar(k).then(trabajador) : Promise.resolve(); }
-  var bajando = Promise.all([trabajador(), trabajador(), trabajador(), trabajador(), trabajador(), trabajador()]);
+  var bajando = fotosListas.then(function () {
+    cola = lista.slice();
+    return Promise.all([trabajador(), trabajador(), trabajador(), trabajador(), trabajador(), trabajador()]);
+  });
 
   return Promise.all([bajando, cargarImagen("../img/helmet-256.png"), (document.fonts && document.fonts.ready) || Promise.resolve()])
     .then(function (res) {
       var casco = res[1];
+      dias = G.dias > 1 ? G.dias + " días" : (r.dias && r.dias > 1 ? r.dias + " días" : "1 día");
+      if (kmRuta == null) kmRuta = G.total;
       var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
       var ctx = cv.getContext("2d");
 
@@ -258,7 +275,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre") ctx.drawImage(casco, cab.x - 48, cab.y - 48, 96, 96);
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto") ctx.drawImage(casco, cab.x - 48, cab.y - 48, 96, 96);
 
         // título: en la vista entera del principio y al alejarse al final
         var tv = tr.tipo === "vista" ? tramo(t, 0, 0.7) : tr.tipo === "zoom" ? 1 - tramo(t, tr.a, tr.a + 0.8) : tr.tipo === "alejar" ? tramo(t, tr.a + 0.6, tr.b) : 0;
@@ -301,6 +318,27 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           textoSombra(ctx, recortar(G.nombreDia(tr.dia), 30), W / 2, H / 2 - alto2 / 2 + 180, "700 46px Manrope, system-ui, sans-serif", "#fff");
           if (nocheP) textoSombra(ctx, (nocheP.w.waypointType === "camping" ? "⛺ " : "🏨 ") + "Noche en " + recortar(nocheP.nombre, 24), W / 2, H / 2 - alto2 / 2 + 270, "600 40px Manrope, system-ui, sans-serif", "rgba(255,255,255,.8)");
           ctx.globalAlpha = 1;
+        }
+
+        // 🆕 FOTOS-SALIDA-1: cada foto a pantalla completa, con un zoom lento y «Día N · de quién»
+        if (tr.tipo === "foto") {
+          var fo = fotosIm[tr.i], u = (t - tr.a) / (tr.b - tr.a);
+          var entra = tramo(t, tr.a, tr.a + 0.4);
+          ctx.globalAlpha = tr.i === 0 ? entra : 1;
+          ctx.fillStyle = "#0e0e0e"; ctx.fillRect(0, 0, W, H);
+          var k = Math.max(W / fo.im.width, H / fo.im.height) * (1 + 0.08 * u);
+          var iw = fo.im.width * k, ih = fo.im.height * k;
+          ctx.globalAlpha = entra;
+          ctx.drawImage(fo.im, (W - iw) / 2, (H - ih) / 2, iw, ih);
+          ctx.globalAlpha = 1;
+          velo(false, true);
+          var pie = (G.dias > 1 ? "Día " + fo.dia : "") + (fo.autor ? (G.dias > 1 ? " · " : "") + "📸 " + fo.autor : "");
+          if (pie) {
+            ctx.font = "700 42px Manrope, system-ui, sans-serif";
+            var wp = ctx.measureText(pie).width + 60;
+            pildora(ctx, (W - wp) / 2, H - 290, wp, 90, 45, "rgba(14,14,14,.8)");
+            ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(pie, W / 2, H - 245);
+          }
         }
 
         // resumen
