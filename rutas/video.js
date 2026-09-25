@@ -48,10 +48,17 @@ function tipoGrabacion() {
   for (var i = 0; i < c.length; i++) if (window.MediaRecorder && MediaRecorder.isTypeSupported(c[i])) return c[i];
   return "";
 }
+/* VIDEO-TEXTO-SAFARI-1 (25-sep, 77.ª): en el iPhone el texto centrado que empieza por emoji salía empezando en el centro
+   (bocadillo «🏔️ Coll de les Ma…» cortado; capturas de Mario). Toda la alineación se hace a mano con measureText y
+   textAlign "left": en los navegadores que ya centraban bien, el resultado es el mismo píxel a píxel. */
+function escribir(ctx, txt, x, y, al) {
+  var w = ctx.measureText(txt).width; ctx.textAlign = "left";
+  ctx.fillText(txt, al === "right" ? x - w : al === "center" ? x - w / 2 : x, y);
+}
 function textoSombra(ctx, txt, x, y, font, color, alineado) {
-  ctx.font = font; ctx.textAlign = alineado || "center"; ctx.textBaseline = "middle";
+  ctx.font = font; ctx.textBaseline = "middle";
   ctx.shadowColor = "rgba(0,0,0,.6)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 3;
-  ctx.fillStyle = color; ctx.fillText(txt, x, y);
+  ctx.fillStyle = color; escribir(ctx, txt, x, y, alineado || "center");
   ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 }
 function pildora(ctx, x, y, w, h, r, fondo) {
@@ -297,13 +304,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           if (G.kmF(p.km) > km + 0.01) return;
           var q = pr({ x: mercX(p.w.lng), y: mercY(p.w.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 26, 0, 2 * Math.PI); ctx.fillStyle = p.t.c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
-          ctx.font = "28px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(p.t.e, q.x, q.y + 1);
+          ctx.font = "28px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textBaseline = "middle"; escribir(ctx, p.t.e, q.x, q.y + 1, "center");
         });
         puertos.forEach(function (pu) {
           if (G.kmF(pu.km) > km + 0.01) return;
           var q = pr({ x: mercX(pu.lng), y: mercY(pu.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 30, 0, 2 * Math.PI); ctx.fillStyle = "#7C3AED"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
-          ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🏔️", q.x, q.y + 1);
+          ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textBaseline = "middle"; escribir(ctx, "🏔️", q.x, q.y + 1, "center");
           if (!VIDEO_V6 && detalle && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50) { // v6: el nombre va en el bocadillo
             var txt = recortar(pu.name, 26) + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "");
             ctx.font = "700 32px Manrope, system-ui, sans-serif";
@@ -349,8 +356,9 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             var al = Math.min(1, (km - ult.km) / (margen * 0.15) + 0.2) * (1 - tramo(km - ult.km, margen * 0.8, margen));
             ctx.globalAlpha = al;
             if (VIDEO_V6) { // v6: bocadillo encima del casco, con la punta hacia él
-              ctx.font = "700 44px Manrope, system-ui, sans-serif";
-              var txB = recortar(ult.txt, 30), wB = ctx.measureText(txB).width + 64, hB = 92;
+              var txB = recortar(ult.txt, 30), fB = 44;
+              do { ctx.font = "700 " + fB + "px Manrope, system-ui, sans-serif"; fB -= 2; } while (fB >= 30 && ctx.measureText(txB).width + 64 > W - 48);
+              var wB = ctx.measureText(txB).width + 64, hB = 92;
               var xB = Math.max(24, Math.min(W - wB - 24, cab.x - 70)), yB = cab.y - 56 - 34 - hB;
               var abajoB = yB < 440; // no pisar los km: si no cabe encima del casco, va debajo con la punta hacia arriba
               if (abajoB) yB = cab.y + 56 + 34;
@@ -365,12 +373,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
               ctx.lineWidth = 4; ctx.strokeStyle = "#fff";
               ctx.beginPath(); ctx.moveTo(xB + hB / 2, yB); ctx.arcTo(xB + wB, yB, xB + wB, yB + hB, hB / 2); ctx.arcTo(xB + wB, yB + hB, xB, yB + hB, hB / 2);
               ctx.arcTo(xB, yB + hB, xB, yB, hB / 2); ctx.arcTo(xB, yB, xB + wB, yB, hB / 2); ctx.closePath(); ctx.stroke();
-              ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txB, xB + wB / 2, yB + hB / 2 + 2);
+              ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; escribir(ctx, txB, xB + 32, yB + hB / 2 + 2, "left");
             } else {
             ctx.font = "700 46px Manrope, system-ui, sans-serif";
             var txtA = recortar(ult.txt, 34), wA = ctx.measureText(txtA).width + 64;
             pildora(ctx, (W - wA) / 2, H - 300, wA, 96, 48, "rgba(14,14,14,.82)");
-            ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txtA, W / 2, H - 252);
+            ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; escribir(ctx, txtA, W / 2, H - 252, "center");
             }
             ctx.globalAlpha = 1;
           }
@@ -406,7 +414,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             ctx.font = "700 42px Manrope, system-ui, sans-serif";
             var wp = ctx.measureText(pie).width + 60;
             pildora(ctx, (W - wp) / 2, H - 290, wp, 90, 45, "rgba(14,14,14,.8)");
-            ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(pie, W / 2, H - 245);
+            ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; escribir(ctx, pie, W / 2, H - 245, "center");
           }
         }
 
@@ -426,9 +434,9 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           filas.forEach(function (fl, i) {
             var y = 690 + i * 112;
             ctx.font = "700 40px Manrope, system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.fillText(fl[0], 150, y);
-            ctx.font = "800 56px Manrope, system-ui, sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = i === 5 ? "#FF7A1A" : "#fff"; ctx.fillText(fl[1], W - 150, y);
+            ctx.font = "800 56px Manrope, system-ui, sans-serif"; ctx.fillStyle = i === 5 ? "#FF7A1A" : "#fff"; escribir(ctx, fl[1], W - 150, y, "right");
           });
-          if (alto) { ctx.font = "600 34px Manrope, system-ui, sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.fillText(recortar(alto.name, 30), W - 150, 690 + 5 * 112 + 58); }
+          if (alto) { ctx.font = "600 34px Manrope, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.62)"; escribir(ctx, recortar(alto.name, 30), W - 150, 690 + 5 * 112 + 58, "right"); }
           ctx.globalAlpha = 1;
         }
 
@@ -445,7 +453,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
         ctx.font = "500 22px Manrope, system-ui, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
         ctx.fillStyle = VIDEO_V6 && (tr.tipo === "dibujo" || tr.tipo === "tarjeta") ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.75)"; // v6: sin velo, en oscuro para que se lea
-        ctx.fillText("© Mapbox © OpenStreetMap", W - 24, H - 24);
+        escribir(ctx, "© Mapbox © OpenStreetMap", W - 24, H - 24, "right");
       }
 
       var tipo = tipoGrabacion();
