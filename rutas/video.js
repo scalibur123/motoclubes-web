@@ -13,14 +13,16 @@
    CÓMO: el mapa se pinta con TESELAS de Mapbox (Static Tiles API, estilo outdoors) descargadas ANTES de grabar, para que
    ningún fotograma salga a medio cargar: se simula la cámara entera, se apuntan las teselas que va a ver y se bajan. Luego
    se graba el lienzo en tiempo real con MediaRecorder (MP4 en Safari). Sin música: se pone en Instagram (con licencia).
+   v5: zoom fundiendo niveles, fotogramas a paso fijo, más lento (km/15 s), abajo solo paradas de verdad y puertos.
    v4 (FOTOS-SALIDA-1): tras alejarse, las fotos de la salida (r.fotos de mc_ruta_publica), 2,6 s cada una.
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, MAPBOX_TOKEN.
    ⚠️ Mientras Mario lo revisa, el botón solo sale con ?video=1 en la dirección. */
 
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
-  T_VISTA: 2.5, T_ZOOM: 2.2, T_TARJETA: 1.8, T_ALEJAR: 2.2, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3,
-  DIBUJO_MIN: 18, DIBUJO_MAX: 34, KM_POR_S: 24,   // el dibujo dura km/24 s, entre 18 y 34 s
+  T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3,
+  // 🔄 v5 (Mario: «va muy rápido y no te da tiempo a ver los nombres»): km/15 por segundo, entre 20 y 58 s de dibujo
+  DIBUJO_MIN: 20, DIBUJO_MAX: 58, KM_POR_S: 15,
   ESTILO: "outdoors-v12"
 };
 
@@ -56,7 +58,7 @@ function recortar(txt, n) { txt = String(txt || ""); return txt.length > n ? txt
 /* ------------------------------------------------------------------ el guion: días, tiempos y cámara */
 function guion(r, pts, paradas, puertos, fotos) {
   fotos = fotos || [];
-  var fino = aligerarTraza(pts, 12);
+  var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
   var totalOrig = kmAcum(pts).slice(-1)[0] || total;
   var kmF = function (km) { return km * total / totalOrig; }; // km del trazado completo → km del trazado aligerado
@@ -133,8 +135,8 @@ function guion(r, pts, paradas, puertos, fotos) {
   function camara(t) {
     var tr = tramoEn(t);
     if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto") return { c: cFit, z: zFit };
-    if (tr.tipo === "zoom") return interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet);
-    if (tr.tipo === "alejar") return interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit);
+    if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
+    if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
     return { c: sigue(kmCabeza(t)), z: zDet };
   }
 
@@ -142,11 +144,13 @@ function guion(r, pts, paradas, puertos, fotos) {
   var avisos = [];
   paradas.forEach(function (p) {
     if (p.w.waypointType === "puerto" || p.inicio || p.fin) return; // los puertos van aparte; salida y llegada, en las tarjetas
+    // v5, Mario: «los puntos de pasada no, porque confunden»: solo paradas de verdad (y los puertos, arriba)
+    if (["gasolinera", "restaurante", "hotel", "camping", "lugar_interes", "mirador"].indexOf(p.w.waypointType) < 0) return;
     var nom = String(p.nombre || "").trim(); if (!nom) return;
     var partes = nom.split(" · ");
     // «N-420a · Falset» → «Falset»: si delante va una carretera, se enseña el pueblo
     var txt = partes.length > 1 && (!p.w.waypointType || /^[A-Z]{1,3}-?\d/.test(partes[0])) ? partes[partes.length - 1] : nom;
-    avisos.push({ km: kmF(p.km), txt: (p.w.waypointType ? p.t.e + " " : "📍 ") + txt });
+    avisos.push({ km: kmF(p.km), txt: p.t.e + " " + txt });
   });
   puertos.forEach(function (pu) { avisos.push({ km: kmF(pu.km), txt: "🏔️ " + pu.name + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "") }); });
   avisos.sort(function (a, b) { return a.km - b.km; });
@@ -157,8 +161,15 @@ function guion(r, pts, paradas, puertos, fotos) {
 
 /* ------------------------------------------------------------------ teselas */
 function nivelTesela(z) { return Math.max(1, Math.min(14, Math.round(z))); }
-function tilesVisibles(cam) {
-  var L = nivelTesela(cam.z), esc = 512 * Math.pow(2, L), f = Math.pow(2, cam.z - L);
+/* v5 · «al principio, cuando está haciendo el zoom, no es muy fino»: saltaba de un nivel de teselas al siguiente de golpe.
+   Mientras la cámara cambia de zoom se pintan DOS niveles (el de abajo y el de arriba) fundiéndose según el zoom. */
+function nivelesTesela(cam) {
+  if (!cam.fundir) return [{ L: nivelTesela(cam.z), a: 1 }];
+  var L0 = Math.max(1, Math.min(14, Math.floor(cam.z))), fr = cam.z - L0;
+  return L0 >= 14 ? [{ L: 14, a: 1 }] : [{ L: L0, a: 1 }, { L: L0 + 1, a: fr }];
+}
+function tilesVisibles(cam, Lfijo) {
+  var L = Lfijo || nivelTesela(cam.z), esc = 512 * Math.pow(2, L), f = Math.pow(2, cam.z - L);
   var cx = cam.c.x * esc, cy = cam.c.y * esc, hw = 270 / f + 64, hh = 480 / f + 64, n = Math.pow(2, L);
   var out = [];
   for (var tx = Math.floor((cx - hw) / 512); tx <= Math.floor((cx + hw) / 512); tx++)
@@ -184,7 +195,15 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   var paradasVideo = paradas.filter(function (p) { return !p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto"; });
 
   // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
-  var fotosR = Array.isArray(r.fotos) ? r.fotos.slice(0, 30) : [];
+  // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
+  var fotosR = (function () {
+    var todas = Array.isArray(r.fotos) ? r.fotos : [], porDia = {};
+    todas.forEach(function (f) { (porDia[f.dia] = porDia[f.dia] || []).push(f); });
+    var diasF = Object.keys(porDia).sort(function (a, b) { return a - b; });
+    var cupo = diasF.length ? Math.ceil(12 / diasF.length) : 0, out = [];
+    diasF.forEach(function (d) { out = out.concat(porDia[d].slice(0, cupo)); });
+    return out.slice(0, 12);
+  })();
   var cache = {}, lista = [];
   var fotosListas = Promise.all(fotosR.map(function (f) {
     return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor }; }).catch(function () { return null; });
@@ -193,7 +212,10 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     G = guion(r, pts, paradas, puertos, fotosIm);
     // 1) qué teselas va a ver la cámara, simulándola entera
     for (var s = 0; s <= G.DUR; s += 0.1) {
-      tilesVisibles(G.camara(s)).forEach(function (k) { var id = k.L + "/" + k.x + "/" + k.y; if (!(id in cache)) { cache[id] = null; lista.push(k); } });
+      var cs = G.camara(s);
+      nivelesTesela(cs).forEach(function (nv) {
+        tilesVisibles(cs, nv.L).forEach(function (k) { var id = k.L + "/" + k.x + "/" + k.y; if (!(id in cache)) { cache[id] = null; lista.push(k); } });
+      });
     }
   });
   // 2) bajarlas antes de grabar (6 a la vez)
@@ -223,12 +245,17 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       }
       function mapa(cam) {
         ctx.fillStyle = "#e9e6dc"; ctx.fillRect(0, 0, W, H);
-        var L = nivelTesela(cam.z), f = Math.pow(2, cam.z - L), esc = 512 * Math.pow(2, L);
-        var cx = cam.c.x * esc, cy = cam.c.y * esc, lado = 512 * f * 2;
-        tilesVisibles(cam).forEach(function (k) {
-          var im = cache[k.L + "/" + k.x + "/" + k.y]; if (!im) return;
-          var px = ((k.tx * 512 - cx) * f + 270) * 2, py = ((k.y * 512 - cy) * f + 480) * 2;
-          ctx.drawImage(im, px, py, lado + 1, lado + 1);
+        nivelesTesela(cam).forEach(function (nv) {
+          if (nv.a <= 0.01) return;
+          var L = nv.L, f = Math.pow(2, cam.z - L), esc = 512 * Math.pow(2, L);
+          var cx = cam.c.x * esc, cy = cam.c.y * esc, lado = 512 * f * 2;
+          ctx.globalAlpha = nv.a;
+          tilesVisibles(cam, L).forEach(function (k) {
+            var im = cache[k.L + "/" + k.x + "/" + k.y]; if (!im) return;
+            var px = ((k.tx * 512 - cx) * f + 270) * 2, py = ((k.y * 512 - cy) * f + 480) * 2;
+            ctx.drawImage(im, px, py, lado + 1, lado + 1);
+          });
+          ctx.globalAlpha = 1;
         });
       }
       function linea(P, hasta, ancho, color) {
@@ -380,7 +407,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
       var tipo = tipoGrabacion();
       if (!tipo || !cv.captureStream) throw new Error("Este navegador no sabe grabar vídeo. Prueba con Safari.");
-      var rec = new MediaRecorder(cv.captureStream(VIDEO.FPS), { mimeType: tipo, videoBitsPerSecond: 8000000 });
+      // v5 · «va a trompicones»: antes el tiempo del vídeo era el del reloj, y si un fotograma tardaba, el siguiente saltaba.
+      // Ahora cada fotograma avanza EXACTAMENTE 1/30 s de guion y se entrega a mano (requestFrame): si el ordenador va
+      // justo, el vídeo tarda más en hacerse pero no da saltos.
+      var flujo = cv.captureStream(0), pista = flujo.getVideoTracks()[0];
+      if (!pista || typeof pista.requestFrame !== "function") { flujo = cv.captureStream(VIDEO.FPS); pista = null; } // sin entrega a mano: al reloj
+      var rec = new MediaRecorder(flujo, { mimeType: tipo, videoBitsPerSecond: 8000000 });
       var trozos = [];
       rec.ondataavailable = function (e) { if (e.data && e.data.size) trozos.push(e.data); };
       var hecho = new Promise(function (ok) { rec.onstop = function () { ok(new Blob(trozos, { type: tipo.split(";")[0] })); }; });
@@ -389,14 +421,19 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       if (avisar.lienzo) avisar.lienzo(cv);
       rec.start(250);
       return new Promise(function (ok) {
-        function paso(ahora) {
-          if (t0 === null) t0 = ahora;
-          var t = (ahora - t0) / 1000;
+        var i = 0, total = Math.ceil(G.DUR * VIDEO.FPS), dt = 1000 / VIDEO.FPS;
+        function paso() {
+          if (t0 === null) t0 = performance.now();
+          var t = i / VIDEO.FPS;
           cuadro(Math.min(t, G.DUR));
+          if (pista && pista.requestFrame) pista.requestFrame();
           if (avisar.progreso) avisar.progreso(t, G.DUR);
-          if (t < G.DUR) requestAnimationFrame(paso); else { rec.stop(); ok(); }
+          i++;
+          if (i > total) { setTimeout(function () { rec.stop(); ok(); }, 200); return; }
+          var espera = t0 + i * dt - performance.now(); // al ritmo de 30 por segundo, sin saltarse ninguno
+          setTimeout(paso, Math.max(0, espera));
         }
-        requestAnimationFrame(paso);
+        paso();
       }).then(function () { return hecho; }).then(function (blob) {
         return { blob: blob, ext: tipo.indexOf("mp4") >= 0 ? "mp4" : "webm", segundos: Math.round(G.DUR) };
       });
