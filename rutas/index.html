@@ -233,7 +233,11 @@ function mapaReal(r, pts) {
       style: "mapbox://styles/mapbox/streets-v12",
       bounds: bounds,
       fitBoundsOptions: { padding: 50, maxZoom: 13 },
-      cooperativeGestures: true,
+      // 🆕 WEB-MAPA-FIJO-1 (25-sep). Mario: «el mapa se sigue moviendo [...] me gustaría que fuera más bien fijo [...]
+      // al pasar sin querer le das». Fuera arrastrar, rueda, doble toque, pellizco y girar: el mapa se queda quieto
+      // encuadrando la ruta. Se acerca y aleja SOLO con los botones + y −, y los pines siguen abriendo su globo.
+      dragPan: false, scrollZoom: false, boxZoom: false, dragRotate: false, keyboard: false,
+      doubleClickZoom: false, touchZoomRotate: false, touchPitch: false,
       attributionControl: false
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
