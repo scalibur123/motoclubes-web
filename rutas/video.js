@@ -18,6 +18,11 @@
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, MAPBOX_TOKEN.
    🟢 25-sep: revisado por Mario en v5 y puesto a la vista de todos en la página de cada ruta pública. */
 
+/* 🆕 v6 (25-sep, 77.ª · VIDEO-RUTA-2), a partir del reel de travelanimator.app que enseñó Mario: más cerca (la mitad de
+   ancho), los km GRANDES arriba a la derecha, el puerto o la parada en un bocadillo pegado al casco y sin velos oscuros
+   mientras se rueda. En revisión: solo con «&video=6» en el enlace; sin él, v5 tal cual. */
+var VIDEO_V6 = /[?&]video=6(&|$)/.test(location.search);
+
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
   T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3,
@@ -100,6 +105,7 @@ function guion(r, pts, paradas, puertos, fotos) {
   zFit = Math.max(2, Math.min(13, zFit));
   var cFit = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 + 10 / (512 * Math.pow(2, zFit)) };
   var zDet = Math.max(zFit + 1, Math.min(11.5, zFit + 3.3)); // en La ruta del silencio: unos 28 km de ancho de pantalla
+  if (VIDEO_V6) zDet = Math.max(zFit + 1, Math.min(12.5, zFit + 4.3)); // v6: un nivel más cerca, la mitad de ancho (~14 km)
 
   // Tiempos.
   var tDibujo = Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
@@ -126,7 +132,8 @@ function guion(r, pts, paradas, puertos, fotos) {
     return total;
   }
   function sigue(km) { // la cámara mira un poco por delante y promedia para no dar tirones
-    var ps = [km - 4, km, km + 4, km + 8].map(function (k) { return enKm(Math.max(0, Math.min(total, k))); });
+    var ad = VIDEO_V6 ? 0.5 : 1; // v6: con el doble de zoom, mirar por delante la mitad (si no, el casco se va arriba del todo)
+    var ps = [km - 4 * ad, km, km + 4 * ad, km + 8 * ad].map(function (k) { return enKm(Math.max(0, Math.min(total, k))); });
     return { x: (ps[0].x + ps[1].x + ps[2].x + ps[3].x) / 4, y: (ps[0].y + ps[1].y + ps[2].y + ps[3].y) / 4 };
   }
   function interp(a, b, u, za, zb) { // de una cámara a otra: el zoom en escala logarítmica
@@ -271,7 +278,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         var tr = G.tramoEn(t), cam = G.camara(t), pr = proy(cam);
         var P = G.M.map(pr), km = G.kmCabeza(t);
         mapa(cam);
-        velo(true, true);
+        if (!VIDEO_V6) velo(true, true);
+        else { // v6: sin velos mientras se rueda; se van al empezar el día 1 y vuelven al alejarse (para el título)
+          var va = tr.tipo === "dibujo" ? 0 : tr.tipo === "tarjeta" ? (tr.dia === 0 ? 1 - tramo(t, tr.a, tr.a + 0.6) : 0) :
+            tr.tipo === "alejar" ? tramo(t, tr.a, tr.a + 0.6) : 1;
+          if (va > 0) { ctx.globalAlpha = va; velo(true, true); ctx.globalAlpha = 1; }
+        }
 
         // la ruta entera, tenue (se ve hacia dónde se va) y lo ya recorrido, fuerte
         linea(P, P.length, 7, "rgba(255,255,255,.55)"); ctx.stroke();
@@ -292,7 +304,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           var q = pr({ x: mercX(pu.lng), y: mercY(pu.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 30, 0, 2 * Math.PI); ctx.fillStyle = "#7C3AED"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
           ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🏔️", q.x, q.y + 1);
-          if (detalle && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50) {
+          if (!VIDEO_V6 && detalle && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50) { // v6: el nombre va en el bocadillo
             var txt = recortar(pu.name, 26) + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "");
             ctx.font = "700 32px Manrope, system-ui, sans-serif";
             var w = ctx.measureText(txt).width + 32, x = Math.max(20, Math.min(W - w - 20, q.x - w / 2));
@@ -302,7 +314,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto") ctx.drawImage(casco, cab.x - 48, cab.y - 48, 96, 96);
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
 
         // título: en la vista entera del principio y al alejarse al final
         var tv = tr.tipo === "vista" ? tramo(t, 0, 0.7) : tr.tipo === "zoom" ? 1 - tramo(t, tr.a, tr.a + 0.8) : tr.tipo === "alejar" ? tramo(t, tr.a + 0.6, tr.b) : 0;
@@ -314,7 +326,17 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         }
 
         // día y km arriba mientras se rueda
-        if (tr.tipo === "tarjeta" || tr.tipo === "dibujo") {
+        if (VIDEO_V6 && (tr.tipo === "tarjeta" || tr.tipo === "dibujo")) {
+          // v6: los km grandes arriba a la derecha (por debajo del icono de cámara de Instagram) y el día en una etiqueta
+          textoSombra(ctx, fmtMiles(km * kmRuta / G.total), W - 56, 250, "800 200px Manrope, system-ui, sans-serif", "#FF7A1A", "right");
+          textoSombra(ctx, "KM", W - 62, 382, "800 58px Manrope, system-ui, sans-serif", "#FF7A1A", "right");
+          if (G.dias > 1) {
+            ctx.font = "800 42px Manrope, system-ui, sans-serif";
+            var txD = "DÍA " + (tr.dia + 1), wD = ctx.measureText(txD).width + 56;
+            pildora(ctx, 56, 150, wD, 80, 40, "rgba(14,14,14,.78)");
+            ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txD, 84, 191);
+          }
+        } else if (tr.tipo === "tarjeta" || tr.tipo === "dibujo") {
           var d = tr.dia;
           textoSombra(ctx, (G.dias > 1 ? "DÍA " + (d + 1) + " · " : "") + "km " + fmtMiles(km * kmRuta / G.total), W / 2, 150, "800 60px Manrope, system-ui, sans-serif", "#fff");
         }
@@ -326,10 +348,30 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           if (ult) {
             var al = Math.min(1, (km - ult.km) / (margen * 0.15) + 0.2) * (1 - tramo(km - ult.km, margen * 0.8, margen));
             ctx.globalAlpha = al;
+            if (VIDEO_V6) { // v6: bocadillo encima del casco, con la punta hacia él
+              ctx.font = "700 44px Manrope, system-ui, sans-serif";
+              var txB = recortar(ult.txt, 30), wB = ctx.measureText(txB).width + 64, hB = 92;
+              var xB = Math.max(24, Math.min(W - wB - 24, cab.x - 70)), yB = cab.y - 56 - 34 - hB;
+              var abajoB = yB < 440; // no pisar los km: si no cabe encima del casco, va debajo con la punta hacia arriba
+              if (abajoB) yB = cab.y + 56 + 34;
+              var px = Math.max(xB + 40, Math.min(xB + wB - 40, cab.x));
+              ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+              pildora(ctx, xB, yB, wB, hB, hB / 2, "rgba(105,105,105,.9)");
+              ctx.beginPath();
+              if (abajoB) { ctx.moveTo(px - 18, yB + 2); ctx.lineTo(px, yB - 26); ctx.lineTo(px + 18, yB + 2); }
+              else { ctx.moveTo(px - 18, yB + hB - 2); ctx.lineTo(px, yB + hB + 26); ctx.lineTo(px + 18, yB + hB - 2); }
+              ctx.closePath(); ctx.fill();
+              ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+              ctx.lineWidth = 4; ctx.strokeStyle = "#fff";
+              ctx.beginPath(); ctx.moveTo(xB + hB / 2, yB); ctx.arcTo(xB + wB, yB, xB + wB, yB + hB, hB / 2); ctx.arcTo(xB + wB, yB + hB, xB, yB + hB, hB / 2);
+              ctx.arcTo(xB, yB + hB, xB, yB, hB / 2); ctx.arcTo(xB, yB, xB + wB, yB, hB / 2); ctx.closePath(); ctx.stroke();
+              ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txB, xB + wB / 2, yB + hB / 2 + 2);
+            } else {
             ctx.font = "700 46px Manrope, system-ui, sans-serif";
             var txtA = recortar(ult.txt, 34), wA = ctx.measureText(txtA).width + 64;
             pildora(ctx, (W - wA) / 2, H - 300, wA, 96, 48, "rgba(14,14,14,.82)");
             ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txtA, W / 2, H - 252);
+            }
             ctx.globalAlpha = 1;
           }
         }
@@ -402,7 +444,8 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         }
 
         ctx.font = "500 22px Manrope, system-ui, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
-        ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillText("© Mapbox © OpenStreetMap", W - 24, H - 24);
+        ctx.fillStyle = VIDEO_V6 && (tr.tipo === "dibujo" || tr.tipo === "tarjeta") ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.75)"; // v6: sin velo, en oscuro para que se lea
+        ctx.fillText("© Mapbox © OpenStreetMap", W - 24, H - 24);
       }
 
       var tipo = tipoGrabacion();
