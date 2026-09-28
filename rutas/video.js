@@ -20,8 +20,10 @@
 
 /* 🆕 v6 (25-sep, 77.ª · VIDEO-RUTA-2), a partir del reel de travelanimator.app que enseñó Mario: más cerca (la mitad de
    ancho), los km GRANDES arriba a la derecha, el puerto o la parada en un bocadillo pegado al casco y sin velos oscuros
-   mientras se rueda. En revisión: solo con «&video=6» en el enlace; sin él, v5 tal cual. */
-var VIDEO_V6 = /[?&]video=6(&|$)/.test(location.search);
+   mientras se rueda. Se quedó «en revisión» (solo con «&video=6») y sin apuntar en ningún documento.
+   🟢 28-sep (83.ª): LA v6 ES LA DE SIEMPRE. Mario, viendo las dos para el post de la primera salida: «lo del zoom me gustaba
+   […] por qué pones el V4 en vez de poner el V6». La anterior (v5) queda con «&video=5» en el enlace, por si hiciera falta. */
+var VIDEO_V6 = !/[?&]video=5(&|$)/.test(location.search);
 
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
