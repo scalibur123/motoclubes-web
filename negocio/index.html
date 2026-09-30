@@ -124,6 +124,9 @@ async function loadPanel() {
   const ofertas = d.offers
 
   document.getElementById('biz-name').textContent = biz?.name || session.email
+  // MC-RF-ROBLE-30SEP-2026 (89.ª, RF-FUNDADOR-1): etiqueta de socio fundador en el panel.
+  if (biz?.fundador) document.getElementById('biz-name').insertAdjacentHTML('afterend',
+    '<span style="margin-left:8px;padding:3px 10px;border-radius:50px;background:rgba(245,197,24,.18);color:#B8860B;font-size:12px;font-weight:800;white-space:nowrap">👑 Socio fundador</span>')
 
   const rfActive = biz?.is_active === true
   // MC-RF-NEGOCIO-21SEP-2026 (RF-PROMESA-PORTAL-1): antes prometía «rellena tu perfil y publica
@@ -157,6 +160,7 @@ async function loadPanel() {
       <a href="perfil.html" class="btn-outline">✏️ Editar perfil</a>
       <a href="ofertas.html" class="btn-primary">+ Nueva oferta</a>
     </div>
+    ${d.qr_pendientes ? `<a href="ofertas.html" style="display:block;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:rgba(255,122,26,.10);color:var(--black);text-decoration:none;font-size:14px">📱 <b>${d.qr_pendientes}</b> ${d.qr_pendientes === 1 ? 'motero tiene su QR' : 'moteros tienen su QR'} sin canjear todavía. <span style="color:var(--orange);font-weight:700">Ver quiénes</span></a>` : ''}
     <div class="section-title">Últimas ofertas</div>
     <div class="ofertas-list">
       ${ofertas && ofertas.length > 0
@@ -165,11 +169,11 @@ async function loadPanel() {
             <div class="oferta-pct">${o.discount_pct ? o.discount_pct + '%' : (o.fixed_price ? o.fixed_price + '€' : '🎁')}</div>
             <div class="oferta-info">
               <div class="oferta-title">${o.title}</div>
-              <div class="oferta-meta">${o.ends_at ? 'Hasta ' + new Date(o.ends_at).toLocaleDateString('es-ES') : 'Sin caducidad'} · ${o.uses_count ?? 0} canjes</div>
+              <div class="oferta-meta">${!o.ends_at || new Date(o.ends_at).getFullYear() >= 2099 ? 'Sin caducidad' : 'Hasta ' + new Date(o.ends_at).toLocaleDateString('es-ES')} · ${o.uses_count ?? 0} canjes</div>
             </div>
             <span class="badge ${o.is_active ? 'on' : 'off'}">${o.is_active ? 'Activa' : 'Borrador'}</span>
           </div>`).join('')
-        : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>¡Crea tu primera oferta para aparecer en el mapa!</div>'
+        : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>Las ofertas son opcionales, pero son lo que más llama la atención de los moteros. Te recomendamos crear al menos una.</div>'
       }
     </div>
     <button class="btn-ghost" onclick="window.location.href='mailto:admin@motoclubes.es'">✉️ Contactar con MOTOCLUBes</button>

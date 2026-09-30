@@ -92,6 +92,21 @@ input[type="file"]{display:none}
 .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading{text-align:center;padding:60px 20px;color:var(--gray-light)}
+/* MC-RF-ROBLE-30SEP-2026 (89.ª): horario por días y cartas */
+.hdia{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 0;border-bottom:1px solid var(--card)}
+.hdia-nombre{width:92px;font-size:14px;font-weight:700;color:var(--black)}
+.hdia .rf-chip{padding:6px 12px;font-size:12px}
+.hfranjas{display:flex;flex-wrap:wrap;gap:8px 14px;width:100%;padding-left:104px}
+.hfranja{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray)}
+.hfranja input{width:112px;padding:6px 8px;font-size:13px}
+.hmismo{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;cursor:pointer}
+@media (max-width:520px){.hfranjas{padding-left:0}}
+.carta-row{display:grid;grid-template-columns:1fr 110px auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--card)}
+.carta-row .field{margin:0}
+.carta-fich{font-size:12px;color:var(--gray);grid-column:1/-1}
+.carta-fich a{color:var(--orange);font-weight:700}
+.btn-mini{background:none;border:1.5px solid var(--card);border-radius:50px;padding:7px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--brown)}
+.ayuda{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--gray-light);background:none;color:var(--gray-light);font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;vertical-align:middle;font-family:inherit}
 </style>
 <link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
 <script src="negocio.js"></script>
@@ -121,6 +136,7 @@ input[type="file"]{display:none}
   <button class="btn-primary" id="btn-save" onclick="handleSave()">Guardar cambios</button>
 </div>
 <input type="file" id="file-input" accept="image/*" multiple>
+<input type="file" id="carta-input" accept="image/*,application/pdf,.pdf">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
@@ -166,6 +182,129 @@ async function handleLogout() {
 let currentLat = 40.4168, currentLng = -3.7038
 let photos = [], selectedType = '', map, marker, biz
 
+// ---- MC-RF-ROBLE-30SEP-2026 (89.ª, RF-HORARIO-DIAS-1 · diseño de Mario) ----
+// Cada día «Abro / Cerrado» con mediodía y noche; «Mismo horario todos los días que abro»;
+// festivos como un domingo, cerrado u otro horario. Sustituye a apertura/cierre (una sola franja).
+let horario = null
+function iniciarHorario(b) {
+  if (b.horario && b.horario.dias) horario = JSON.parse(JSON.stringify(b.horario))
+  else {
+    // Primera vez: lo que tuviera en apertura/cierre, todos los días, como punto de partida.
+    const t = b.opening_time && b.closing_time ? [[b.opening_time.slice(0, 5), b.closing_time.slice(0, 5)]] : []
+    horario = { mismo: true, dias: {}, festivos: { modo: 'domingo' } }
+    MC_DIAS.forEach(d => { horario.dias[d.k] = { abre: t.length > 0, turnos: t.map(x => [...x]) } })
+  }
+  horario.festivos = horario.festivos || { modo: 'domingo' }
+  document.getElementById('h-mismo').checked = !!horario.mismo
+  document.getElementById('h-mismo').addEventListener('change', (e) => {
+    horario.mismo = e.target.checked
+    if (horario.mismo) { const base = turnosComunes(); MC_DIAS.forEach(d => { if (horario.dias[d.k].abre) horario.dias[d.k].turnos = base.map(x => [...x]) }) }
+    pintarHorario()
+  })
+  pintarHorario()
+}
+function turnosComunes() {
+  const d = MC_DIAS.map(x => horario.dias[x.k]).find(x => x && x.abre && (x.turnos || []).length)
+  return d ? d.turnos : []
+}
+// Dos franjas fijas en pantalla: [0] mediodía, [1] noche. Vacías = ese turno no abre.
+function franjasHtml(turnos, pref) {
+  const t = turnos || []
+  const f = (i, nombre) => `<div class="hfranja">${nombre} <input type="time" data-f="${pref}" data-i="${i}" data-j="0" value="${(t[i] || [])[0] || ''}"> a <input type="time" data-f="${pref}" data-i="${i}" data-j="1" value="${(t[i] || [])[1] || ''}"></div>`
+  return f(0, 'Mediodía') + f(1, 'Noche')
+}
+function leerFranjas(pref) {
+  const v = (i, j) => (document.querySelector(`input[data-f="${pref}"][data-i="${i}"][data-j="${j}"]`) || {}).value || ''
+  return [0, 1].map(i => [v(i, 0), v(i, 1)]).filter(x => x[0] && x[1])
+}
+function pintarHorario() {
+  const comun = document.getElementById('h-comun')
+  comun.innerHTML = horario.mismo ? `<div class="hdia"><div class="hdia-nombre">Horario</div><div class="hfranjas" style="padding-left:0">${franjasHtml(turnosComunes(), 'comun')}</div></div>` : ''
+  document.getElementById('h-dias').innerHTML = MC_DIAS.map(d => {
+    const x = horario.dias[d.k] || { abre: false }
+    return `<div class="hdia"><div class="hdia-nombre">${d.l}</div>
+      <div class="rf-chips"><button type="button" class="rf-chip${x.abre ? ' sel' : ''}" onclick="abreDia('${d.k}',true)">Abro</button><button type="button" class="rf-chip${x.abre ? '' : ' sel'}" onclick="abreDia('${d.k}',false)">Cerrado</button></div>
+      ${x.abre && !horario.mismo ? `<div class="hfranjas">${franjasHtml(x.turnos, d.k)}</div>` : ''}</div>`
+  }).join('')
+  const modos = [['domingo', 'Como un domingo'], ['cerrado', 'Cerrado'], ['otro', 'Otro horario']]
+  document.getElementById('h-fest').innerHTML = modos.map(([k, l]) =>
+    `<button type="button" class="rf-chip${horario.festivos.modo === k ? ' sel' : ''}" onclick="modoFestivo('${k}')">${l}</button>`).join('')
+  document.getElementById('h-fest-franjas').innerHTML = horario.festivos.modo === 'otro' ? franjasHtml(horario.festivos.turnos, 'fest') : ''
+  document.querySelectorAll('input[data-f]').forEach(i => i.addEventListener('input', leerHorario))
+  pintarPrevia()
+}
+function leerHorario() {
+  if (horario.mismo) {
+    const t = leerFranjas('comun')
+    MC_DIAS.forEach(d => { if (horario.dias[d.k].abre) horario.dias[d.k].turnos = t.map(x => [...x]) })
+  } else {
+    MC_DIAS.forEach(d => { if (horario.dias[d.k].abre && document.querySelector(`input[data-f="${d.k}"]`)) horario.dias[d.k].turnos = leerFranjas(d.k) })
+  }
+  if (horario.festivos.modo === 'otro') horario.festivos.turnos = leerFranjas('fest')
+  pintarPrevia()
+}
+window.abreDia = function (k, abre) {
+  leerHorario()
+  horario.dias[k] = { abre, turnos: abre ? (horario.mismo ? turnosComunes() : (horario.dias[k].turnos || [])).map(x => [...x]) : [] }
+  pintarHorario()
+}
+window.modoFestivo = function (m) { leerHorario(); horario.festivos = { modo: m, turnos: m === 'otro' ? (horario.festivos.turnos || []) : undefined }; pintarHorario() }
+// Lo que se guarda: un día «Abro» sin ninguna franja no dice nada al motero; se avisa antes.
+function horarioParaGuardar() {
+  leerHorario()
+  const sinHora = MC_DIAS.filter(d => horario.dias[d.k].abre && !(horario.dias[d.k].turnos || []).length).map(d => d.l)
+  if (sinHora.length) throw new Error('pon la hora de ' + sinHora.join(', ') + ' (o márcalo como Cerrado)')
+  return horario
+}
+
+// ---- MC-RF-ROBLE-30SEP-2026 (89.ª, RF-CARTA-1 · diseño de Mario): nombre libre, foto o PDF, precio opcional, varias ----
+let cartas = [], cartaSubiendo = null
+function pintarCartas() {
+  const cont = document.getElementById('cartas')
+  if (!cartas.length) cartas.push({ nombre: '', url: '', precio: null })
+  cont.innerHTML = cartas.map((c, i) => `
+    <div class="carta-row">
+      <div class="field"><label>NOMBRE</label><input type="text" maxlength="60" value="${esc(c.nombre || '')}" placeholder="Menú motero, Carta, Menú del día…" oninput="cartas[${i}].nombre=this.value;pintarPrevia()"></div>
+      <div class="field"><label>PRECIO <span>(opcional)</span></label><input type="number" min="0" step="0.5" value="${c.precio ?? ''}" placeholder="18" oninput="cartas[${i}].precio=this.value===''?null:Number(this.value);pintarPrevia()"></div>
+      <button type="button" class="btn-mini" onclick="quitarCarta(${i})">Quitar</button>
+      <div class="carta-fich">${c.url
+        ? `${c.url.toLowerCase().endsWith('.pdf') ? '📄 PDF' : '🖼️ Foto'} subido · <a href="${esc(c.url)}" target="_blank" rel="noopener">ver</a> · <a href="#" onclick="subirCarta(${i});return false">cambiar</a>`
+        : `<button type="button" class="btn-mini" onclick="subirCarta(${i})">+ Foto o PDF</button>`}</div>
+    </div>`).join('')
+  pintarPrevia()
+}
+window.nuevaCarta = function () { if (cartas.length >= 10) return alert('Como mucho 10 cartas o menús.'); cartas.push({ nombre: '', url: '', precio: null }); pintarCartas() }
+window.quitarCarta = function (i) { cartas.splice(i, 1); pintarCartas() }
+window.subirCarta = function (i) { cartaSubiendo = i; document.getElementById('carta-input').click() }
+document.getElementById('carta-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; e.target.value = ''
+  if (!file || cartaSubiendo === null) return
+  const i = cartaSubiendo; cartaSubiendo = null
+  try {
+    const esPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    const r = esPdf ? { blob: file, ext: 'pdf' } : await reducirFoto(file)
+    if (r.blob.size > 10 * 1024 * 1024) throw new Error('pesa más de 10 MB')
+    const slot = await api('photo_slot', { ext: r.ext })
+    const { error } = await sbClient.storage.from('business-photos')
+      .uploadToSignedUrl(slot.path, slot.token, r.blob, { contentType: esPdf ? 'application/pdf' : (r.blob.type || 'image/jpeg') })
+    if (error) throw new Error(error.message)
+    cartas[i].url = slot.public_url
+    if (!cartas[i].nombre) cartas[i].nombre = esPdf ? 'Carta' : 'Menú'
+    pintarCartas()
+  } catch (err) { alert('No se pudo subir ' + file.name + ': ' + err.message) }
+})
+function cartasParaGuardar() {
+  const sinNombre = cartas.filter(c => c.url && !String(c.nombre || '').trim())
+  if (sinNombre.length) throw new Error('ponle nombre a cada carta o menú')
+  return cartas.filter(c => c.url).map(c => ({ nombre: String(c.nombre).trim(), url: c.url, precio: c.precio }))
+}
+function pintarPrevia() {
+  const hoy = document.getElementById('preview-hoy'); const ca = document.getElementById('preview-carta')
+  if (hoy) hoy.textContent = horario ? mcHorarioHoy(horario) : ''
+  const c = cartas.find(x => x.url && String(x.nombre || '').trim())
+  if (ca) ca.textContent = c ? c.nombre + (c.precio != null && c.precio !== '' ? ' · ' + String(c.precio).replace('.', ',') + ' €' : '') : ''
+}
+
 
 
 async function loadPerfil() {
@@ -187,8 +326,10 @@ async function loadPerfil() {
     <div class="section-block">
       <div class="section-label">Tipo de negocio</div>
       <div class="rf-chips" id="tipos"></div>
-      <div class="field" style="margin-top:14px"><label>¿Y EXACTAMENTE? <span>(opcional)</span></label>
-        <input type="text" id="f-cat" list="categorias" maxlength="60" value="${esc(biz.category||'')}" placeholder="Casa rural, asador, taller de motos…"><datalist id="categorias"></datalist></div>
+      <div class="field" style="margin-top:14px"><label>¿Y EXACTAMENTE? <span>(opcional)</span><button type="button" class="ayuda" onclick="document.getElementById('cat-mas').style.display='block'" aria-label="Qué poner aquí">?</button></label>
+        <input type="text" id="f-cat" list="categorias" maxlength="60" value="${esc(biz.category||'')}" placeholder="Casa rural, asador, taller de motos…"><datalist id="categorias"></datalist>
+        <div class="field-hint">Por ejemplo: brasería, asador, cafetería. Sale junto al tipo en la app.</div>
+        <div class="field-hint" id="cat-mas" style="display:none">Es cómo os definís vosotros. En la ficha el motero leerá, por ejemplo, «Bar o restaurante · Brasería». Si no sabéis qué poner, dejadlo en blanco.</div></div>
     </div>
     <div class="section-block">
       <div class="section-label">Para moteros</div>
@@ -235,10 +376,21 @@ async function loadPerfil() {
     </div>
     <div class="section-block">
       <div class="section-label">Horario</div>
-      <div class="grid2">
-        <div class="field"><label>APERTURA</label><input type="time" id="f-open" value="${biz.opening_time||'09:00'}"></div>
-        <div class="field"><label>CIERRE</label><input type="time" id="f-close" value="${biz.closing_time||'22:00'}"></div>
+      <label class="hmismo"><input type="checkbox" id="h-mismo"> Mismo horario todos los días que abro</label>
+      <div id="h-comun"></div>
+      <div id="h-dias"></div>
+      <div class="hdia" style="border-bottom:none">
+        <div class="hdia-nombre">Festivos</div>
+        <div class="rf-chips" id="h-fest"></div>
+        <div class="hfranjas" id="h-fest-franjas"></div>
       </div>
+      <div class="field-hint">Mediodía y noche son opcionales: rellena solo los turnos que abres.</div>
+    </div>
+    <div class="section-block">
+      <div class="section-label">Carta y menús</div>
+      <div class="field-hint" style="margin-bottom:8px">Sube tu carta, el menú del día o un menú para moteros. Ponle el nombre que quieras. Foto o PDF.</div>
+      <div id="cartas"></div>
+      <button type="button" class="btn-mini" style="margin-top:12px" onclick="nuevaCarta()">+ Añadir otra carta o menú</button>
     </div>
     <div class="section-block">
       <div class="section-label">📱 Así aparecerá en la app</div>
@@ -252,13 +404,18 @@ async function loadPerfil() {
           </div>
         </div>
         <div class="app-card-body">
-          <div class="rf-badge-mini">🪖 Rider Friendly</div>
+          <div class="rf-badge-mini">🪖 Rider Friendly</div>${biz.fundador ? ' <div class="rf-badge-mini" style="background:rgba(245,197,24,.18);color:#B8860B">👑 Socio fundador</div>' : ''}
           <div class="app-card-desc" id="preview-desc">${biz.description||'Descripción del negocio'}</div>
+          <div class="app-card-desc" id="preview-hoy" style="margin-top:6px;font-weight:700;color:var(--black)"></div>
+          <div class="app-card-desc" id="preview-carta" style="margin-top:2px;color:var(--orange);font-weight:700"></div>
         </div>
       </div>
     </div>
   `
 
+  iniciarHorario(biz)
+  cartas = Array.isArray(biz.cartas) ? biz.cartas.map(c => ({ ...c })) : []
+  pintarCartas()
   mcChipsTipo(document.getElementById('tipos'), selectedType, (v) => selectType(v))
   mcCategorias(document.getElementById('categorias'), selectedType)
   mcServicios(document.getElementById('servicios'), selectedType, biz.servicios_moto || [])
@@ -477,7 +634,7 @@ function fotoFormulario() {
   const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : '' }
   return JSON.stringify({
     n: v('f-name'), t: selectedType, c: v('f-cat'), o: v('f-otros'), d: v('f-desc'), p: v('f-phone'),
-    w: v('f-web'), a: v('f-address'), ab: v('f-open'), ci: v('f-close'),
+    w: v('f-web'), a: v('f-address'), h: horario, ca: cartas.filter(c => c.url),
     s: [...document.querySelectorAll('.f-serv:checked')].map(c => c.value).sort(),
     la: Number(currentLat).toFixed(6), ln: Number(currentLng).toFixed(6), f: photos,
   })
@@ -492,6 +649,11 @@ function refrescarBoton() {
   btn.textContent = hay ? 'Guardar cambios' : 'Sin cambios'
 }
 setInterval(refrescarBoton, 500)
+
+function turnosDeLaSemana() {
+  const d = MC_DIAS.map(x => horario.dias[x.k]).find(x => x && x.abre && (x.turnos || []).length)
+  return d ? d.turnos : []
+}
 
 async function handleSave() {
   const btn = document.getElementById('btn-save')
@@ -518,8 +680,10 @@ async function handleSave() {
       website: document.getElementById('f-web').value.trim(),
       address: document.getElementById('f-address').value.trim(),
       lat: currentLat, lng: currentLng, photos,
-      opening_time: document.getElementById('f-open').value,
-      closing_time: document.getElementById('f-close').value
+      horario: horarioParaGuardar(),
+      cartas: cartasParaGuardar(),
+      // La app 1.26.930 y anteriores solo leen apertura/cierre: se les da la primera franja y la última.
+      ...(() => { const t = turnosDeLaSemana(); return t.length ? { opening_time: t[0][0], closing_time: t[t.length - 1][1] } : {} })()
     })
     alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0)
     guardado = loQueSeGuarda

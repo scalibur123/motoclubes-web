@@ -68,3 +68,23 @@ window.mcChipsTipo = function (cont, actual, onElegir) {
 window.mcCategorias = function (datalist, tipo) {
   datalist.innerHTML = (window.MC_CATEGORIAS[tipo] || []).map(c => `<option value="${c}">`).join('')
 }
+
+// ---- MC-RF-ROBLE-30SEP-2026 (89.ª, RF-HORARIO-DIAS-1) · horario por días ----
+// Formato (el mismo que limpia business-portal y lee la app en src/lib/rider-friendly.ts):
+//   { mismo, dias: { lun: { abre, turnos: [["13:00","16:00"],["20:30","23:00"]] }, … }, festivos: { modo, turnos } }
+// ⚠️ El texto «Hoy: …» existe DOS veces: aquí (vista previa del perfil) y en la app (horarioHoy). Si cambia uno, el otro.
+window.MC_DIAS = [
+  { k: 'lun', l: 'Lunes' }, { k: 'mar', l: 'Martes' }, { k: 'mie', l: 'Miércoles' }, { k: 'jue', l: 'Jueves' },
+  { k: 'vie', l: 'Viernes' }, { k: 'sab', l: 'Sábado' }, { k: 'dom', l: 'Domingo' },
+]
+window.mcTurnosTxt = function (t) { return (t || []).map(x => x[0] + '–' + x[1]).join(' y ') }
+window.mcHorarioHoy = function (h, fecha) {
+  if (!h || !h.dias) return ''
+  const k = window.MC_DIAS[((fecha || new Date()).getDay() + 6) % 7].k
+  const d = h.dias[k] || {}
+  const cerrados = window.MC_DIAS.filter(x => !(h.dias[x.k] || {}).abre).map(x => x.l.toLowerCase())
+  const cierra = cerrados.length === 7 ? '' : cerrados.length
+    ? ' · Cierra ' + (cerrados.length === 1 ? cerrados[0] : cerrados.slice(0, -1).join(', ') + ' y ' + cerrados[cerrados.length - 1])
+    : ''
+  return (d.abre ? 'Hoy: ' + window.mcTurnosTxt(d.turnos) : 'Hoy cerrado') + cierra
+}

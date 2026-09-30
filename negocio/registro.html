@@ -39,6 +39,10 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .success-screen .icon{font-size:48px;margin-bottom:16px}
 .success-screen h2{font-size:20px;font-weight:800;margin-bottom:10px}
 .success-screen p{font-size:14px;color:var(--gray);line-height:1.6}
+.inv-banner{background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.45);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+.inv-banner b{display:block;font-size:15px;color:#F5C518;margin-bottom:2px}
+.inv-banner span{font-size:12px;color:#D9B79A}
+.ayuda{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--gray-light);background:none;color:var(--gray-light);font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;vertical-align:middle;font-family:inherit}
 .password-wrap{position:relative;display:block}.password-wrap input{padding-right:42px}.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-light);font-size:18px;padding:0;line-height:1}
 </style>
 <link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
@@ -51,15 +55,25 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 </header>
 <main>
   <div class="card">
-    <div id="form-view">
+    <!-- MC-RF-INVITA-30SEP-2026 (89.ª, RF-ALTA-INVITACION-1): solo se entra con el enlace de la invitación.
+         Sin enlace (o usado o caducado) se ve «El alta de negocios abre muy pronto». Lo decide el servidor. -->
+    <div id="cargando-view" style="text-align:center;padding:30px 0;color:var(--gray)">Comprobando tu invitación…</div>
+    <div id="cerrado-view" style="display:none">
+      <div class="card-title">El alta de negocios abre muy pronto</div>
+      <div class="card-sub" id="cerrado-texto">Estamos incorporando los primeros negocios uno a uno. Si te hemos invitado, entra con el enlace que te llegó por correo.</div>
+      <div class="card-sub">Si el enlace ya lo usaste o ha caducado, escríbenos a <a href="mailto:soporte@motoclubes.es?subject=Invitaci%C3%B3n%20a%20Rider%20Friendly">soporte@motoclubes.es</a> y te mandamos otro.</div>
+      <div class="card-sub"><a href="/rider-friendly/">Qué es Rider Friendly</a> · ¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></div>
+    </div>
+    <div id="form-view" style="display:none">
+      <div class="inv-banner" id="inv-banner" style="display:none"><b id="inv-nombre"></b><span id="inv-sub"></span></div>
       <div class="card-title">Crea tu cuenta</div>
       <div class="card-sub">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></div>
       <div class="alert error" id="alert-error"></div>
       <div class="field"><label>NOMBRE DEL NEGOCIO</label><input type="text" id="biz-name" placeholder="Ej: Casa Pepe — Asador de montaña"></div>
       <!-- MC-RF-NEGOCIO-21SEP-2026: el tipo es obligatorio y es el que pinta el mapa -->
       <div class="field"><label>¿QUÉ TIPO DE NEGOCIO ES?</label><div class="rf-chips" id="tipos"></div></div>
-      <div class="field"><label>¿Y EXACTAMENTE? <span style="font-weight:500;color:var(--gray-light)">(opcional)</span></label><input type="text" id="categoria" list="categorias" maxlength="60" placeholder="Casa rural, asador, taller de motos…"><datalist id="categorias"></datalist></div>
-      <div class="field"><label>EMAIL DE CONTACTO</label><input type="email" id="email" placeholder="correo@tunegocio.es" autocomplete="email"></div>
+      <div class="field"><label>¿Y EXACTAMENTE? <span style="font-weight:500;color:var(--gray-light)">(opcional)</span><button type="button" class="ayuda" onclick="document.getElementById('cat-mas').style.display='block'" aria-label="Qué poner aquí">?</button></label><input type="text" id="categoria" list="categorias" maxlength="60" placeholder="Casa rural, asador, taller de motos…"><datalist id="categorias"></datalist><div class="field-hint" id="cat-pista">Por ejemplo: brasería, asador, cafetería. Sale junto al tipo en la app.</div><div class="field-hint" id="cat-mas" style="display:none">Es cómo os definís vosotros. En la ficha el motero leerá, por ejemplo, «Bar o restaurante · Brasería». Si no sabéis qué poner, dejadlo en blanco.</div></div>
+      <div class="field"><label>EMAIL DE CONTACTO DEL ESTABLECIMIENTO</label><input type="email" id="email" placeholder="correo@tunegocio.es" autocomplete="email"></div>
       <div class="field"><label>CONTRASEÑA</label><div class="password-wrap"><input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password','eye1')" id="eye1">👁</button></div><div class="field-hint">Mínimo 8 caracteres</div></div>
       <div class="field"><label>REPITE LA CONTRASEÑA</label><div class="password-wrap"><input type="password" id="password2" placeholder="••••••••" autocomplete="new-password"><button class="eye-btn" onclick="toggleEye('password2','eye2')" id="eye2">👁</button></div></div>
       <div style="background:rgba(255,122,26,.14);border-radius:12px;padding:14px 16px;margin-bottom:18px;">
@@ -96,11 +110,42 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi
 function toggleEye(inputId,btnId){const input=document.getElementById(inputId);const btn=document.getElementById(btnId);if(input.type==="password"){input.type="text";btn.textContent="🙈"}else{input.type="password";btn.textContent="👁"}}
 // MC-RF-NEGOCIO-21SEP-2026: chips de tipo y sugerencias de categoría (listas en negocio.js)
 let tipoElegido = ''
-window.addEventListener('DOMContentLoaded', () => {
-  mcChipsTipo(document.getElementById('tipos'), '', (v) => {
+const invitacion = new URLSearchParams(location.search).get('i') || ''
+const ver = (id) => ['cargando-view', 'cerrado-view', 'form-view', 'success-view']
+  .forEach((v) => { document.getElementById(v).style.display = v === id ? 'block' : 'none' })
+window.addEventListener('DOMContentLoaded', async () => {
+  let inv = null
+  if (invitacion) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/business-register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ accion: 'invitacion', invitacion })
+      })
+      inv = await r.json()
+      if (!r.ok || inv.error) {
+        if (inv && (inv.usada || inv.caducada)) document.getElementById('cerrado-texto').textContent = inv.error
+        inv = null
+      }
+    } catch (e) { inv = null }
+  }
+  if (!inv) { ver('cerrado-view'); return }
+
+  document.getElementById('inv-nombre').textContent = 'Invitación para ' + inv.nombre
+  document.getElementById('inv-sub').textContent = inv.fundador
+    ? 'Socio fundador de Rider Friendly · gratis para siempre'
+    : 'Rider Friendly · MOTOCLUBes'
+  document.getElementById('inv-banner').style.display = 'block'
+  document.getElementById('biz-name').value = inv.nombre || ''
+  document.getElementById('email').value = inv.correo || ''
+  document.getElementById('categoria').value = inv.categoria || ''
+  tipoElegido = inv.tipo || ''
+  mcChipsTipo(document.getElementById('tipos'), tipoElegido, (v) => {
     tipoElegido = v
     mcCategorias(document.getElementById('categorias'), v)
   })
+  mcCategorias(document.getElementById('categorias'), tipoElegido)
+  ver('form-view')
 })
 async function handleRegister() {
   const bizName = document.getElementById('biz-name').value.trim()
@@ -144,7 +189,7 @@ async function handleRegister() {
         'apikey': SUPABASE_PUBLISHABLE_KEY,
         'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
       },
-      body: JSON.stringify({ email, password, business_name: bizName, type: tipoElegido,
+      body: JSON.stringify({ invitacion, email, password, business_name: bizName, type: tipoElegido,
                              category: document.getElementById('categoria').value.trim() })
     })
 
@@ -159,8 +204,7 @@ async function handleRegister() {
     }
 
     document.getElementById('confirm-email').textContent = email
-    document.getElementById('form-view').style.display = 'none'
-    document.getElementById('success-view').style.display = 'block'
+    ver('success-view')
 
   } catch(e) {
     alertError.textContent = 'Error de conexión: ' + e.message
@@ -171,7 +215,7 @@ async function handleRegister() {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') handleRegister()
+  if (e.key === 'Enter' && document.getElementById('form-view').style.display === 'block') handleRegister()
 })
 </script>
 <script src="/assets/visita.js" defer></script>

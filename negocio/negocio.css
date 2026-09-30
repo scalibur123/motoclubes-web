@@ -56,6 +56,9 @@ body.tema-claro{
 }
 body.tema-claro nav{background:#FFFFFF!important;border-bottom-color:var(--card)!important}
 body.tema-claro .rf-chip{background:#FFFFFF}
+/* MC-RF-ROBLE-30SEP-2026 (89.ª): la regla de arriba pesaba más que .rf-chip.sel y el chip elegido salía
+   blanco sobre blanco en el perfil (el tipo de negocio elegido no se veía). Visto probando el horario. */
+body.tema-claro .rf-chip.sel{background:var(--orange);border-color:var(--orange);color:#fff}
 
 /* MC-PORTAL-CASCO-21SEP-2026 (Mario: «desde el panel de negocio no puedo ir dándole al casco»):
    el casco y «MOTOCLUBes» de la cabecera eran imagen y texto sueltos; ahora llevan a la portada. */

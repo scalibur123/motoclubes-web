@@ -99,9 +99,22 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 <main>
   <div class="alert error" id="alert-error"></div>
   <div class="alert success" id="alert-success"></div>
-  <div class="section-label">Ofertas activas</div>
+  <!-- MC-RF-ROBLE-30SEP-2026 (89.ª, RF-QR-1): QR de los moteros sin canjear y cómo funcionan -->
+  <div id="qr-bloque" style="display:none">
+    <div class="section-label">QR de moteros sin canjear</div>
+    <div id="qr-list"></div>
+  </div>
+  <div class="section-label">Tus ofertas</div>
   <div id="ofertas-list"><div class="loading">Cargando ofertas...</div></div>
   <button class="btn-new" onclick="showForm()">+ Nueva oferta</button>
+  <div id="retiradas-bloque" style="display:none;margin-bottom:20px">
+    <div class="section-label">Retiradas con QR pendientes</div>
+    <div id="retiradas-list"></div>
+  </div>
+  <div class="preview-box" style="margin:0 0 20px">
+    <div class="preview-box-label">Cómo funcionan los QR</div>
+    <div class="preview-box-txt" style="font-weight:500;font-size:13px">El motero saca su QR en la app, cada uno el suyo, y os lo enseña al llegar: lo escaneáis en <b>Escáner</b> y queda canjeado. <b>Los QR no caducan.</b> Podéis retirar o cambiar una oferta cuando queráis, pero los QR que ya se hayan sacado siguen valiendo tal como estaba la oferta ese día. Aquí arriba veis cuántos hay sin canjear, también de las ofertas retiradas.</div>
+  </div>
   <div class="form-block" id="form-block" style="display:none">
     <div class="section-label">Nueva oferta</div>
     <div class="field">
@@ -206,26 +219,45 @@ async function handleLogout() {
 
 let tipoActual = 'pct_consumicion'
 
+// MC-RF-ROBLE-30SEP-2026 (89.ª): una oferta «sin caducidad» se guarda hasta 2099 (la base exige fecha).
+const SIN_FIN = '2099-12-31T23:59:59Z'
+const hasta = (iso) => !iso || new Date(iso).getFullYear() >= 2099 ? 'Sin caducidad' : 'Hasta ' + new Date(iso).toLocaleDateString('es-ES')
+const escH = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
 async function loadOfertas() {
   const r = await api('offers_list')
   document.getElementById('biz-name-header').textContent = r.business_name || ''
-  const ofertas = r.offers
-  const list = document.getElementById('ofertas-list')
-  if (!ofertas || ofertas.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aún no tienes ofertas publicadas.<br>¡Crea tu primera oferta para aparecer en el mapa!</div>'
-    return
-  }
-  list.innerHTML = ofertas.map(o => `
+  const todas = r.offers || []
+  const ofertas = todas.filter(o => !o.retirada_en)
+  const retiradas = todas.filter(o => o.retirada_en && o.qr_pendientes > 0)
+  const tarjeta = (o, conBotones) => `
     <div class="oferta-card">
       <div class="oferta-val">${o.discount_pct ? o.discount_pct+'%' : (o.fixed_price ? o.fixed_price+'€' : '🎁')}</div>
       <div class="oferta-info">
-        <div class="oferta-title">${o.title}</div>
-        <div class="oferta-meta">${o.ends_at ? 'Hasta '+new Date(o.ends_at).toLocaleDateString('es-ES') : 'Sin caducidad'} · ${o.uses_count ?? 0} canjes</div>
+        <div class="oferta-title">${escH(o.title)}</div>
+        <div class="oferta-meta">${o.retirada_en ? 'Retirada el ' + new Date(o.retirada_en).toLocaleDateString('es-ES') : hasta(o.ends_at)} · ${o.uses_count ?? 0} canjes${o.qr_pendientes ? ` · <b style="color:var(--orange)">${o.qr_pendientes} QR sin canjear</b>` : ''}</div>
       </div>
-      <div class="oferta-actions">
+      ${conBotones ? `<div class="oferta-actions">
         <span class="badge ${o.is_active ? 'on' : 'off'}">${o.is_active ? 'Activa' : 'Borrador'}</span>
-        <button class="icon-btn" onclick="toggleActive('${o.id}',${o.is_active})">${o.is_active ? '⏸' : '▶️'}</button>
-        <button class="icon-btn" onclick="deleteOferta('${o.id}')">🗑️</button>
+        <button class="icon-btn" title="${o.is_active ? 'Pausar' : 'Publicar'}" onclick="toggleActive('${o.id}',${o.is_active})">${o.is_active ? '⏸' : '▶️'}</button>
+        <button class="icon-btn" title="Retirar" onclick="deleteOferta('${o.id}',${o.qr_pendientes || 0})">🗑️</button>
+      </div>` : ''}
+    </div>`
+  const list = document.getElementById('ofertas-list')
+  list.innerHTML = ofertas.length
+    ? ofertas.map(o => tarjeta(o, true)).join('')
+    : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>Las ofertas son opcionales, pero son lo que más llama la atención de los moteros. Te recomendamos crear al menos una.</div>'
+  document.getElementById('retiradas-bloque').style.display = retiradas.length ? 'block' : 'none'
+  document.getElementById('retiradas-list').innerHTML = retiradas.map(o => tarjeta(o, false)).join('')
+
+  const q = await api('qr_pendientes').catch(() => ({ qrs: [] }))
+  document.getElementById('qr-bloque').style.display = q.qrs?.length ? 'block' : 'none'
+  document.getElementById('qr-list').innerHTML = (q.qrs || []).map(x => `
+    <div class="oferta-card">
+      <div class="oferta-val">📱</div>
+      <div class="oferta-info">
+        <div class="oferta-title">${escH(x.rider)}</div>
+        <div class="oferta-meta">${escH(x.oferta)} · lo sacó el ${new Date(x.sacado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     </div>`).join('')
 }
@@ -260,7 +292,7 @@ window.handleSave = async function(publish) {
   const alertError = document.getElementById('alert-error')
   const alertSuccess = document.getElementById('alert-success')
   alertError.classList.remove('show'); alertSuccess.classList.remove('show')
-  const oferta = { offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value || null, uses_count: 0 }
+  const oferta = { offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value ? new Date(document.getElementById('f-caducidad').value + 'T23:59:59').toISOString() : SIN_FIN, uses_count: 0 }
   if (tipoActual === 'pct_consumicion') { const pct = parseInt(document.getElementById('f-pct').value); if (!pct) { alertError.textContent = 'Introduce el porcentaje.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = document.getElementById('f-aplica').value; oferta.title = `${pct}% de descuento en ${oferta.applies_to}` }
   else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona` }
   else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.room_type = document.getElementById('f-hab').value; oferta.title = `Hab. ${oferta.room_type} · ${precio}€/persona/noche` }
@@ -277,7 +309,7 @@ window.handleSave = async function(publish) {
   btn.disabled = false; btn.innerHTML = 'Publicar oferta'
 }
 window.toggleActive = async function(id, currentState) { try { await api('offer_toggle', { id, is_active: !currentState }); await loadOfertas() } catch (e) { alert(e.message) } }
-window.deleteOferta = async function(id) { if (!confirm('¿Eliminar esta oferta?')) return; try { await api('offer_delete', { id }); await loadOfertas() } catch (e) { alert(e.message) } }
+window.deleteOferta = async function(id, pendientes) { if (!confirm('¿Retirar esta oferta?\n\nLos moteros ya no podrán sacar QR nuevos.' + (pendientes ? `\nLos ${pendientes} QR que ya tienen siguen valiendo: los veréis aquí hasta que los canjeen.` : ''))) return; try { await api('offer_delete', { id }); await loadOfertas() } catch (e) { alert(e.message) } }
 window.handleLogout = handleLogout
 
 loadOfertas()
