@@ -93,10 +93,10 @@ main{max-width:500px;margin:0 auto;padding:28px 20px}
     <!-- MC-RF-QR-MANUAL-30SEP-2026 (89.ª): si la cámara no lee el QR, el código de debajo se escribe a mano.
          Sin esto, un negocio con la cámara rota no podía canjear (visto preparando la prueba con un solo iPhone). -->
     <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(0,0,0,.08)">
-      <div class="card-sub" style="margin-bottom:8px">¿No lee el QR? Escribe el código que sale debajo, en el móvil del motero:</div>
+      <div class="card-sub" style="margin-bottom:8px">¿No lee el QR? Escribe el código que sale debajo del QR, en el móvil del motero:</div>
       <div style="display:flex;gap:8px">
-        <input id="codigo-manual" maxlength="9" placeholder="Ej: DT42 FSZH" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"
-          style="flex:1;min-width:0;padding:11px 14px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid rgba(0,0,0,.15);border-radius:10px">
+        <input id="codigo-manual" maxlength="9" placeholder="Código de 8 letras y números" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"
+          style="flex:1;min-width:0;padding:11px 14px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;border:1.5px solid rgba(0,0,0,.15);border-radius:10px">
         <button type="button" onclick="canjearManual()" style="flex-shrink:0;padding:11px 16px;border:none;border-radius:50px;background:var(--orange);color:#fff;font-weight:700;font-family:inherit;font-size:14px;cursor:pointer">Canjear</button>
       </div>
     </div>
@@ -240,7 +240,7 @@ async function processQR(data) {
 
 function canjearManual() {
   const c = document.getElementById('codigo-manual').value.replace(/\s+/g, '').toUpperCase()
-  if (!/^[A-Z0-9]{8}$/.test(c)) { showError('El código tiene 8 letras y números, como DT42 FSZH.'); return }
+  if (!/^[A-Z0-9]{8}$/.test(c)) { showError('El código tiene 8 letras y números. Míralo debajo del QR, en el móvil del motero.'); return }
   stopCamera()
   processQR(c)
 }
