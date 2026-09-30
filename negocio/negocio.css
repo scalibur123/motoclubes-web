@@ -64,3 +64,15 @@ body.tema-claro .rf-chip.sel{background:var(--orange);border-color:var(--orange)
    el casco y «MOTOCLUBes» de la cabecera eran imagen y texto sueltos; ahora llevan a la portada. */
 .marca-portal{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
 .marca-portal:hover span{color:var(--orange)}
+/* MC-RF-MOVIL-30SEP-2026 (89.ª): en el móvil la cabecera no cabía (marca + nombre del negocio + «Cerrar sesión»)
+   y empujaba toda la página a la derecha: papelera y textos cortados (foto de Mario, iPhone). Ahora el nombre se
+   recorta con «…», el botón no se aplasta y en pantallas estrechas se esconde la palabra MOTOCLUBes (queda el casco). */
+header{gap:10px}
+header .header-left{min-width:0;flex:1 1 auto}
+header .biz-name{min-width:0;flex:0 1 auto;max-width:none!important}
+header .btn-logout{flex-shrink:0;white-space:nowrap}
+@media (max-width:520px){
+  header{padding-left:14px!important;padding-right:14px!important}
+  header .brand,header .sep{display:none}
+}
+

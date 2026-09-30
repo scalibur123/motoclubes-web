@@ -90,12 +90,22 @@ main{max-width:500px;margin:0 auto;padding:28px 20px}
     </div>
     <canvas id="canvas"></canvas>
     <button class="btn-start" id="btn-start" onclick="startScanner()">📷 Activar cámara</button>
+    <!-- MC-RF-QR-MANUAL-30SEP-2026 (89.ª): si la cámara no lee el QR, el código de debajo se escribe a mano.
+         Sin esto, un negocio con la cámara rota no podía canjear (visto preparando la prueba con un solo iPhone). -->
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(0,0,0,.08)">
+      <div class="card-sub" style="margin-bottom:8px">¿No lee el QR? Escribe el código que sale debajo, en el móvil del motero:</div>
+      <div style="display:flex;gap:8px">
+        <input id="codigo-manual" maxlength="9" placeholder="Ej: DT42 FSZH" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"
+          style="flex:1;min-width:0;padding:11px 14px;font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid rgba(0,0,0,.15);border-radius:10px">
+        <button type="button" onclick="canjearManual()" style="flex-shrink:0;padding:11px 16px;border:none;border-radius:50px;background:var(--orange);color:#fff;font-weight:700;font-family:inherit;font-size:14px;cursor:pointer">Canjear</button>
+      </div>
+    </div>
   </div>
   <div class="result-card ok" id="result-ok">
     <div class="result-icon">✅</div>
     <div class="result-title">¡Canje registrado!</div>
     <div class="rider-info" id="rider-info"></div>
-    <div class="result-detail">El descuento ha sido validado.<br>Se ha enviado confirmación por email.</div>
+    <div class="result-detail">La oferta ha quedado canjeada.<br>Al motero le llega el aviso en la app.</div>
     <button class="btn-retry" onclick="resetScanner()">Escanear otro QR</button>
   </div>
   <div class="result-card error" id="result-error">
@@ -222,10 +232,17 @@ async function processQR(data) {
     <div class="label">Motero</div>
     <div class="value" style="margin-bottom:10px">🏍️ ${riderName}</div>
     <div class="label">Oferta aplicada</div>
-    <div class="value">${offerDesc}</div>
+    <div class="value">${String((redeem.oferta && redeem.oferta.titulo) || offerDesc).replace(/</g, '&lt;')}</div>
   `
   document.getElementById('scanner-card').style.display = 'none'
   document.getElementById('result-ok').style.display = 'block'
+}
+
+function canjearManual() {
+  const c = document.getElementById('codigo-manual').value.replace(/\s+/g, '').toUpperCase()
+  if (!/^[A-Z0-9]{8}$/.test(c)) { showError('El código tiene 8 letras y números, como DT42 FSZH.'); return }
+  stopCamera()
+  processQR(c)
 }
 
 function showError(msg) {
@@ -243,6 +260,7 @@ function resetScanner() {
   btn.style.display = 'flex'
   btn.disabled = false
   btn.innerHTML = '📷 Activar cámara'
+  document.getElementById('codigo-manual').value = ''
   scanning = false
 }
 

@@ -125,8 +125,6 @@ async function loadPanel() {
 
   document.getElementById('biz-name').textContent = biz?.name || session.email
   // MC-RF-ROBLE-30SEP-2026 (89.ª, RF-FUNDADOR-1): etiqueta de socio fundador en el panel.
-  if (biz?.fundador) document.getElementById('biz-name').insertAdjacentHTML('afterend',
-    '<span style="margin-left:8px;padding:3px 10px;border-radius:50px;background:rgba(245,197,24,.18);color:#B8860B;font-size:12px;font-weight:800;white-space:nowrap">👑 Socio fundador</span>')
 
   const rfActive = biz?.is_active === true
   // MC-RF-NEGOCIO-21SEP-2026 (RF-PROMESA-PORTAL-1): antes prometía «rellena tu perfil y publica
@@ -137,7 +135,9 @@ async function loadPanel() {
   if (biz?.lat == null || biz?.lng == null) faltan.push('la ubicación en el mapa')
   if (!(biz?.photos || []).length) faltan.push('al menos una foto')
 
+  // MC-RF-ROBLE-30SEP-2026 (89.ª, RF-FUNDADOR-1): la etiqueta va arriba del panel, no en la cabecera (en el móvil no cabía).
   document.querySelector('main').innerHTML = `
+    ${biz?.fundador ? '<div style="display:inline-block;margin:0 0 14px;padding:5px 12px;border-radius:50px;background:rgba(245,197,24,.2);color:#8a6400;font-size:13px;font-weight:800">👑 Socio fundador de Rider Friendly · gratis para siempre</div>' : ''}
     <div class="rf-banner ${rfActive ? 'active' : 'inactive'}">
       <div class="rf-banner-icon">${rfActive ? '🪖' : '⏳'}</div>
       <div>
