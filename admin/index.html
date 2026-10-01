@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOTOCLUBes · Administración</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- MC-ADMIN-WEB-1OCT-2026 (92.ª, ADMIN-WEB-NEGOCIOS-1): el panel de Mario en el ordenador (maqueta A1 y A2 del lienzo).
+     Entra con su usuario de MOTOCLUBes; la base comprueba que es administrador (mc_soy_admin) y cada función lleva su
+     propio candado (mc_rf_admin_altas, mc_rf_invitar). Invitar = un solo correo con la carta, la presentación y la guía. -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--o:#FF7A1A;--od:#C2560B;--bg:#F7F5F2;--card:#FFFFFF;--line:#E7E1D9;--tx:#161412;--g:#5C5750;--gl:#8C857C;--red:#B3261E}
+body{font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+header{background:#0E0E0E;padding:14px 28px;display:flex;align-items:center;gap:12px}
+header img{width:30px;height:30px;border-radius:8px}header .m{color:#fff;font-weight:800}header .s{color:#E7E1D9;font-weight:600;flex-grow:1}
+header .u{color:#B3B3B3;font-size:13px}header button{background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:50px;padding:8px 14px;font:600 12px Manrope,sans-serif;cursor:pointer}
+main{max-width:1180px;margin:0 auto;padding:28px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:26px}.sub{color:var(--g);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.cifra b{display:block;font-size:26px}.cifra span{color:var(--g);font-size:13px}
+.btn{background:var(--o);color:#fff;border:none;border-radius:50px;padding:12px 22px;font:700 14px Manrope,sans-serif;cursor:pointer}.btn:disabled{opacity:.6}
+.btn2{background:#fff;color:#6B4423;border:1.5px solid var(--line);border-radius:50px;padding:11px 20px;font:600 14px Manrope,sans-serif;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--g);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px}
+td{padding:13px 14px;border-top:1px solid #EFEAE3;vertical-align:top}.tabla{overflow-x:auto;padding:0}
+.chip{display:inline-block;border-radius:50px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.verde{background:#DFF3E4;color:#1E6B34}.amar{background:#FFF1C2;color:#6B5100}.azul{background:#E4EDFB;color:#244A86}.gris{background:#EFEAE3;color:#5C5750}.rojo{background:#FBE3E1;color:#8E1F18}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--g);letter-spacing:.3px}
+input[type=text],input[type=email],input[type=password]{padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font:500 14px Manrope,sans-serif;background:var(--bg);color:var(--tx)}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:14px}.opc{display:flex;flex-wrap:wrap;gap:8px}
+.opc button{border:1.5px solid var(--line);background:#fff;color:var(--tx);border-radius:50px;padding:9px 14px;font:600 13px Manrope,sans-serif;cursor:pointer}
+.opc button.sel{background:var(--o);border-color:var(--o);color:#fff}
+.check{flex-direction:row;align-items:center;gap:10px;font-size:14px;color:var(--tx);font-weight:600;letter-spacing:0}
+.check input{width:18px;height:18px;accent-color:var(--o)}
+.aviso{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}.ok{background:#DFF3E4;color:#1E6B34}.mal{background:#FBE3E1;color:#8E1F18}
+.oculto{display:none!important}.login{max-width:420px;margin:60px auto;display:flex;flex-direction:column;gap:14px}
+.corona{color:#B8860B;font-weight:800}
+@media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
+
+<div id="v-login" class="login card oculto">
+  <h1 style="font-size:22px">Entrar</h1>
+  <div class="sub">Con tu usuario de MOTOCLUBes. Solo para administradores.</div>
+  <label>CORREO<input type="email" id="l-correo" autocomplete="username"></label>
+  <label>CONTRASEÑA<input type="password" id="l-clave" autocomplete="current-password"></label>
+  <div id="l-error" class="aviso mal oculto"></div>
+  <button class="btn" id="l-entrar">Entrar</button>
+</div>
+
+<main id="v-panel" class="oculto">
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1"><h1>Altas de Rider Friendly</h1><div class="sub" id="resumen"></div></div>
+    <button class="btn" id="b-invitar">+ Invitar negocio</button>
+  </div>
+  <div id="aviso"></div>
+
+  <section id="form" class="card oculto" style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="font-size:20px">Invitar un negocio</h2>
+      <label>NOMBRE DEL NEGOCIO<input type="text" id="f-nombre" maxlength="120"></label>
+      <label>TIPO<div class="opc" id="f-tipo"></div></label>
+      <div class="fila"><label>¿Y EXACTAMENTE? (opcional)<input type="text" id="f-cat" maxlength="60" placeholder="Casa rural, asador, taller de motos…"></label>
+        <label>PERSONA DE CONTACTO<input type="text" id="f-contacto" maxlength="80" placeholder="El nombre con el que le saludamos"></label></div>
+      <label>CORREO DEL NEGOCIO<input type="email" id="f-correo"></label>
+      <label>¿YA HABÉIS HABLADO? (cambia la primera frase del correo)<div class="opc" id="f-previo"></div></label>
+      <label class="check"><input type="checkbox" id="f-fundador" checked> Socio fundador <span id="f-quedan" style="color:var(--gl);font-weight:500"></span></label>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="b-cancelar">Cancelar</button><button class="btn" id="b-enviar">Enviar invitación</button></div>
+    </div>
+    <div class="aviso" style="background:#FFF7E6;color:#6B5100;align-self:start">
+      <b>Qué recibe el negocio:</b> un solo correo firmado por ti, con «Responder a» negocios@motoclubes.es: la carta (con la primera frase según cómo os conocisteis), el enlace de alta de 15 días y dos adjuntos, <b>la presentación</b> y <b>la guía del negocio</b>.<br><br>
+      Si te escribe, le contesta el acuse al momento y te llega la respuesta que propone el agente. Cuando abra el enlace y cuando cree la cuenta, te avisamos.
+    </div>
+  </section>
+
+  <div class="card tabla"><table><thead><tr><th>Negocio</th><th>Tipo</th><th>Estado</th><th>Correo</th><th style="text-align:center">Pendiente de ti</th></tr></thead><tbody id="filas"></tbody></table></div>
+  <div class="sub" style="font-size:12px">Estados: Invitación enviada → Abrió el enlace → Cuenta creada → Ficha completa · por revisar → En el mapa. 👑 = socio fundador.</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient('https://yxmirhpwmdmaxynlshdx.supabase.co', 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi')
+const $ = (id) => document.getElementById(id)
+const esc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+const TIPOS = [['restaurante','Bar o restaurante'],['hotel','Hotel o casa rural'],['camping','Camping'],['gasolinera','Gasolinera'],['taller','Taller']]
+const PREVIO = [['telefono','Por teléfono'],['en_persona','En persona'],['cita','Una cita'],['ninguno','No (puerta fría)']]
+let tipo = 'restaurante', previo = 'ninguno', fundadores = 0
+function opciones(cont, lista, actual, fijar) {
+  cont.innerHTML = lista.map(([v, l]) => `<button type="button" data-v="${v}" class="${v === actual ? 'sel' : ''}">${l}</button>`).join('')
+  cont.querySelectorAll('button').forEach(b => b.onclick = () => { fijar(b.dataset.v); cont.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)) })
+}
+function aviso(txt, bien) { $('aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
+function estado(a) {
+  if (a.clase === 'negocio') {
+    if (a.activo) return '<span class="chip verde">En el mapa</span>'
+    if (a.ficha_completa) return '<span class="chip amar">Ficha completa · por revisar</span>'
+    return '<span class="chip azul">Cuenta creada · ficha a medias</span>'
+  }
+  if (a.envio_error) return '<span class="chip rojo">No se pudo enviar</span>'
+  if (!a.enviada_en) return '<span class="chip gris">Enviando…</span>'
+  if (a.caducada) return '<span class="chip rojo">Enlace caducado</span>'
+  if (a.abierta) return `<span class="chip gris">Abrió el enlace${a.aperturas > 1 ? ' (' + a.aperturas + ' veces)' : ''}</span>`
+  return '<span class="chip gris">Invitación enviada</span>'
+}
+const TIPO_TXT = Object.fromEntries(TIPOS)
+async function cargar() {
+  const { data, error } = await sb.rpc('mc_rf_admin_altas')
+  if (error) return aviso('No se han podido cargar las altas: ' + esc(error.message))
+  fundadores = data.fundadores || 0
+  const altas = data.altas || []
+  const mapa = altas.filter(a => a.activo).length, curso = altas.filter(a => a.clase === 'invitacion').length
+  const cambios = altas.reduce((n, a) => n + (a.cambios_pendientes || 0), 0), correos = altas.reduce((n, a) => n + (a.correos_sin_contestar || 0), 0)
+  $('resumen').innerHTML = `${mapa} en el mapa · ${curso} invitaciones en curso · ${cambios} cambios por revisar · ${correos} correos sin contestar · <b>Socios fundadores: ${fundadores} de 10</b>`
+  $('f-quedan').textContent = `(quedan ${Math.max(0, 10 - fundadores)} de 10)`
+  $('filas').innerHTML = altas.map(a => `<tr>
+    <td><b>${esc(a.nombre)}</b> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
+    <td>${esc(TIPO_TXT[a.tipo] || a.tipo || '')}</td>
+    <td>${estado(a)}${a.envio_error ? `<div class="sub" style="font-size:12px">${esc(a.envio_error).slice(0, 120)}</div>` : ''}</td>
+    <td class="sub">${esc(a.correo || '')}</td>
+    <td style="text-align:center">${[(a.cambios_pendientes ? a.cambios_pendientes + ' cambio' + (a.cambios_pendientes > 1 ? 's' : '') : ''), (a.correos_sin_contestar ? a.correos_sin_contestar + ' correo' + (a.correos_sin_contestar > 1 ? 's' : '') : '')].filter(Boolean).join(' · ') || '—'}</td>
+  </tr>`).join('') || '<tr><td colspan="5" class="sub">Aún no hay altas.</td></tr>'
+}
+async function entrar() {
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  const { data: admin } = await sb.rpc('mc_soy_admin')
+  if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
+  $('quien').textContent = session.user.email
+  $('v-login').classList.add('oculto'); $('v-panel').classList.remove('oculto'); $('salir').classList.remove('oculto')
+  await cargar()
+}
+$('l-entrar').onclick = async () => {
+  $('l-error').classList.add('oculto'); $('l-entrar').disabled = true
+  const { error } = await sb.auth.signInWithPassword({ email: $('l-correo').value.trim(), password: $('l-clave').value })
+  $('l-entrar').disabled = false
+  if (error) { $('l-error').textContent = 'Correo o contraseña incorrectos.'; $('l-error').classList.remove('oculto'); return }
+  entrar()
+}
+$('l-clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('l-entrar').click() })
+$('salir').onclick = async () => { await sb.auth.signOut(); entrar() }
+$('b-invitar').onclick = () => { $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
+$('b-cancelar').onclick = () => $('form').classList.add('oculto')
+opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
+opciones($('f-previo'), PREVIO, previo, v => previo = v)
+const ERRORES = { MC_CORREO_YA_TIENE_NEGOCIO: 'Ese correo ya tiene cuenta en el portal de negocios.', MC_FUNDADORES_COMPLETOS: 'Ya hay 10 socios fundadores (contando las invitaciones vivas).', MC_SOLO_ADMIN: 'Tu sesión no es de administrador. Vuelve a entrar.' }
+$('b-enviar').onclick = async () => {
+  const nombre = $('f-nombre').value.trim(), correo = $('f-correo').value.trim()
+  if (!nombre) return aviso('Pon el nombre del negocio.')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return aviso('El correo no parece válido.')
+  $('b-enviar').disabled = true
+  const { error } = await sb.rpc('mc_rf_invitar', { p_nombre: nombre, p_tipo: tipo, p_correo: correo, p_fundador: $('f-fundador').checked,
+    p_contacto: $('f-contacto').value.trim() || null, p_categoria: $('f-cat').value.trim() || null, p_contacto_previo: previo })
+  $('b-enviar').disabled = false
+  if (error) { const k = Object.keys(ERRORES).find(k => error.message.includes(k)); return aviso(k ? ERRORES[k] : 'No se ha podido invitar: ' + esc(error.message)) }
+  $('form').classList.add('oculto'); ['f-nombre','f-cat','f-contacto','f-correo'].forEach(id => $(id).value = '')
+  aviso(`✅ Invitación a <b>${esc(nombre)}</b> en camino. Sale en unos segundos; en la lista verás cuándo la abre.`, true)
+  setTimeout(cargar, 4000); cargar()
+}
+entrar()
+</script>
+</body>
+</html>
