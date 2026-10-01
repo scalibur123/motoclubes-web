@@ -151,7 +151,7 @@ input[type="file"]{display:none}
   <div id="content"><div class="loading">Cargando perfil...</div></div>
 </main>
 <div class="sticky-footer">
-  <button class="btn-outline" onclick="window.location.href='index.html'">Cancelar</button>
+  <button class="btn-outline" onclick="if (guardado === null || fotoFormulario() === guardado || confirm('Tienes cambios sin guardar. ¿Salir sin guardar?')) { guardado = fotoFormulario(); window.location.href='index.html' }">Cancelar</button>
   <button class="btn-primary" id="btn-save" onclick="handleSave()">Guardar cambios</button>
 </div>
 <input type="file" id="file-input" accept="image/*" multiple>
@@ -884,6 +884,10 @@ function refrescarBoton() {
   btn.textContent = hay ? 'Guardar cambios' : 'Sin cambios'
 }
 setInterval(refrescarBoton, 500)
+// MC-RF-GUARDAR-1OCT-2026: salir con cambios sin guardar avisa (Carlos salió y perdió la ficha del hotel).
+window.addEventListener('beforeunload', (e) => {
+  try { if (guardado !== null && fotoFormulario() !== guardado) { e.preventDefault(); e.returnValue = '' } } catch (_) {}
+})
 
 function turnosDeLaSemana() {
   const d = MC_DIAS.map(x => horario.dias[x.k]).find(x => x && x.abre && (x.turnos || []).length)
@@ -908,10 +912,11 @@ async function handleSave() {
     const habsAGuardar = selectedType === 'hotel' ? habitaciones.filter(h => !h.id || habFoto(h) !== h._orig)
       .filter(h => h.tipo || h.bano || h.personas || h.cuantas || h.precio_desde || h.fotos.length) : []
     for (const h of habsAGuardar) {
-      if (!h.tipo) throw new Error('elige el tipo de cada habitación')
-      if (!h.bano) throw new Error('di si el baño está dentro o es compartido en cada habitación')
-      if (!(Number(h.personas) >= 1)) throw new Error('¿cuántas personas caben en cada habitación?')
-      if (!(Number(h.cuantas) >= 1)) throw new Error('¿cuántas habitaciones de cada tipo tenéis?')
+      const n = 'en la habitación ' + (habitaciones.indexOf(h) + 1)
+      if (!h.tipo) throw new Error('falta elegir el tipo ' + n)
+      if (!h.bano) throw new Error('falta decir si el baño está dentro o es compartido ' + n)
+      if (!(Number(h.personas) >= 1)) throw new Error('falta cuántas personas caben ' + n)
+      if (!(Number(h.cuantas) >= 1)) throw new Error('falta cuántas habitaciones de ese tipo tenéis ' + n)
     }
     const rf = await api('profile_update', {
       name, type: selectedType,
@@ -945,7 +950,10 @@ async function handleSave() {
     alertSuccess.classList.add('show'); window.scrollTo(0,0)
     guardado = fotoFormulario()
   } catch (err) {
-    alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
+    // MC-RF-GUARDAR-1OCT-2026 (92.ª, Carlos): el error salía ARRIBA y él guardaba desde ABAJO: «no dice nada»,
+    // salió y lo perdió todo. Ahora se ve sí o sí: arriba (con la página subiendo) y en una ventana.
+    alertError.textContent = 'No se ha guardado: ' + err.message; alertError.classList.add('show'); window.scrollTo(0, 0)
+    alert('No se ha guardado.\n\n' + err.message + '\n\nTus datos siguen en la pantalla: corrígelo y vuelve a pulsar «Guardar cambios».')
   }
 
   delete btn.dataset.guardando
