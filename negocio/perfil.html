@@ -107,6 +107,25 @@ input[type="file"]{display:none}
 .carta-fich a{color:var(--orange);font-weight:700}
 .btn-mini{background:none;border:1.5px solid var(--card);border-radius:50px;padding:7px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--brown)}
 .ayuda{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--gray-light);background:none;color:var(--gray-light);font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;vertical-align:middle;font-family:inherit}
+/* MC-RF-HOTEL-1OCT-2026 (92.ª, HOTEL-92-1): pantalla 5 del lienzo · y RF-REVISION-CAMBIOS-1 */
+.aviso-rev{border-radius:14px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.55}
+.aviso-rev.pend{background:rgba(245,197,24,.16);border:1px solid rgba(245,197,24,.55);color:#7A5C00}
+.aviso-rev.rech{background:rgba(214,58,58,.10);border:1px solid rgba(214,58,58,.35);color:var(--red)}
+.aviso-rev b{display:block;font-size:14px;margin-bottom:2px}
+.pend-chip{display:inline-block;background:rgba(245,197,24,.2);color:#7A5C00;border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;margin-left:8px}
+.hab{border:1.5px solid var(--card);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--cream)}
+.hab .field input{background:var(--white)}
+.hab-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;font-weight:800}
+.hab-fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.hab-fotos .hf{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden}
+.hab-fotos .hf img{width:100%;height:100%;object-fit:cover}
+.hab-fotos .hf button{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:11px;cursor:pointer}
+.mini-lbl{font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.4px;margin:10px 0 6px}
+.plato{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--card)}
+.plato-n{width:80px;font-size:14px;font-weight:700}
+.plato input{width:90px;padding:6px 8px;font-size:13px}
+.temp-sel{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:13px}
+.temp-sel select{padding:7px 8px;font-family:inherit;font-size:13px;border:1.5px solid var(--card);border-radius:8px;background:var(--white);color:var(--black)}
 </style>
 <link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
 <script src="negocio.js"></script>
@@ -137,6 +156,7 @@ input[type="file"]{display:none}
 </div>
 <input type="file" id="file-input" accept="image/*" multiple>
 <input type="file" id="carta-input" accept="image/*,application/pdf,.pdf">
+<input type="file" id="hab-input" accept="image/*" multiple><!-- MC-RF-HOTEL-1OCT-2026: fotos de una habitación -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://yxmirhpwmdmaxynlshdx.supabase.co'
@@ -181,6 +201,8 @@ async function handleLogout() {
 
 let currentLat = 40.4168, currentLng = -3.7038
 let photos = [], selectedType = '', map, marker, biz
+// MC-RF-HOTEL-1OCT-2026 (92.ª): habitaciones, lo del hotel entero y lo pendiente de revisión.
+let habitaciones = [], alojamiento = null, cambios = []
 
 // ---- MC-RF-ROBLE-30SEP-2026 (89.ª, RF-HORARIO-DIAS-1 · diseño de Mario) ----
 // Cada día «Abro / Cerrado» con mediodía y noche; «Mismo horario todos los días que abro»;
@@ -307,10 +329,188 @@ function pintarPrevia() {
 
 
 
+// ---- MC-RF-CAMBIOS-1OCT-2026 (92.ª, RF-REVISION-CAMBIOS-1) · avisos de revisión arriba del perfil ----
+const QUE_CAMBIO = { ficha: 'la ficha', habitacion: 'una habitación', oferta: 'una oferta' }
+function avisosRevision() {
+  const pend = cambios.filter(c => c.estado === 'pendiente')
+  const rech = cambios.filter(c => c.estado === 'rechazado').slice(0, 3)
+  let h = ''
+  if (pend.length) h += `<div class="aviso-rev pend"><b>🕒 Pendiente de revisión</b>Has cambiado ${[...new Set(pend.map(c => QUE_CAMBIO[c.objeto]))].join(', ')}. Lo revisamos antes de publicarlo; en la app sigue saliendo lo de antes hasta entonces. Aquí ves ya tu versión nueva.</div>`
+  rech.forEach(c => { h += `<div class="aviso-rev rech"><b>No hemos publicado un cambio de ${QUE_CAMBIO[c.objeto]} (${new Date(c.revisado_en).toLocaleDateString('es-ES')})</b>${esc(c.motivo || '')}</div>` })
+  return h
+}
+
+// ---- MC-RF-HOTEL-1OCT-2026 (92.ª, HOTEL-92-1) · pantalla 5 del lienzo: habitaciones, entrada/salida, comedor ----
+// Formatos: los de db/rf_hotel.sql (business_rooms y rider_friendly_businesses.alojamiento), que limpia business-portal.
+const HAB_TIPOS = [
+  { v: 'doble_matrimonio', l: 'Doble · cama de matrimonio' }, { v: 'doble_dos_camas', l: 'Doble · dos camas' },
+  { v: 'individual', l: 'Individual' }, { v: 'triple', l: 'Triple' }, { v: 'familiar', l: 'Familiar' },
+]
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+function habNormal(h) {
+  return { id: h.id || null, tipo: h.tipo || '', bano: h.bano || '', personas: h.personas ?? '', cuantas: h.cuantas ?? '',
+    precio_desde: h.precio_desde ?? '', fotos: Array.isArray(h.fotos) ? [...h.fotos] : [], orden: h.orden ?? 0, pendiente: !!h.pendiente }
+}
+function habFoto(h) { return JSON.stringify([h.tipo, h.bano, String(h.personas), String(h.cuantas), String(h.precio_desde), h.fotos]) }
+function verHotel() {
+  const esHotel = selectedType === 'hotel'
+  const el = document.getElementById('hotel'); if (!el) return
+  el.style.display = esHotel ? 'block' : 'none'
+  const comedor = document.getElementById('a-comedor').checked
+  // Hotel: el horario y la carta son los del comedor, y solo si lo tiene.
+  document.getElementById('sec-horario').style.display = !esHotel || comedor ? 'block' : 'none'
+  document.getElementById('sec-cartas').style.display = !esHotel || comedor ? 'block' : 'none'
+  document.getElementById('lbl-horario').textContent = esHotel ? 'Horario del comedor' : 'Horario'
+  pintarPreviaHotel()
+}
+function iniciarHotel() {
+  const a = alojamiento || {}
+  document.getElementById('a-entrada').value = a.entrada || ''
+  document.getElementById('a-salida').value = a.salida || ''
+  const dias = Array.from({ length: 31 }, (_, i) => `<option value="${String(i + 1).padStart(2, '0')}">${i + 1}</option>`).join('')
+  const meses = MESES.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m}</option>`).join('')
+  ;['a-cd-d', 'a-ch-d'].forEach(id => document.getElementById(id).innerHTML = dias)
+  ;['a-cd-m', 'a-ch-m'].forEach(id => document.getElementById(id).innerHTML = meses)
+  const t = a.temporada || { todo_el_ano: true }
+  if (!t.todo_el_ano) {
+    const [m1, d1] = String(t.cierre_desde || '01-01').split('-'), [m2, d2] = String(t.cierre_hasta || '01-31').split('-')
+    document.getElementById('a-cd-d').value = d1; document.getElementById('a-cd-m').value = m1
+    document.getElementById('a-ch-d').value = d2; document.getElementById('a-ch-m').value = m2
+  }
+  const temp = document.getElementById('a-temp')
+  const pintaTemp = (todo) => {
+    temp.innerHTML = `<button type="button" class="rf-chip${todo ? ' sel' : ''}" data-v="1">Abierto todo el año</button>` +
+      `<button type="button" class="rf-chip${todo ? '' : ' sel'}" data-v="0">Cerramos una temporada</button>`
+    document.getElementById('a-cierre').style.display = todo ? 'none' : 'flex'
+    temp.querySelectorAll('.rf-chip').forEach(b => b.addEventListener('click', () => pintaTemp(b.dataset.v === '1')))
+  }
+  pintaTemp(t.todo_el_ano !== false)
+  const c = a.comedor
+  document.getElementById('a-comedor').checked = !!c
+  document.getElementById('a-precios').style.display = c ? 'block' : 'none'
+  document.getElementById('a-comedor').addEventListener('change', (e) => {
+    document.getElementById('a-precios').style.display = e.target.checked ? 'block' : 'none'; verHotel()
+  })
+  const platos = [['desayuno', 'Desayuno', 'incluido'], ['comida', 'Comida', 'no'], ['cena', 'Cena', 'precio']]
+  document.getElementById('a-platos').innerHTML = platos.map(([k, l]) =>
+    `<div class="plato" data-k="${k}"><div class="plato-n">${l}</div>
+      <div class="rf-chips">${[['incluido', 'Incluido'], ['precio', 'Precio'], ['no', 'No damos']].map(([v, t]) =>
+        `<button type="button" class="rf-chip" data-m="${v}">${t}</button>`).join('')}</div>
+      <input type="number" min="0" max="500" step="0.5" placeholder="€" class="plato-precio" style="display:none"></div>`).join('')
+  document.querySelectorAll('.plato').forEach((row, i) => {
+    const actual = (c && c[row.dataset.k]) || { modo: platos[i][2] }
+    const marca = (m) => {
+      row.dataset.modo = m
+      row.querySelectorAll('.rf-chip').forEach(b => b.classList.toggle('sel', b.dataset.m === m))
+      row.querySelector('.plato-precio').style.display = m === 'precio' ? 'inline-block' : 'none'
+      pintarPreviaHotel()
+    }
+    if (actual.precio != null) row.querySelector('.plato-precio').value = actual.precio
+    row.querySelector('.plato-precio').addEventListener('input', pintarPreviaHotel)
+    row.querySelectorAll('.rf-chip').forEach(b => b.addEventListener('click', () => marca(b.dataset.m)))
+    marca(actual.modo || 'no')
+  })
+  pintarHabs()
+  verHotel()
+}
+function leerAlojamiento() {
+  if (!document.getElementById('a-entrada')) return null
+  const todo = !!document.querySelector('#a-temp .rf-chip.sel[data-v="1"]')
+  const v = (id) => document.getElementById(id).value
+  const comedor = document.getElementById('a-comedor').checked ? Object.fromEntries([...document.querySelectorAll('.plato')].map(row => {
+    const modo = row.dataset.modo || 'no'
+    const precio = row.querySelector('.plato-precio').value
+    return [row.dataset.k, modo === 'precio' ? { modo, precio: precio === '' ? null : Number(precio) } : { modo }]
+  })) : null
+  return { entrada: v('a-entrada') || null, salida: v('a-salida') || null,
+    temporada: todo ? { todo_el_ano: true } : { todo_el_ano: false, cierre_desde: v('a-cd-m') + '-' + v('a-cd-d'), cierre_hasta: v('a-ch-m') + '-' + v('a-ch-d') },
+    comedor }
+}
+function pintarHabs() {
+  const cont = document.getElementById('habs'); if (!cont) return
+  if (!habitaciones.length) habitaciones.push(habNormal({}))
+  cont.innerHTML = habitaciones.map((h, i) => `
+    <div class="hab" data-i="${i}">
+      <div class="hab-cab"><span>Habitación ${i + 1}${h.pendiente ? '<span class="pend-chip">Pendiente de revisión</span>' : ''}</span>
+        <button type="button" class="btn-mini" onclick="quitarHab(${i})">Quitar</button></div>
+      <div class="mini-lbl">TIPO</div>
+      <div class="rf-chips">${HAB_TIPOS.map(t => `<button type="button" class="rf-chip${h.tipo === t.v ? ' sel' : ''}" onclick="habDato(${i},'tipo','${t.v}')">${t.l}</button>`).join('')}</div>
+      <div class="mini-lbl">BAÑO</div>
+      <div class="rf-chips">${[['dentro', 'Dentro de la habitación'], ['compartido', 'Compartido']].map(([v, l]) =>
+        `<button type="button" class="rf-chip${h.bano === v ? ' sel' : ''}" onclick="habDato(${i},'bano','${v}')">${l}</button>`).join('')}</div>
+      <div class="field" style="margin-top:12px"><label>¿Cuántas personas caben en esta habitación?</label>
+        <input type="number" min="1" max="12" value="${esc(h.personas)}" oninput="habDato(${i},'personas',this.value,true)"></div>
+      <div class="field"><label>¿Cuántas habitaciones de este tipo tenéis?</label>
+        <input type="number" min="1" max="500" value="${esc(h.cuantas)}" oninput="habDato(${i},'cuantas',this.value,true)"></div>
+      <div class="field"><label>Precio por noche, desde (€)</label>
+        <input type="number" min="0" step="1" value="${esc(h.precio_desde)}" oninput="habDato(${i},'precio_desde',this.value,true)"></div>
+      <div class="hab-fotos">${h.fotos.map((u, j) => `<div class="hf"><img src="${esc(u)}" alt=""><button type="button" onclick="quitarFotoHab(${i},${j})">✕</button></div>`).join('')}</div>
+      ${h.fotos.length < 6 ? `<button type="button" class="btn-mini" style="margin-top:8px" onclick="subirFotoHab(${i})">+ Añadir fotos de esta habitación</button>` : ''}
+    </div>`).join('')
+  pintarPreviaHotel()
+}
+window.nuevaHab = function () { habitaciones.push(habNormal({ orden: habitaciones.length })); pintarHabs() }
+window.habDato = function (i, k, v, sinPintar) { habitaciones[i][k] = v; if (sinPintar) pintarPreviaHotel(); else pintarHabs() }
+window.quitarFotoHab = function (i, j) { habitaciones[i].fotos.splice(j, 1); pintarHabs() }
+let habSubiendo = 0
+window.subirFotoHab = function (i) { habSubiendo = i; document.getElementById('hab-input').click() }
+window.quitarHab = async function (i) {
+  const h = habitaciones[i]
+  if (h.id) {
+    // Retirar es inmediato (Mario, 1-oct): no espera a la revisión.
+    if (!confirm('¿Quitar esta habitación?\n\nSe quita al momento de la app.')) return
+    try { await api('room_delete', { id: h.id }) } catch (e) { return alert(e.message) }
+  }
+  habitaciones.splice(i, 1); pintarHabs()
+}
+document.getElementById('hab-input').addEventListener('change', async e => {
+  const h = habitaciones[habSubiendo]
+  for (const file of Array.from(e.target.files)) {
+    if (!h || h.fotos.length >= 6) break
+    try {
+      const { blob, ext } = await reducirFoto(file)
+      const slot = await api('photo_slot', { ext })
+      const { error } = await sbClient.storage.from('business-photos')
+        .uploadToSignedUrl(slot.path, slot.token, blob, { contentType: blob.type || 'image/jpeg' })
+      if (error) throw new Error(error.message)
+      h.fotos.push(slot.public_url)
+    } catch (err) { alert('No se pudo subir ' + file.name + ': ' + err.message) }
+  }
+  e.target.value = ''
+  pintarHabs()
+})
+// La tarjeta de la app: «Habitaciones desde 70 €/noche · baño dentro» y «Desayuno incluido · Cena 22 €».
+function pintarPreviaHotel() {
+  const ph = document.getElementById('preview-hab'), pc = document.getElementById('preview-comedor')
+  if (!ph || !pc) return
+  if (selectedType !== 'hotel') { ph.textContent = ''; pc.textContent = ''; return }
+  const precios = habitaciones.map(h => Number(h.precio_desde)).filter(n => n > 0)
+  const banos = [...new Set(habitaciones.map(h => h.bano).filter(Boolean))]
+  ph.textContent = precios.length
+    ? `Habitaciones desde ${Math.min(...precios)} €/noche` + (banos.length === 1 ? ' · baño ' + (banos[0] === 'dentro' ? 'dentro' : 'compartido') : '')
+    : ''
+  const a = leerAlojamiento()
+  const t = (n, x) => !x || x.modo === 'no' ? '' : x.modo === 'incluido' ? `${n} incluido` : (x.precio != null ? `${n} ${x.precio} €` : '')
+  pc.textContent = a && a.comedor ? [t('Desayuno', a.comedor.desayuno), t('Comida', a.comedor.comida), t('Cena', a.comedor.cena)].filter(Boolean).join(' · ') : ''
+}
+
 async function loadPerfil() {
   const r = await api('profile_get')
   biz = r.business
   if (!biz) return
+  // MC-RF-CAMBIOS-1OCT-2026 (RF-REVISION-CAMBIOS-1): si hay cambios esperando revisión, el panel enseña
+  // la versión NUEVA (la que el negocio guardó); en la app sigue la anterior hasta que se apruebe.
+  cambios = r.cambios || []
+  const pf = cambios.find(c => c.estado === 'pendiente' && c.objeto === 'ficha')
+  if (pf) biz = { ...biz, ...pf.despues }
+  alojamiento = biz.alojamiento || null
+  habitaciones = (r.habitaciones || []).map(h => {
+    const pe = cambios.find(c => c.estado === 'pendiente' && c.objeto === 'habitacion' && c.objeto_id === h.id)
+    return habNormal({ ...h, ...(pe ? pe.despues : {}), pendiente: !!pe })
+  })
+  cambios.filter(c => c.estado === 'pendiente' && c.objeto === 'habitacion' && c.accion === 'crear')
+    .forEach(c => habitaciones.push(habNormal({ ...c.despues, id: c.objeto_id, pendiente: true })))
+  habitaciones.forEach(h => { h._orig = habFoto(h) })
 
   document.getElementById('biz-name-header').textContent = biz.name || ''
   currentLat = biz.lat || 40.4168
@@ -318,7 +518,7 @@ async function loadPerfil() {
   photos = biz.photos || []
   selectedType = biz.type || ''
 
-  document.getElementById('content').innerHTML = `
+  document.getElementById('content').innerHTML = avisosRevision() + `
     <!-- MC-RF-NEGOCIO-21SEP-2026 (RF-NEGOCIO-1): fuera el acordeón de categorías. Guardaba
          «Restaurante», «Bar / Cafetería»… y la base solo aceptaba otra lista: ningún negocio
          podía guardar tras elegir. Ahora: tipo (los cinco que pinta el mapa), categoría libre
@@ -374,8 +574,37 @@ async function loadPerfil() {
       <div class="photos-grid" id="photos-grid"></div>
       <div class="field-hint" id="foto-hint">Máx. 5 fotos · se reducen solas al subirlas</div>
     </div>
-    <div class="section-block">
-      <div class="section-label">Horario</div>
+    <!-- MC-RF-HOTEL-1OCT-2026 (92.ª, HOTEL-92-1) · pantalla 5 del lienzo: solo para hotel o casa rural -->
+    <div id="hotel" style="display:none">
+      <div class="section-block">
+        <div class="section-label">Habitaciones</div>
+        <div class="field-hint" style="margin-bottom:12px">Añade cada tipo de habitación que tengas. Los moteros suelen viajar en pareja o en grupo: cuenta bien las camas.</div>
+        <div id="habs"></div>
+        <button type="button" class="btn-mini" onclick="nuevaHab()">+ Añadir otro tipo de habitación</button>
+      </div>
+      <div class="section-block">
+        <div class="section-label">Entrada, salida y temporada</div>
+        <div class="grid2">
+          <div class="field"><label>ENTRADA DESDE</label><input type="time" id="a-entrada"></div>
+          <div class="field"><label>SALIDA HASTA</label><input type="time" id="a-salida"></div>
+        </div>
+        <div class="mini-lbl">TEMPORADA</div>
+        <div class="rf-chips" id="a-temp"></div>
+        <div class="temp-sel" id="a-cierre" style="display:none">Cerrado del
+          <select id="a-cd-d"></select><select id="a-cd-m"></select> al <select id="a-ch-d"></select><select id="a-ch-m"></select>
+        </div>
+      </div>
+      <div class="section-block">
+        <label class="hmismo"><input type="checkbox" id="a-comedor"> Tenemos comedor (desayunos, comidas o cenas)</label>
+        <div id="a-precios" style="display:none">
+          <div class="mini-lbl">PRECIOS DEL COMEDOR, POR PERSONA</div>
+          <div id="a-platos"></div>
+          <div class="field-hint" style="margin-top:8px">Debajo aparecen el horario del comedor por días y «Carta y menús», igual que en un restaurante.</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-block" id="sec-horario">
+      <div class="section-label" id="lbl-horario">Horario</div>
       <label class="hmismo"><input type="checkbox" id="h-mismo"> Mismo horario todos los días que abro</label>
       <div id="h-comun"></div>
       <div id="h-dias"></div>
@@ -386,7 +615,7 @@ async function loadPerfil() {
       </div>
       <div class="field-hint">Mediodía y noche son opcionales: rellena solo los turnos que abres.</div>
     </div>
-    <div class="section-block">
+    <div class="section-block" id="sec-cartas">
       <div class="section-label">Carta y menús</div>
       <div class="field-hint" style="margin-bottom:8px">Sube tu carta, el menú del día o un menú para moteros. Ponle el nombre que quieras. Foto o PDF.</div>
       <div id="cartas"></div>
@@ -408,6 +637,8 @@ async function loadPerfil() {
           <div class="app-card-desc" id="preview-desc">${biz.description||'Descripción del negocio'}</div>
           <div class="app-card-desc" id="preview-hoy" style="margin-top:6px;font-weight:700;color:var(--black)"></div>
           <div class="app-card-desc" id="preview-carta" style="margin-top:2px;color:var(--orange);font-weight:700"></div>
+          <div class="app-card-desc" id="preview-hab" style="margin-top:6px;font-weight:700;color:var(--black)"></div>
+          <div class="app-card-desc" id="preview-comedor" style="margin-top:2px"></div>
         </div>
       </div>
     </div>
@@ -416,6 +647,7 @@ async function loadPerfil() {
   iniciarHorario(biz)
   cartas = Array.isArray(biz.cartas) ? biz.cartas.map(c => ({ ...c })) : []
   pintarCartas()
+  iniciarHotel()
   mcChipsTipo(document.getElementById('tipos'), selectedType, (v) => selectType(v))
   mcCategorias(document.getElementById('categorias'), selectedType)
   mcServicios(document.getElementById('servicios'), selectedType, biz.servicios_moto || [])
@@ -542,6 +774,7 @@ window.selectType = function(type) {
   mcServicios(document.getElementById('servicios'), type, marcadas)
   mcCategorias(document.getElementById('categorias'), type)
   document.getElementById('preview-cat').textContent = etiquetaTipo()
+  verHotel()
 }
 // Lo que se lee en la tarjeta: la categoría si la hay («Casa rural»), si no el tipo.
 function etiquetaTipo() {
@@ -637,6 +870,8 @@ function fotoFormulario() {
     w: v('f-web'), a: v('f-address'), h: horario, ca: cartas.filter(c => c.url),
     s: [...document.querySelectorAll('.f-serv:checked')].map(c => c.value).sort(),
     la: Number(currentLat).toFixed(6), ln: Number(currentLng).toFixed(6), f: photos,
+    al: selectedType === 'hotel' ? leerAlojamiento() : null,
+    hb: selectedType === 'hotel' ? habitaciones.map(habFoto) : null,
   })
 }
 function refrescarBoton() {
@@ -669,7 +904,16 @@ async function handleSave() {
 
   try {
     if (!selectedType) throw new Error('elige qué tipo de negocio es')
-    await api('profile_update', {
+    // MC-RF-HOTEL-1OCT-2026: las habitaciones se comprueban ANTES de guardar nada.
+    const habsAGuardar = selectedType === 'hotel' ? habitaciones.filter(h => !h.id || habFoto(h) !== h._orig)
+      .filter(h => h.tipo || h.bano || h.personas || h.cuantas || h.precio_desde || h.fotos.length) : []
+    for (const h of habsAGuardar) {
+      if (!h.tipo) throw new Error('elige el tipo de cada habitación')
+      if (!h.bano) throw new Error('di si el baño está dentro o es compartido en cada habitación')
+      if (!(Number(h.personas) >= 1)) throw new Error('¿cuántas personas caben en cada habitación?')
+      if (!(Number(h.cuantas) >= 1)) throw new Error('¿cuántas habitaciones de cada tipo tenéis?')
+    }
+    const rf = await api('profile_update', {
       name, type: selectedType,
       category: document.getElementById('f-cat').value.trim(),
       servicios_moto: [...document.querySelectorAll('.f-serv:checked')].map(c => c.value),
@@ -682,11 +926,24 @@ async function handleSave() {
       lat: currentLat, lng: currentLng, photos,
       horario: horarioParaGuardar(),
       cartas: cartasParaGuardar(),
+      ...(selectedType === 'hotel' ? { alojamiento: leerAlojamiento() } : {}),
       // La app 1.26.930 y anteriores solo leen apertura/cierre: se les da la primera franja y la última.
       ...(() => { const t = turnosDeLaSemana(); return t.length ? { opening_time: t[0][0], closing_time: t[t.length - 1][1] } : {} })()
     })
-    alertSuccess.textContent = '✅ Cambios guardados correctamente.'; alertSuccess.classList.add('show'); window.scrollTo(0,0)
-    guardado = loQueSeGuarda
+    let pendiente = !!rf.pendiente
+    for (const h of habsAGuardar) {
+      const rh = await api('room_save', { id: h.id, tipo: h.tipo, bano: h.bano, personas: h.personas, cuantas: h.cuantas,
+        precio_desde: h.precio_desde, fotos: h.fotos, orden: habitaciones.indexOf(h) })
+      h.id = rh.id; h._orig = habFoto(h)
+      if (rh.pendiente) { h.pendiente = true; pendiente = true }
+    }
+    if (habsAGuardar.length) pintarHabs()
+    // MC-RF-CAMBIOS-1OCT-2026: un negocio activo no publica al momento; se le dice claro.
+    alertSuccess.textContent = pendiente
+      ? '✅ Guardado. Lo revisamos antes de publicarlo: en la app sigue saliendo lo de antes hasta entonces. Te avisamos por correo.'
+      : '✅ Cambios guardados correctamente.'
+    alertSuccess.classList.add('show'); window.scrollTo(0,0)
+    guardado = fotoFormulario()
   } catch (err) {
     alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
   }

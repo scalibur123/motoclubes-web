@@ -120,12 +120,12 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
     <div class="field">
       <label>TIPO DE OFERTA</label>
       <div class="tipo-list">
-        <div class="tipo-row" onclick="selectTipo('pct_consumicion')"><div class="tipo-radio sel" id="radio-pct_consumicion"></div><div class="tipo-lbl">Descuento % en consumición</div><div class="tipo-sub">ej. 10% menú</div></div>
-        <div class="tipo-row" onclick="selectTipo('menu_cerrado')"><div class="tipo-radio" id="radio-menu_cerrado"></div><div class="tipo-lbl">Menú motero — precio cerrado por persona</div><div class="tipo-sub">ej. 25€/p</div></div>
-        <div class="tipo-row" onclick="selectTipo('alojamiento')"><div class="tipo-radio" id="radio-alojamiento"></div><div class="tipo-lbl">Alojamiento — precio por persona/noche</div><div class="tipo-sub">ej. 30€/p/n</div></div>
-        <div class="tipo-row" onclick="selectTipo('producto_gratis')"><div class="tipo-radio" id="radio-producto_gratis"></div><div class="tipo-lbl">Producto gratuito</div><div class="tipo-sub">café, postre…</div></div>
-        <div class="tipo-row" onclick="selectTipo('pct_servicio')"><div class="tipo-radio" id="radio-pct_servicio"></div><div class="tipo-lbl">Descuento % en servicio</div><div class="tipo-sub">taller, equipación…</div></div>
-        <div class="tipo-row" onclick="selectTipo('otro')"><div class="tipo-radio" id="radio-otro"></div><div class="tipo-lbl">Otro</div><div class="tipo-sub">campo libre corto</div></div>
+        <div class="tipo-row" id="fila-pct_consumicion" onclick="selectTipo('pct_consumicion')"><div class="tipo-radio sel" id="radio-pct_consumicion"></div><div class="tipo-lbl" id="lbl-pct_consumicion">Descuento % en consumición</div><div class="tipo-sub" id="sub-pct_consumicion">ej. 10% menú</div></div>
+        <div class="tipo-row" id="fila-menu_cerrado" onclick="selectTipo('menu_cerrado')"><div class="tipo-radio" id="radio-menu_cerrado"></div><div class="tipo-lbl" id="lbl-menu_cerrado">Menú motero — precio cerrado por persona</div><div class="tipo-sub" id="sub-menu_cerrado">ej. 25€/p</div></div>
+        <div class="tipo-row" id="fila-alojamiento" onclick="selectTipo('alojamiento')"><div class="tipo-radio" id="radio-alojamiento"></div><div class="tipo-lbl" id="lbl-alojamiento">Alojamiento — precio por persona/noche</div><div class="tipo-sub" id="sub-alojamiento">ej. 30€/p/n</div></div>
+        <div class="tipo-row" id="fila-producto_gratis" onclick="selectTipo('producto_gratis')"><div class="tipo-radio" id="radio-producto_gratis"></div><div class="tipo-lbl" id="lbl-producto_gratis">Producto gratuito</div><div class="tipo-sub" id="sub-producto_gratis">café, postre…</div></div>
+        <div class="tipo-row" id="fila-pct_servicio" onclick="selectTipo('pct_servicio')"><div class="tipo-radio" id="radio-pct_servicio"></div><div class="tipo-lbl" id="lbl-pct_servicio">Descuento % en servicio</div><div class="tipo-sub" id="sub-pct_servicio">taller, equipación…</div></div>
+        <div class="tipo-row" id="fila-otro" onclick="selectTipo('otro')"><div class="tipo-radio" id="radio-otro"></div><div class="tipo-lbl" id="lbl-otro">Otro</div><div class="tipo-sub" id="sub-otro">campo libre corto</div></div>
       </div>
     </div>
     <div class="campos visible" id="campos-pct_consumicion">
@@ -146,11 +146,22 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
         </div>
       </div>
     </div>
+    <!-- MC-RF-HOTEL-1OCT-2026 (92.ª, HOTEL-92-1): pantalla 6 del lienzo, «Paquete para moteros» -->
     <div class="campos" id="campos-alojamiento">
+      <div class="field"><label>QUÉ INCLUYE</label><div class="rf-chips" id="f-regimen"></div></div>
+      <div class="field"><label>HABITACIÓN</label><select id="f-hab" onchange="updatePreview()"></select></div>
       <div class="grid2">
-        <div class="field"><label>PRECIO POR PERSONA/NOCHE (€)</label><input type="number" id="f-precio-aloj" min="1" placeholder="30" oninput="updatePreview()"></div>
-        <div class="field"><label>TIPO DE HABITACIÓN</label><select id="f-hab" onchange="updatePreview()"><option value="individual">Individual</option><option value="doble" selected>Doble</option><option value="suite">Suite</option><option value="múltiple">Múltiple</option></select></div>
+        <div class="field"><label>PRECIO POR NOCHE (€)</label><input type="number" id="f-precio-aloj" min="1" placeholder="55" oninput="updatePreview()"></div>
+        <div class="field"><label>EL PRECIO ES</label><div class="rf-chips" id="f-precio-por"></div></div>
       </div>
+      <div class="field"><label>INCLUIDO PARA LA MOTO</label>
+        <div class="checks-row">
+          <div class="check-item" onclick="toggleCheck('moto-garaje')"><div class="check-box" id="moto-garaje"></div><span class="check-lbl">Garaje cubierto</span></div>
+          <div class="check-item" onclick="toggleCheck('moto-lavado')"><div class="check-box" id="moto-lavado"></div><span class="check-lbl">Lavado de la moto</span></div>
+          <div class="check-item" onclick="toggleCheck('moto-secado')"><div class="check-box" id="moto-secado"></div><span class="check-lbl">Secado de ropa y equipo</span></div>
+        </div>
+      </div>
+      <div class="field" style="max-width:220px"><label>NOCHES MÍNIMAS <span>(opc.)</span></label><input type="number" id="f-noches" min="1" max="30" placeholder="1" oninput="updatePreview()"></div>
     </div>
     <div class="campos" id="campos-producto_gratis">
       <div class="field"><label>PRODUCTO GRATUITO</label><input type="text" id="f-producto" placeholder="Ej: Café con el menú" oninput="updatePreview()"></div>
@@ -158,7 +169,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
     <div class="campos" id="campos-pct_servicio">
       <div class="grid2">
         <div class="field"><label>DESCUENTO (%)</label><input type="number" id="f-pct-serv" min="1" max="100" placeholder="10" oninput="updatePreview()"></div>
-        <div class="field"><label>TIPO DE SERVICIO</label><input type="text" id="f-serv" placeholder="Ej: Revisión de motos" oninput="updatePreview()"></div>
+        <div class="field" id="campo-serv"><label>TIPO DE SERVICIO</label><input type="text" id="f-serv" placeholder="Ej: Revisión de motos" oninput="updatePreview()"></div>
       </div>
     </div>
     <div class="campos" id="campos-otro">
@@ -170,7 +181,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
     </div>
     <div class="preview-box">
       <div class="preview-box-label">Así lo verá el motero en la app</div>
-      <div class="preview-box-txt" id="preview-txt">Selecciona el tipo de oferta y rellena los campos</div>
+      <div class="preview-box-txt" id="preview-txt" style="white-space:pre-line">Selecciona el tipo de oferta y rellena los campos</div>
     </div>
     <div class="btn-row">
       <button class="btn-outline" onclick="hideForm()">Cancelar</button>
@@ -218,6 +229,43 @@ async function handleLogout() {
 }
 
 let tipoActual = 'pct_consumicion'
+// MC-RF-HOTEL-1OCT-2026 (92.ª): un hotel ve SUS tipos de oferta (pantalla 6 del lienzo) y sus habitaciones.
+let esHotel = false, habitaciones = [], regimen = 'media_pension', precioPor = 'persona'
+const HAB_TXT = { doble_matrimonio: 'Doble · cama de matrimonio', doble_dos_camas: 'Doble · dos camas', individual: 'Individual', triple: 'Triple', familiar: 'Familiar' }
+const REGIMENES = [['solo_habitacion', 'Solo habitación'], ['desayuno', 'Con desayuno'], ['media_pension', 'Media pensión'], ['completa', 'Pensión completa']]
+const TITULO_REGIMEN = { solo_habitacion: 'Habitación para moteros', desayuno: 'Habitación con desayuno para moteros', media_pension: 'Media pensión para moteros', completa: 'Pensión completa para moteros' }
+const INCLUYE_REGIMEN = { solo_habitacion: '', desayuno: 'desayuno', media_pension: 'desayuno y cena', completa: 'desayuno, comida y cena' }
+const MOTO = [['moto-garaje', 'Garaje cubierto'], ['moto-lavado', 'Lavado de la moto'], ['moto-secado', 'Secado de ropa y equipo']]
+function prepararHotel() {
+  if (esHotel) {
+    ;['pct_consumicion', 'menu_cerrado'].forEach(t => document.getElementById('fila-' + t).style.display = 'none')
+    const rotulo = { alojamiento: ['Paquete para moteros', 'Noche con precio cerrado'], pct_servicio: ['Descuento en la habitación', 'Ej: 10 % reservando por la app'],
+      producto_gratis: ['Detalle o regalo', 'Ej: lavado de moto, bebida de bienvenida'], otro: ['Otro', 'Texto libre corto'] }
+    for (const [t, [l, sub]] of Object.entries(rotulo)) { document.getElementById('lbl-' + t).textContent = l; document.getElementById('sub-' + t).textContent = sub }
+    document.getElementById('campo-serv').style.display = 'none'
+  }
+  document.getElementById('f-regimen').innerHTML = REGIMENES.map(([v, l]) => `<button type="button" class="rf-chip" data-v="${v}">${l}</button>`).join('')
+  document.getElementById('f-precio-por').innerHTML = [['persona', 'Por persona'], ['habitacion', 'Por habitación']].map(([v, l]) => `<button type="button" class="rf-chip" data-v="${v}">${l}</button>`).join('')
+  const chips = (id, fijar) => document.querySelectorAll('#' + id + ' .rf-chip').forEach(b => b.addEventListener('click', () => { fijar(b.dataset.v); marcarChips(); updatePreview() }))
+  chips('f-regimen', v => regimen = v); chips('f-precio-por', v => precioPor = v)
+  document.getElementById('f-hab').innerHTML = habitaciones.map(h =>
+    `<option value="${h.id}">${escH(HAB_TXT[h.tipo] || h.tipo)} · baño ${h.bano === 'dentro' ? 'dentro' : 'compartido'}</option>`).join('') +
+    '<option value="">Cualquiera de mis habitaciones</option>'
+  marcarChips()
+}
+function marcarChips() {
+  document.querySelectorAll('#f-regimen .rf-chip').forEach(b => b.classList.toggle('sel', b.dataset.v === regimen))
+  document.querySelectorAll('#f-precio-por .rf-chip').forEach(b => b.classList.toggle('sel', b.dataset.v === precioPor))
+}
+// «Doble con cama de matrimonio y baño dentro · desayuno y cena · garaje cubierto y secado de ropa»
+function lineaHotel() {
+  const h = habitaciones.find(x => x.id === document.getElementById('f-hab').value)
+  const hab = h ? (HAB_TXT[h.tipo] || '').replace(' · ', ' con ').replace('Doble con dos camas', 'Doble con dos camas') + ' y baño ' + (h.bano === 'dentro' ? 'dentro' : 'compartido') : ''
+  const moto = MOTO.filter(([id]) => document.getElementById(id).classList.contains('sel')).map(([, l]) => l.toLowerCase())
+  const motoTxt = moto.length > 1 ? moto.slice(0, -1).join(', ') + ' y ' + moto[moto.length - 1] : moto.join('')
+  const noches = document.getElementById('f-noches').value
+  return [hab, INCLUYE_REGIMEN[regimen], motoTxt, noches > 1 ? `mínimo ${noches} noches` : ''].filter(Boolean).join(' · ')
+}
 
 // MC-RF-ROBLE-30SEP-2026 (89.ª): una oferta «sin caducidad» se guarda hasta 2099 (la base exige fecha).
 const SIN_FIN = '2099-12-31T23:59:59Z'
@@ -227,6 +275,11 @@ const escH = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
 async function loadOfertas() {
   const r = await api('offers_list')
   document.getElementById('biz-name-header').textContent = r.business_name || ''
+  const primeraVez = !document.getElementById('f-regimen').innerHTML
+  esHotel = r.business_type === 'hotel'; habitaciones = r.habitaciones || []
+  if (primeraVez) { prepararHotel(); if (esHotel) selectTipo('alojamiento') }
+  // MC-RF-CAMBIOS-1OCT-2026: las ofertas nuevas que esperan revisión (y lo rechazado, con el motivo).
+  const cambios = r.cambios || []
   const todas = r.offers || []
   const ofertas = todas.filter(o => !o.retirada_en)
   const retiradas = todas.filter(o => o.retirada_en && o.qr_pendientes > 0)
@@ -243,10 +296,27 @@ async function loadOfertas() {
         <button class="icon-btn" title="Retirar" onclick="deleteOferta('${o.id}',${o.qr_pendientes || 0})">🗑️</button>
       </div>` : ''}
     </div>`
+  const pendientes = cambios.filter(c => c.estado === 'pendiente').map(c => `
+    <div class="oferta-card">
+      <div class="oferta-val">${c.despues.discount_pct ? c.despues.discount_pct + '%' : (c.despues.fixed_price ? c.despues.fixed_price + '€' : '🎁')}</div>
+      <div class="oferta-info">
+        <div class="oferta-title">${escH(c.despues.title)}</div>
+        <div class="oferta-meta"><b style="color:#B8860B">🕒 Pendiente de revisión</b> · la revisamos antes de que salga en la app</div>
+      </div>
+      <div class="oferta-actions"><button class="icon-btn" title="Retirar" onclick="deleteOferta('${c.objeto_id}',0)">🗑️</button></div>
+    </div>`).join('')
+  const rechazadas = cambios.filter(c => c.estado === 'rechazado').slice(0, 3).map(c => `
+    <div class="oferta-card">
+      <div class="oferta-val">✋</div>
+      <div class="oferta-info">
+        <div class="oferta-title">${escH(c.despues.title)}</div>
+        <div class="oferta-meta" style="color:var(--red)">No la hemos publicado: ${escH(c.motivo || '')}</div>
+      </div>
+    </div>`).join('')
   const list = document.getElementById('ofertas-list')
-  list.innerHTML = ofertas.length
+  list.innerHTML = pendientes + rechazadas + (ofertas.length || pendientes
     ? ofertas.map(o => tarjeta(o, true)).join('')
-    : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>Las ofertas son opcionales, pero son lo que más llama la atención de los moteros. Te recomendamos crear al menos una.</div>'
+    : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>Las ofertas son opcionales, pero son lo que más llama la atención de los moteros. Te recomendamos crear al menos una.</div>')
   document.getElementById('retiradas-bloque').style.display = retiradas.length ? 'block' : 'none'
   document.getElementById('retiradas-list').innerHTML = retiradas.map(o => tarjeta(o, false)).join('')
 
@@ -279,9 +349,9 @@ window.updatePreview = function() {
   let txt = ''
   if (tipoActual === 'pct_consumicion') { const pct = document.getElementById('f-pct').value; const aplica = document.getElementById('f-aplica').value; txt = pct ? `${pct}% de descuento en ${aplica}` : '—' }
   else if (tipoActual === 'menu_cerrado') { const precio = document.getElementById('f-precio-menu').value; const inc = ['primero','segundo','postre','bebida','cafe'].filter(i => document.getElementById('inc-'+i)?.classList.contains('sel')).map(i => i.charAt(0).toUpperCase()+i.slice(1)); txt = precio ? `Menú motero · ${precio}€/persona` + (inc.length ? ' · '+inc.join(' · ') : '') : '—' }
-  else if (tipoActual === 'alojamiento') { const precio = document.getElementById('f-precio-aloj').value; const hab = document.getElementById('f-hab').value; txt = precio ? `Hab. ${hab} · ${precio}€/persona/noche` : '—' }
+  else if (tipoActual === 'alojamiento') { const precio = document.getElementById('f-precio-aloj').value; txt = precio ? `${TITULO_REGIMEN[regimen]} · ${precio} €/${precioPor === 'persona' ? 'persona' : 'habitación'}` + (lineaHotel() ? '\n' + lineaHotel() : '') : '—' }
   else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); txt = prod ? `${prod} — gratis para moteros` : '—' }
-  else if (tipoActual === 'pct_servicio') { const pct = document.getElementById('f-pct-serv').value; const serv = document.getElementById('f-serv').value.trim(); txt = pct && serv ? `${pct}% de descuento en ${serv}` : '—' }
+  else if (tipoActual === 'pct_servicio') { const pct = document.getElementById('f-pct-serv').value; const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); txt = pct && serv ? `${pct}% de descuento en ${serv}` : '—' }
   else if (tipoActual === 'otro') { txt = document.getElementById('f-otro').value.trim() || '—' }
   if (condicion) txt += ` · ${condicion}`
   if (caducidad) txt += ` · Hasta ${new Date(caducidad).toLocaleDateString('es-ES')}`
@@ -297,14 +367,22 @@ window.handleSave = async function(publish) {
   else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona`
     // MC-RF-INCLUYE-30SEP-2026 (89.ª): las casillas «Qué incluye» se enseñaban y NO se guardaban nunca (visto en el QR de la prueba).
     oferta.includes = ['primero', 'segundo', 'postre', 'bebida', 'cafe'].filter(i => document.getElementById('inc-' + i)?.classList.contains('sel')).map(i => ({ primero: 'Primero', segundo: 'Segundo', postre: 'Postre', bebida: 'Bebida', cafe: 'Café' })[i]) }
-  else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.room_type = document.getElementById('f-hab').value; oferta.title = `Hab. ${oferta.room_type} · ${precio}€/persona/noche` }
+  else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return }
+    // MC-RF-HOTEL-1OCT-2026: paquete de hotel (régimen, habitación suya, por persona o habitación, moto, noches).
+    oferta.fixed_price = precio; oferta.precio_por = precioPor; oferta.regimen = regimen
+    oferta.habitacion_id = document.getElementById('f-hab').value || null
+    oferta.noches_min = document.getElementById('f-noches').value || null
+    oferta.includes = MOTO.filter(([id]) => document.getElementById(id).classList.contains('sel')).map(([, l]) => l)
+    oferta.title = TITULO_REGIMEN[regimen]; oferta.description = lineaHotel() || null }
   else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { alertError.textContent = 'Describe el producto.'; alertError.classList.add('show'); return } oferta.title = prod + ' — gratis para moteros' }
-  else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = document.getElementById('f-serv').value.trim(); if (!pct || !serv) { alertError.textContent = 'Rellena descuento y servicio.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
+  else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); if (!pct || !serv) { alertError.textContent = 'Rellena descuento y servicio.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
   else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { alertError.textContent = 'Describe la oferta.'; alertError.classList.add('show'); return } oferta.title = txt }
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
   try {
-    await api('offer_create', oferta)
-    alertSuccess.textContent = publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0)
+    const rr = await api('offer_create', oferta)
+    // MC-RF-CAMBIOS-1OCT-2026: un negocio activo no publica al momento.
+    alertSuccess.textContent = rr.pendiente ? '✅ Oferta guardada. La revisamos antes de que salga en la app; te avisamos por correo.'
+      : publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0)
   } catch (err) {
     alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
   }
