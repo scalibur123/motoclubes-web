@@ -357,26 +357,33 @@ window.updatePreview = function() {
   if (caducidad) txt += ` · Hasta ${new Date(caducidad).toLocaleDateString('es-ES')}`
   document.getElementById('preview-txt').textContent = txt || 'Rellena los campos para ver la vista previa'
 }
+// MC-RF-GUARDAR-OFERTAS-1OCT-2026 (93.ª, Carlos): como en el perfil (RF-GUARDAR-1), el aviso salía ARRIBA y «Publicar oferta»
+// está ABAJO: si faltaba un dato o fallaba el servidor, no se veía nada y la oferta no se guardaba. Ahora, arriba y en una ventana.
+function fallo(msg) {
+  const alertError = document.getElementById('alert-error')
+  alertError.textContent = 'No se ha guardado la oferta: ' + msg; alertError.classList.add('show'); window.scrollTo(0, 0)
+  alert('No se ha guardado la oferta.\n\n' + msg + '\n\nLo que has escrito sigue en la pantalla: corrígelo y vuelve a pulsar «Publicar oferta».')
+}
 window.handleSave = async function(publish) {
   const btn = document.getElementById('btn-publish')
   const alertError = document.getElementById('alert-error')
   const alertSuccess = document.getElementById('alert-success')
   alertError.classList.remove('show'); alertSuccess.classList.remove('show')
   const oferta = { offer_type: tipoActual, is_active: publish, condition_text: document.getElementById('f-condicion').value.trim() || null, ends_at: document.getElementById('f-caducidad').value ? new Date(document.getElementById('f-caducidad').value + 'T23:59:59').toISOString() : SIN_FIN, uses_count: 0 }
-  if (tipoActual === 'pct_consumicion') { const pct = parseInt(document.getElementById('f-pct').value); if (!pct) { alertError.textContent = 'Introduce el porcentaje.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = document.getElementById('f-aplica').value; oferta.title = `${pct}% de descuento en ${oferta.applies_to}` }
-  else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona`
+  if (tipoActual === 'pct_consumicion') { const pct = parseInt(document.getElementById('f-pct').value); if (!pct) { return fallo('Introduce el porcentaje.') } oferta.discount_pct = pct; oferta.applies_to = document.getElementById('f-aplica').value; oferta.title = `${pct}% de descuento en ${oferta.applies_to}` }
+  else if (tipoActual === 'menu_cerrado') { const precio = parseFloat(document.getElementById('f-precio-menu').value); if (!precio) { return fallo('Introduce el precio.') } oferta.fixed_price = precio; oferta.title = `Menú motero · ${precio}€/persona`
     // MC-RF-INCLUYE-30SEP-2026 (89.ª): las casillas «Qué incluye» se enseñaban y NO se guardaban nunca (visto en el QR de la prueba).
     oferta.includes = ['primero', 'segundo', 'postre', 'bebida', 'cafe'].filter(i => document.getElementById('inc-' + i)?.classList.contains('sel')).map(i => ({ primero: 'Primero', segundo: 'Segundo', postre: 'Postre', bebida: 'Bebida', cafe: 'Café' })[i]) }
-  else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { alertError.textContent = 'Introduce el precio.'; alertError.classList.add('show'); return }
+  else if (tipoActual === 'alojamiento') { const precio = parseFloat(document.getElementById('f-precio-aloj').value); if (!precio) { return fallo('Introduce el precio.') }
     // MC-RF-HOTEL-1OCT-2026: paquete de hotel (régimen, habitación suya, por persona o habitación, moto, noches).
     oferta.fixed_price = precio; oferta.precio_por = precioPor; oferta.regimen = regimen
     oferta.habitacion_id = document.getElementById('f-hab').value || null
     oferta.noches_min = document.getElementById('f-noches').value || null
     oferta.includes = MOTO.filter(([id]) => document.getElementById(id).classList.contains('sel')).map(([, l]) => l)
     oferta.title = TITULO_REGIMEN[regimen]; oferta.description = lineaHotel() || null }
-  else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { alertError.textContent = 'Describe el producto.'; alertError.classList.add('show'); return } oferta.title = prod + ' — gratis para moteros' }
-  else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); if (!pct || !serv) { alertError.textContent = 'Rellena descuento y servicio.'; alertError.classList.add('show'); return } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
-  else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { alertError.textContent = 'Describe la oferta.'; alertError.classList.add('show'); return } oferta.title = txt }
+  else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { return fallo('Describe el producto.') } oferta.title = prod + ' — gratis para moteros' }
+  else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); if (!pct || !serv) { return fallo('Rellena descuento y servicio.') } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
+  else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { return fallo('Describe la oferta.') } oferta.title = txt }
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
   try {
     const rr = await api('offer_create', oferta)
@@ -384,7 +391,7 @@ window.handleSave = async function(publish) {
     alertSuccess.textContent = rr.pendiente ? '✅ Oferta guardada. La revisamos antes de que salga en la app; te avisamos por correo.'
       : publish ? '✅ Oferta publicada.' : '✅ Borrador guardado.'; alertSuccess.classList.add('show'); hideForm(); await loadOfertas(); window.scrollTo(0,0)
   } catch (err) {
-    alertError.textContent = 'Error al guardar: ' + err.message; alertError.classList.add('show')
+    fallo(err.message)
   }
   btn.disabled = false; btn.innerHTML = 'Publicar oferta'
 }
