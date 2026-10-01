@@ -54,6 +54,9 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .rev-botones{display:flex;gap:10px;margin-top:22px}
 .btn-rechazar{background:transparent;color:var(--red);border:1.5px solid var(--red)}
 .btn-rechazar:hover{background:rgba(229,62,62,.1)}
+.rev-agente{background:#F3F3F3;border-left:3px solid #888;padding:10px 14px;border-radius:8px;font-size:14px;line-height:1.5;margin:-12px 0 16px}
+.rev-agente.raro{background:rgba(255,122,26,.10);border-left-color:var(--orange)}
+.rev-agente b{color:var(--black)}
 textarea{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--cream);border:1.5px solid var(--card);border-radius:10px;color:var(--black);outline:none;resize:vertical;margin-top:12px}
 </style>
 <link rel="stylesheet" href="negocio.css">
@@ -65,7 +68,9 @@ textarea{width:100%;padding:10px 14px;font-size:14px;font-family:inherit;backgro
 </header>
 <main>
   <!-- MC-RF-CAMBIOS-1OCT-2026 (92.ª, RF-REVISION-CAMBIOS-1): aquí llega el botón «Revisar» del correo
-       «Cambio para revisar» que recibe soporte@. Abrir no decide nada: hay que pulsar Aprobar o Rechazar. -->
+       «Cambio para revisar» que recibe soporte@. Abrir no decide nada: hay que pulsar Aprobar o Rechazar.
+       MC-AGENTE-REVISOR-1OCT-2026 (93.ª): arriba, lo que vio el agente (si lo retuvo o no pudo mirarlo), y una
+       «Lección para el agente» opcional que se guarda al decidir (agente_lecciones). -->
   <div class="card">
     <div class="alert error" id="alert-error"></div>
     <div id="cargando" style="color:var(--gray);font-size:14px">Cargando el cambio…</div>
@@ -106,6 +111,7 @@ async function cargar() {
     <div class="card-title">${esc(d.negocio)}</div>
     <div class="card-sub">${esc(d.municipio || '')}${d.municipio ? ' · ' : ''}ha cambiado ${que} el ${new Date(d.creado_en).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}.
       En la app sigue lo de antes hasta que lo apruebes.</div>
+    ${d.agente_nota ? `<div class="rev-agente${d.agente_veredicto === 'raro' ? ' raro' : ''}"><b>${d.agente_veredicto === 'raro' ? 'El agente lo ha retenido' : 'El agente no lo ha podido mirar'}:</b> ${esc(d.agente_nota)}</div>` : ''}
     <table class="rev-tabla">
       ${crear ? '' : '<tr><td></td><td style="font-size:12px;color:var(--gray-light)">Antes</td><td style="font-size:12px;color:var(--gray-light)">Ahora</td></tr>'}
       ${d.filas.map(f => `<tr><td class="k">${esc(f.etiqueta || f.clave)}</td>
@@ -113,6 +119,7 @@ async function cargar() {
         <td class="ahora">${esc(f.ahora)}${mini(f.fotos_ahora)}</td></tr>`).join('')}
     </table>
     <textarea id="motivo" rows="2" maxlength="500" placeholder="Si lo rechazas, el motivo (le llega al negocio)"></textarea>
+    <textarea id="leccion" rows="2" maxlength="1000" placeholder="Lección para el agente (opcional): qué tenía que haber visto o por qué esto sí es normal. No le llega al negocio."></textarea>
     <div class="rev-botones">
       <button class="btn" id="btn-aprobar">Aprobar y publicar</button>
       <button class="btn btn-rechazar" id="btn-rechazar">Rechazar</button>
@@ -123,7 +130,7 @@ async function cargar() {
     if (!aprobar && !motivo) { error('Escribe el motivo: le llega al negocio.'); return }
     document.querySelectorAll('.rev-botones .btn').forEach(b => b.disabled = true)
     try {
-      const r = await llamar('cambio_decidir', { aprobar, motivo })
+      const r = await llamar('cambio_decidir', { aprobar, motivo, leccion: document.getElementById('leccion').value.trim() })
       document.getElementById('cambio').style.display = 'none'
       document.getElementById('alert-error').classList.remove('show')
       document.getElementById('ok-icono').textContent = aprobar ? '✅' : '✋'
