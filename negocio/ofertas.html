@@ -58,6 +58,10 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
 .check-box.sel{background:var(--orange);border-color:var(--orange)}
 .check-box.sel::after{content:'✓';font-size:10px;color:#fff;font-weight:700}
 .check-lbl{font-size:13px;color:var(--black)}
+/* MC-RF-OFERTA-FOTO-2OCT-2026 (95.ª, RF-FOTOS-CARTA-OFERTA-1): una foto por oferta */
+.oferta-foto{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.oferta-foto img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid rgba(0,0,0,.08)}
+.oferta-mini{width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0}
 .preview-box{background:rgba(255,122,26,.14);border-radius:12px;padding:14px 16px;margin-top:16px}
 .preview-box-label{font-size:10px;font-weight:700;color:#B85000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .preview-box-txt{font-size:14px;color:#6B4423;font-weight:600;line-height:1.5}
@@ -179,6 +183,11 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
       <div class="field"><label>CADUCIDAD <span>(opcional)</span></label><input type="date" id="f-caducidad" onchange="updatePreview()"><div class="field-hint">Déjalo vacío si no tiene fecha límite.</div></div>
       <div class="field"><label>CONDICIÓN <span>(opcional)</span></label><input type="text" id="f-condicion" maxlength="80" placeholder="Ej: No acumulable. Solo mediodía." oninput="updatePreview()"></div>
     </div>
+    <div class="field"><label>FOTO DE LA OFERTA <span>(opcional)</span></label>
+      <div class="oferta-foto" id="foto-zona"><button type="button" class="btn-outline" id="foto-boton" onclick="document.getElementById('foto-input').click()">+ Añadir una foto</button></div>
+      <input type="file" id="foto-input" accept="image/*" style="display:none">
+      <div class="field-hint">Una foto que ayude a entender la oferta: el plato, la habitación, el cartel que ya tengáis… Sale en la ficha del sitio en la app.</div>
+    </div>
     <div class="preview-box">
       <div class="preview-box-label">Así lo verá el motero en la app</div>
       <div class="preview-box-txt" id="preview-txt" style="white-space:pre-line">Selecciona el tipo de oferta y rellena los campos</div>
@@ -285,7 +294,7 @@ async function loadOfertas() {
   const retiradas = todas.filter(o => o.retirada_en && o.qr_pendientes > 0)
   const tarjeta = (o, conBotones) => `
     <div class="oferta-card">
-      <div class="oferta-val">${o.discount_pct ? o.discount_pct+'%' : (o.fixed_price ? o.fixed_price+'€' : '🎁')}</div>
+      ${o.photo_url ? `<img class="oferta-mini" src="${escH(o.photo_url)}" alt="">` : ''}<div class="oferta-val">${o.discount_pct ? o.discount_pct+'%' : (o.fixed_price ? o.fixed_price+'€' : '🎁')}</div>
       <div class="oferta-info">
         <div class="oferta-title">${escH(o.title)}</div>
         <div class="oferta-meta">${o.retirada_en ? 'Retirada el ' + new Date(o.retirada_en).toLocaleDateString('es-ES') : hasta(o.ends_at)} · ${o.uses_count ?? 0} canjes${o.qr_pendientes ? ` · <b style="color:var(--orange)">${o.qr_pendientes} QR sin canjear</b>` : ''}</div>
@@ -298,7 +307,7 @@ async function loadOfertas() {
     </div>`
   const pendientes = cambios.filter(c => c.estado === 'pendiente').map(c => `
     <div class="oferta-card">
-      <div class="oferta-val">${c.despues.discount_pct ? c.despues.discount_pct + '%' : (c.despues.fixed_price ? c.despues.fixed_price + '€' : '🎁')}</div>
+      ${c.despues.photo_url ? `<img class="oferta-mini" src="${escH(c.despues.photo_url)}" alt="">` : ''}<div class="oferta-val">${c.despues.discount_pct ? c.despues.discount_pct + '%' : (c.despues.fixed_price ? c.despues.fixed_price + '€' : '🎁')}</div>
       <div class="oferta-info">
         <div class="oferta-title">${escH(c.despues.title)}</div>
         <div class="oferta-meta"><b style="color:#B8860B">🕒 Pendiente de revisión</b> · la revisamos antes de que salga en la app</div>
@@ -332,8 +341,48 @@ async function loadOfertas() {
     </div>`).join('')
 }
 
+// ---- MC-RF-OFERTA-FOTO-2OCT-2026 (95.ª, RF-FOTOS-CARTA-OFERTA-1, Mario: «si quiere subir una foto de la oferta, que la app la enseñe») ----
+// La misma subida que las cartas del perfil: hueco firmado (photo_slot) en SU carpeta, reducida a 1280 px.
+let fotoOferta = null
+function pintarFoto() {
+  const z = document.getElementById('foto-zona')
+  z.innerHTML = fotoOferta
+    ? `<img src="${escH(fotoOferta)}" alt="Foto de la oferta"><button type="button" class="btn-outline" onclick="document.getElementById('foto-input').click()">Cambiar</button><button type="button" class="btn-outline" onclick="quitarFoto()">Quitar</button>`
+    : `<button type="button" class="btn-outline" id="foto-boton" onclick="document.getElementById('foto-input').click()">+ Añadir una foto</button>`
+}
+window.quitarFoto = function () { fotoOferta = null; pintarFoto() }
+async function reducirFoto(file) {
+  if (!file.type.startsWith('image/')) return { blob: file, ext: (file.name.split('.').pop() || 'jpg') }
+  try {
+    const bitmap = await createImageBitmap(file)
+    const escala = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+    const w = Math.round(bitmap.width * escala), h = Math.round(bitmap.height * escala)
+    const lienzo = document.createElement('canvas'); lienzo.width = w; lienzo.height = h
+    lienzo.getContext('2d').drawImage(bitmap, 0, 0, w, h)
+    const blob = await new Promise(r => lienzo.toBlob(r, 'image/jpeg', 0.75))
+    bitmap.close && bitmap.close()
+    if (!blob || blob.size >= file.size) return { blob: file, ext: (file.name.split('.').pop() || 'jpg') }
+    return { blob, ext: 'jpg' }
+  } catch (err) { return { blob: file, ext: (file.name.split('.').pop() || 'jpg') } }
+}
+document.getElementById('foto-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; e.target.value = ''
+  if (!file) return
+  const z = document.getElementById('foto-zona'); z.innerHTML = '<div class="spinner"></div> Subiendo la foto…'
+  try {
+    const r = await reducirFoto(file)
+    if (r.blob.size > 10 * 1024 * 1024) throw new Error('pesa más de 10 MB')
+    const slot = await api('photo_slot', { ext: r.ext })
+    const { error } = await sbClient.storage.from('business-photos')
+      .uploadToSignedUrl(slot.path, slot.token, r.blob, { contentType: r.blob.type || 'image/jpeg' })
+    if (error) throw new Error(error.message)
+    fotoOferta = slot.public_url
+  } catch (err) { alert('No se pudo subir la foto: ' + err.message) }
+  pintarFoto()
+})
+
 window.showForm = function() { document.getElementById('form-block').style.display = 'block'; document.getElementById('form-block').scrollIntoView({ behavior: 'smooth' }) }
-window.hideForm = function() { document.getElementById('form-block').style.display = 'none' }
+window.hideForm = function() { document.getElementById('form-block').style.display = 'none'; fotoOferta = null; pintarFoto() }
 window.selectTipo = function(tipo) {
   tipoActual = tipo
   document.querySelectorAll('.tipo-radio').forEach(r => r.classList.remove('sel'))
@@ -384,6 +433,7 @@ window.handleSave = async function(publish) {
   else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { return fallo('Describe el producto.') } oferta.title = prod + ' — gratis para moteros' }
   else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); if (!pct || !serv) { return fallo('Rellena descuento y servicio.') } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
   else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { return fallo('Describe la oferta.') } oferta.title = txt }
+  oferta.photo_url = fotoOferta || null
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Guardando...'
   try {
     const rr = await api('offer_create', oferta)
