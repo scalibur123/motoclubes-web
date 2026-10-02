@@ -51,6 +51,15 @@ textarea{resize:vertical}
 .nombre-c{background:none;border:none;padding:0;font:700 14px Manrope,sans-serif;color:var(--tx);cursor:pointer;text-align:left}
 .est-por{background:#fff;color:#5C5750;border:1px solid var(--line)}.est-volver_a_llamar{background:#FFF7E6;color:#6B5100}.est-si{background:#DFF3E4;color:#1E6B34}.est-no{background:#F4E4E1;color:#7A2E21}.est-invitado{background:#EFEAE3;color:#5C5750}
 .hist{font-size:12px;color:var(--g);display:flex;flex-direction:column;gap:4px}
+.est-app{background:#1E6B34;color:#fff}
+.falta{background:#FFF1E6;color:#8F3E06;border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap}
+.completa{background:#DFF3E4;color:#1E6B34;border-radius:50px;padding:2px 8px;font-size:11px;font-weight:700}
+input.vacio{border-color:#FFB27A;background:#FFF8F2}
+.ficha{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:20px}
+.volver{background:none;border:none;color:var(--od);font:600 14px Manrope,sans-serif;cursor:pointer;padding:0;align-self:flex-start}
+.tcambios td,.tcambios th{padding:8px 10px;font-size:13px}.tcambios .antes{color:var(--gl);text-decoration:line-through}
+@media (max-width:900px){.ficha{grid-template-columns:1fr}}
 @media (max-width:760px){.cifras5{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila{grid-template-columns:1fr}}
 </style>
@@ -59,7 +68,7 @@ textarea{resize:vertical}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Candidatos <span class="n" id="n-cand">0</span></button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -100,42 +109,64 @@ textarea{resize:vertical}
 </main>
 
 <main id="v-cand" class="oculto">
+<!-- MC-ADMIN-NEGOCIOS-2OCT-2026 (95.ª, ADMIN-NEGOCIOS-1, maquetas A5 y A6 aprobadas por Mario): la base de datos de negocios. -->
+ <div id="c-lista" style="display:flex;flex-direction:column;gap:20px">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-    <div style="flex-grow:1"><h1>Candidatos de Rider Friendly</h1><div class="sub">Los sitios por llamar. El «sí» se consigue por teléfono o en persona; con el «sí» y el correo, «Invitar →» rellena el formulario. ⭐ = empezar por ellos.</div></div>
-    <button class="btn2" id="c-nuevo">+ Añadir candidato</button>
+    <div style="flex-grow:1"><h1>Base de datos de negocios</h1><div class="sub">Todos: los que están en la app, los invitados y los que queremos llamar. Cada uno con su ficha y lo que nos falta de él. ⭐ = empezar por ellos.</div></div>
+    <button class="btn2" id="c-nuevo">+ Añadir negocio</button>
   </div>
   <div id="c-aviso"></div>
   <div class="cifras cifras5" id="c-cifras"></div>
   <div class="filtros">
-    <label>BUSCAR<input type="text" id="c-buscar" placeholder="Nombre, pueblo, zona o teléfono"></label>
+    <label>BUSCAR<input type="text" id="c-buscar" placeholder="Nombre, pueblo, persona, teléfono o correo"></label>
     <label>ZONA<select id="c-zona"></select></label>
     <label>TIPO<select id="c-tipo"></select></label>
     <label>ESTADO<select id="c-estado"></select></label>
+    <label>DATOS<select id="c-datos"><option value="">Todos</option><option value="falta">Les falta algo</option><option value="ok">Completos</option></select></label>
   </div>
+  <div class="card tabla"><table><thead><tr><th>Negocio</th><th>Tipo</th><th>Contacto</th><th>Estado</th><th>Nos falta</th><th></th></tr></thead><tbody id="c-filas"></tbody></table></div>
+  <div class="sub" style="font-size:12px">«Nos falta» mira persona de contacto, teléfono, correo y web. Estados: Por llamar → Volver a llamar → Dicen que sí → Invitado → En la app (cuando crea la cuenta pasa solo). «No» se queda para no volver a buscarlo.</div>
+ </div>
 
-  <section id="c-editor" class="card oculto" style="border:2px solid var(--o);display:flex;flex-direction:column;gap:14px">
-    <h2 style="font-size:18px" id="c-ed-titulo">Apuntar llamada</h2>
-    <label>¿QUÉ TE HAN DICHO?<div class="opc" id="c-ed-estado"></div></label>
-    <div class="fila"><label>PERSONA DE CONTACTO<input type="text" id="c-ed-contacto" maxlength="80"></label>
-      <label>CORREO (CUANDO DIGAN QUE SÍ)<input type="email" id="c-ed-correo" maxlength="200" placeholder="lo dicen ellos o se busca en su web"></label></div>
-    <label>NOTAS DE LA LLAMADA<textarea id="c-ed-notas" rows="3" maxlength="2000"></textarea></label>
-    <details id="c-ed-datos"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--g)">Datos del sitio</summary>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
-        <label>NOMBRE<input type="text" id="c-ed-nombre" maxlength="120"></label>
-        <label>TIPO<div class="opc" id="c-ed-tipo"></div></label>
-        <div class="fila"><label>¿Y EXACTAMENTE?<input type="text" id="c-ed-cat" maxlength="60"></label><label>TELÉFONO<input type="text" id="c-ed-tel" maxlength="40"></label></div>
-        <div class="fila"><label>PUEBLO<input type="text" id="c-ed-muni" maxlength="80"></label><label>ZONA<input type="text" id="c-ed-zona" maxlength="60" list="c-zonas"></label></div>
-        <datalist id="c-zonas"></datalist>
-        <label>POR QUÉ ENCAJA<input type="text" id="c-ed-motivo" maxlength="300"></label>
-        <label class="check"><input type="checkbox" id="c-ed-prio"> ⭐ Empezar por este</label>
-      </div>
-    </details>
-    <div class="hist" id="c-ed-hist"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn2" id="c-ed-cancelar">Cancelar</button><button class="btn" id="c-ed-guardar" style="background:#161412">Guardar</button></div>
-  </section>
-
-  <div class="card tabla"><table><thead><tr><th>Sitio</th><th>Tipo</th><th>Teléfono</th><th>Estado</th><th>Notas</th><th></th></tr></thead><tbody id="c-filas"></tbody></table></div>
-  <div class="sub" style="font-size:12px">Estados: Por llamar → Volver a llamar → Dicen que sí → Invitados (pasa a «Altas»). «No» se queda en la lista para no volver a buscarlo. «Invitar →» abre «Invitar negocio» con nombre, tipo, contacto y correo ya puestos y «Por teléfono» marcado.</div>
+ <div id="c-ficha" class="oculto" style="display:flex;flex-direction:column;gap:20px">
+  <button class="volver" id="f2-volver">← Negocios</button>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h1 id="f2-titulo"></h1><span id="f2-estado"></span><span class="sub" id="f2-sub"></span></div>
+  <div id="f2-aviso"></div>
+  <div class="ficha">
+   <div class="col">
+    <section class="card" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px"><h2 style="font-size:18px;flex-grow:1">Datos de contacto (nuestros)</h2><span id="f2-faltan"></span></div>
+      <label>NOMBRE DEL NEGOCIO<input type="text" id="f2-nombre" maxlength="120"></label>
+      <div class="fila"><label>PERSONA DE CONTACTO<input type="text" id="f2-contacto" maxlength="80" data-falta="contacto"></label><label>CARGO O RELACIÓN<input type="text" id="f2-cargo" maxlength="80" placeholder="Dueño, encargado…"></label></div>
+      <div class="fila"><label>TELÉFONO DE CONTACTO<input type="text" id="f2-telefono" maxlength="40" data-falta="teléfono"></label><label>OTRO TELÉFONO<input type="text" id="f2-telefono2" maxlength="40" placeholder="fijo, móvil del encargado…"></label></div>
+      <div class="fila"><label>CORREO<input type="email" id="f2-correo" maxlength="200" data-falta="correo"></label><label>WEB<input type="text" id="f2-web" maxlength="200" data-falta="web" placeholder="www…"></label></div>
+      <label>DIRECCIÓN<input type="text" id="f2-direccion" maxlength="200"></label>
+      <div class="fila"><label>PUEBLO<input type="text" id="f2-municipio" maxlength="80"></label><label>ZONA<input type="text" id="f2-zona" maxlength="60" list="c-zonas"></label></div>
+      <datalist id="c-zonas"></datalist>
+      <label>TIPO<div class="opc" id="f2-tipo"></div></label>
+      <div class="fila"><label>¿Y EXACTAMENTE?<input type="text" id="f2-categoria" maxlength="60" placeholder="Casa rural, asador, taller de motos…"></label><label>POR QUÉ ENCAJA<input type="text" id="f2-motivo" maxlength="300"></label></div>
+      <label>NOTAS FIJAS (LO QUE CONVIENE SABER ANTES DE LLAMAR)<textarea id="f2-notas_fijas" rows="2" maxlength="1000"></textarea></label>
+      <label class="check"><input type="checkbox" id="f2-prioridad"> ⭐ Empezar por este</label>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn2 oculto" id="f2-invitar">Invitar →</button><button class="btn" id="f2-guardar" style="background:#161412">Guardar cambios</button></div>
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:18px">Historial de cambios</h2>
+      <div class="sub" style="font-size:13px">Cada dato que se cambia queda aquí con lo que había antes. Nada se pierde.</div>
+      <div style="overflow-x:auto"><table class="tcambios"><thead><tr><th>Cuándo</th><th>Qué</th><th>Antes</th><th>Ahora</th></tr></thead><tbody id="f2-cambios"></tbody></table></div>
+    </section>
+   </div>
+   <div class="col">
+    <section class="card" style="border:2px solid var(--o);display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:18px">Apuntar llamada</h2>
+      <div class="opc" id="f2-ll-estado"></div>
+      <textarea id="f2-ll-nota" rows="3" maxlength="2000" placeholder="Qué te han dicho"></textarea>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" id="f2-ll-apuntar">Apuntar</button></div>
+      <div class="hist" id="f2-llamadas"></div>
+    </section>
+    <section class="card oculto" id="f2-app" style="display:flex;flex-direction:column;gap:10px"></section>
+   </div>
+  </div>
+ </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -226,125 +257,180 @@ $('b-enviar').onclick = async () => {
     p_contacto: $('f-contacto').value.trim() || null, p_categoria: cat || null, p_contacto_previo: previo })
   $('b-enviar').disabled = false
   if (error) { const k = Object.keys(ERRORES).find(k => error.message.includes(k)); return aviso(k ? ERRORES[k] : 'No se ha podido invitar: ' + esc(error.message)) }
-  // Venía de un candidato: queda «Invitado» y unido a su invitación (para seguirlo desde «Candidatos»).
-  if (candidatoInvitando && invId) {
-    const r = await sb.rpc('mc_rf_admin_candidato_guardar', { p_id: candidatoInvitando, p_datos: { estado: 'invitado', invitacion_id: invId,
-      correo, contacto: $('f-contacto').value.trim() } })
-    if (r.error) aviso('La invitación ha salido, pero no se ha podido marcar el candidato como invitado: ' + esc(r.error.message))
+  // MC-ADMIN-NEGOCIOS-2OCT-2026: toda invitación queda en la base de datos de negocios. Si venía de un negocio de la lista,
+  // pasa a «Invitado» y se une a su invitación; si se invitó directo, se crea su ficha.
+  if (invId) {
+    const r = await sb.rpc('mc_rf_admin_negocio_guardar', { p_id: candidatoInvitando, p_datos: Object.assign(
+      { estado: 'invitado', invitacion_id: invId, correo, contacto: $('f-contacto').value.trim() },
+      candidatoInvitando ? {} : { nombre, tipo: tipoBase(tipo), categoria: cat }) })
+    if (r.error) aviso('La invitación ha salido, pero no se ha podido apuntar en «Negocios»: ' + esc(r.error.message))
     candidatoInvitando = null; cargarCand()
   }
   $('form').classList.add('oculto'); ['f-nombre','f-cat','f-contacto','f-correo'].forEach(id => $(id).value = '')
   aviso(`✅ Invitación a <b>${esc(nombre)}</b> en camino. Sale en unos segundos; en la lista verás cuándo la abre.`, true)
   setTimeout(cargar, 4000); cargar()
 }
-// ===== Candidatos (MC-ADMIN-CANDIDATOS-2OCT-2026) =====
+// ===== Negocios (MC-ADMIN-NEGOCIOS-2OCT-2026, maquetas A5 y A6) =====
 const ESTADOS = [['por_llamar','Por llamar'],['volver_a_llamar','Volver a llamar'],['si','Dicen que sí'],['no','No'],['invitado','Invitado']]
-const EST_TXT = Object.fromEntries(ESTADOS)
-let cands = [], candEditando = null, candidatoInvitando = null, edEstado = 'por_llamar', edTipo = 'restaurante'
+const EST_TXT = Object.assign(Object.fromEntries(ESTADOS), { app: 'En la app' })
+const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: 'Tipo', categoria: '¿Y exactamente?', telefono: 'Teléfono de contacto',
+  telefono2: 'Otro teléfono', correo: 'Correo', web: 'Web', direccion: 'Dirección', contacto: 'Persona de contacto', cargo: 'Cargo o relación',
+  notas_fijas: 'Notas fijas', motivo: 'Por qué encaja', prioridad: 'Empezar por este' }
+const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
+let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
 function verPestana(cual) {
   $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand')
 }
 $('p-altas').onclick = () => verPestana('altas')
-$('p-cand').onclick = () => verPestana('cand')
+$('p-cand').onclick = () => { verPestana('cand'); verLista() }
 function cAviso(txt, bien) { $('c-aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
+function fAviso(txt, bien) { $('f2-aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
 const tipoUi = (c) => c.tipo === 'restaurante' && esBar(c.categoria) && !esRest(c.categoria) ? 'bar' : c.tipo
+const estadoEf = (c) => c.app ? 'app' : c.estado
+const faltan = (c) => [!c.contacto && 'contacto', !c.telefono && 'teléfono', !c.correo && 'correo', !c.web && 'web'].filter(Boolean)
+const chipEstado = (e) => `<span class="chip est-${e === 'por_llamar' ? 'por' : e}">${esc(EST_TXT[e] || e)}</span>`
 function estadoInv(c) {
   const i = c.invitacion
+  if (c.app) return c.app.activo ? 'En el mapa' : (c.app.ficha_completa ? 'Ficha completa · por revisar' : 'Cuenta creada · ficha a medias')
   if (!i) return ''
-  if (i.usada) return 'Cuenta creada (mira «Altas»)'
   if (i.envio_error) return 'La invitación no se pudo enviar'
   if (i.caducada) return 'Enlace caducado'
   if (i.abierta) return 'Abrió el enlace'
-  return i.enviada_en ? 'Invitación enviada' : 'Enviando…'
+  return i.enviada_en ? 'Invitación sin abrir' : 'Enviando…'
 }
 function rellenarSelect(sel, lista, actual) {
   sel.innerHTML = lista.map(([v, l]) => `<option value="${esc(v)}"${v === actual ? ' selected' : ''}>${esc(l)}</option>`).join('')
 }
 async function cargarCand() {
-  const { data, error } = await sb.rpc('mc_rf_admin_candidatos')
-  if (error) return cAviso('No se han podido cargar los candidatos: ' + esc(error.message))
+  const { data, error } = await sb.rpc('mc_rf_admin_negocios')
+  if (error) return cAviso('No se ha podido cargar la base de datos de negocios: ' + esc(error.message))
   cands = data || []
   $('n-cand').textContent = cands.length
-  const cuenta = (e) => cands.filter(c => c.estado === e).length
-  $('c-cifras').innerHTML = [['por_llamar','Por llamar',''],['volver_a_llamar','Volver a llamar','background:#FFF7E6;border-color:#F0D9A8'],['si','Dicen que sí',''],['invitado','Invitados',''],['no','Dicen que no','']]
-    .map(([e, l, st]) => `<div class="card cifra" style="padding:16px;${st}"><b>${cuenta(e)}</b><span>${l}</span></div>`).join('')
+  const n = (f) => cands.filter(f).length
+  $('c-cifras').innerHTML = [[n(c => estadoEf(c) === 'por_llamar'), 'Por llamar', ''], [n(c => estadoEf(c) === 'volver_a_llamar'), 'Volver a llamar', 'background:#FFF7E6;border-color:#F0D9A8'],
+    [n(c => estadoEf(c) === 'invitado'), 'Invitados', ''], [n(c => c.app), 'En la app', ''], [n(c => faltan(c).length), 'Con datos por completar', '']]
+    .map(([v, l, st]) => `<div class="card cifra" style="padding:16px;${st}"><b>${v}</b><span>${l}</span></div>`).join('')
   const zonas = [...new Set(cands.map(c => c.zona).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
   const zSel = $('c-zona').value, tSel = $('c-tipo').value, eSel = $('c-estado').value
   rellenarSelect($('c-zona'), [['', 'Todas'], ...zonas.map(z => [z, z])], zSel)
   rellenarSelect($('c-tipo'), [['', 'Todos'], ...TIPOS], tSel)
-  rellenarSelect($('c-estado'), [['', 'Todos'], ...ESTADOS], eSel)
+  rellenarSelect($('c-estado'), [['', 'Todos'], ...ESTADOS.slice(0, 2), ['si', 'Dicen que sí'], ['invitado', 'Invitados'], ['app', 'En la app'], ['no', 'No']], eSel)
   $('c-zonas').innerHTML = zonas.map(z => `<option value="${esc(z)}">`).join('')
   pintarCand()
+  if (fichaId) { const c = cands.find(x => x.id === fichaId); if (c) pintarFicha(c) }
 }
 const sinTildes = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 function pintarCand() {
-  const q = sinTildes($('c-buscar').value.trim()), z = $('c-zona').value, t = $('c-tipo').value, e = $('c-estado').value
+  const q = sinTildes($('c-buscar').value.trim()), z = $('c-zona').value, t = $('c-tipo').value, e = $('c-estado').value, d = $('c-datos').value
   const qTel = q.replace(/\D/g, '')
   const lista = cands.filter(c =>
-    (!z || c.zona === z) && (!e || c.estado === e) &&
+    (!z || c.zona === z) && (!e || estadoEf(c) === e) && (!d || (d === 'falta' ? faltan(c).length > 0 : faltan(c).length === 0)) &&
     (!t || (t === 'bar' ? c.tipo === 'restaurante' && esBar(c.categoria) : t === 'restaurante' ? c.tipo === 'restaurante' && (!esBar(c.categoria) || esRest(c.categoria)) : c.tipo === t)) &&
-    (!q || sinTildes([c.nombre, c.municipio, c.zona, c.categoria, c.contacto, c.notas].join(' ')).includes(q) || (qTel.length >= 3 && String(c.telefono || '').replace(/\D/g, '').includes(qTel))))
+    (!q || sinTildes([c.nombre, c.municipio, c.zona, c.categoria, c.contacto, c.correo, c.notas, c.notas_fijas].join(' ')).includes(q)
+        || (qTel.length >= 3 && [c.telefono, c.telefono2].join(' ').replace(/\D/g, '').includes(qTel))))
   $('c-filas').innerHTML = lista.map(c => {
-    const tel = c.telefono ? `<a class="tel" href="tel:${esc(String(c.telefono).replace(/ ext.*$/i, '').replace(/\s/g, ''))}">${esc(c.telefono)}</a>` : '<span class="sub">—</span>'
-    const inv = estadoInv(c)
-    const accion = c.estado === 'si' ? `<button class="btn3 o" data-inv="${c.id}">Invitar →</button>`
-      : c.estado === 'invitado' ? `<button class="btn3" data-altas="1">Ver en Altas</button>`
-      : `<button class="btn3" data-ed="${c.id}">Apuntar llamada</button>`
+    const f = faltan(c), inv = estadoInv(c), est = estadoEf(c)
+    const accion = est === 'si' ? `<button class="btn3 o" data-inv="${c.id}">Invitar →</button>` : `<button class="btn3" data-ficha="${c.id}">Abrir ficha</button>`
     return `<tr>
-      <td><button class="nombre-c" data-ed="${c.id}">${esc(c.nombre)}</button>${c.prioridad ? ' ⭐' : ''}<div class="sub" style="font-size:12px">${esc([c.municipio, c.zona].filter(Boolean).join(' · '))}</div></td>
-      <td class="sub">${esc(tipoTxt(c.tipo, c.categoria))}${c.categoria ? `<div style="font-size:12px;color:var(--gl)">${esc(c.categoria)}</div>` : ''}</td>
-      <td>${tel}</td>
-      <td><span class="chip est-${c.estado === 'por_llamar' ? 'por' : c.estado}">${esc(EST_TXT[c.estado] || c.estado)}</span>${inv ? `<div class="sub" style="font-size:12px;margin-top:4px">${esc(inv)}</div>` : ''}</td>
-      <td class="sub" style="font-size:13px;max-width:320px">${esc(c.notas || c.motivo || '')}${c.contacto ? `<div style="font-size:12px;color:var(--gl)">Contacto: ${esc(c.contacto)}${c.correo ? ' · ' + esc(c.correo) : ''}</div>` : (c.correo ? `<div style="font-size:12px;color:var(--gl)">${esc(c.correo)}</div>` : '')}</td>
+      <td><button class="nombre-c" data-ficha="${c.id}">${esc(c.nombre)}</button>${c.app?.fundador ? ' <span class="corona" title="Socio fundador">👑</span>' : ''}${c.prioridad ? ' ⭐' : ''}<div class="sub" style="font-size:12px">${esc([c.municipio, c.zona].filter(Boolean).join(' · '))}</div></td>
+      <td class="sub">${esc(tipoTxt(c.tipo, c.categoria))}</td>
+      <td class="sub">${esc(c.contacto || '—')}${c.telefono ? `<div><a class="tel" href="tel:${esc(String(c.telefono).replace(/ ext.*$/i, '').replace(/\s/g, ''))}">${esc(c.telefono)}</a></div>` : ''}</td>
+      <td>${chipEstado(est)}${inv && est !== 'app' ? `<div class="sub" style="font-size:12px;margin-top:4px">${esc(inv)}</div>` : (est === 'app' ? `<div class="sub" style="font-size:12px;margin-top:4px">${esc(inv)}</div>` : '')}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">${f.length ? f.map(x => `<span class="falta">${x}</span>`).join('') : '<span class="completa">Completa</span>'}</div></td>
       <td style="text-align:right">${accion}</td></tr>`
-  }).join('') || '<tr><td colspan="6" class="sub">Ningún candidato con esos filtros.</td></tr>'
-  $('c-filas').querySelectorAll('[data-ed]').forEach(b => b.onclick = () => abrirEditor(b.dataset.ed))
+  }).join('') || '<tr><td colspan="6" class="sub">Ningún negocio con esos filtros.</td></tr>'
+  $('c-filas').querySelectorAll('[data-ficha]').forEach(b => b.onclick = () => abrirFicha(b.dataset.ficha))
   $('c-filas').querySelectorAll('[data-inv]').forEach(b => b.onclick = () => invitarCand(b.dataset.inv))
-  $('c-filas').querySelectorAll('[data-altas]').forEach(b => b.onclick = () => verPestana('altas'))
 }
-;['c-buscar'].forEach(id => $(id).addEventListener('input', pintarCand))
-;['c-zona','c-tipo','c-estado'].forEach(id => $(id).addEventListener('change', pintarCand))
-function abrirEditor(id) {
-  const c = id ? cands.find(x => x.id === id) : null
-  candEditando = c ? c.id : null
-  cAviso('')
-  $('c-ed-titulo').textContent = c ? 'Apuntar llamada · ' + c.nombre : 'Nuevo candidato'
-  edEstado = c ? c.estado : 'por_llamar'; edTipo = c ? tipoUi(c) : 'restaurante'
-  opciones($('c-ed-estado'), ESTADOS, edEstado, v => edEstado = v)
-  opciones($('c-ed-tipo'), TIPOS, edTipo, v => edTipo = v)
-  $('c-ed-contacto').value = c?.contacto || ''; $('c-ed-correo').value = c?.correo || ''; $('c-ed-notas').value = c?.notas || ''
-  $('c-ed-nombre').value = c?.nombre || ''; $('c-ed-cat').value = c?.categoria || ''; $('c-ed-tel').value = c?.telefono || ''
-  $('c-ed-muni').value = c?.municipio || ''; $('c-ed-zona').value = c?.zona || ''; $('c-ed-motivo').value = c?.motivo || ''
-  $('c-ed-prio').checked = !!c?.prioridad
-  $('c-ed-datos').open = !c
-  const h = (c?.historial || []).slice().reverse()
-  $('c-ed-hist').innerHTML = h.length ? '<b>Historial</b>' + h.map(x => `<div>${esc(new Date(x.en).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }))} · ${esc(EST_TXT[x.estado] || x.estado)}${x.notas ? ' · ' + esc(x.notas) : ''}</div>`).join('') : ''
-  $('c-editor').classList.remove('oculto')
-  $('c-editor').scrollIntoView({ behavior: 'smooth', block: 'start' })
+$('c-buscar').addEventListener('input', pintarCand)
+;['c-zona','c-tipo','c-estado','c-datos'].forEach(id => $(id).addEventListener('change', pintarCand))
+function verLista() { fichaId = null; $('c-ficha').classList.add('oculto'); $('c-lista').classList.remove('oculto') }
+$('f2-volver').onclick = () => { verLista(); window.scrollTo(0, 0) }
+const fmtFecha = (iso) => { try { return new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) } catch { return iso } }
+function valorTxt(campo, v) {
+  if (v === null || v === undefined || v === '') return '—'
+  if (campo === 'tipo') return TIPO_TXT[v] || v
+  if (campo === 'prioridad') return v ? 'Sí' : 'No'
+  return String(v)
 }
-$('c-nuevo').onclick = () => abrirEditor(null)
-$('c-ed-cancelar').onclick = () => { $('c-editor').classList.add('oculto'); candEditando = null }
-$('c-ed-guardar').onclick = async () => {
-  const nombre = $('c-ed-nombre').value.trim(), correo = $('c-ed-correo').value.trim()
-  if (!nombre) { $('c-ed-datos').open = true; return cAviso('Pon el nombre del sitio.') }
-  if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return cAviso('El correo no parece válido.')
-  let cat = $('c-ed-cat').value.trim()
-  if (edTipo === 'bar' && !esBar(cat)) cat = cat ? 'Bar, ' + cat : 'Bar'
-  const datos = { nombre, estado: edEstado, tipo: tipoBase(edTipo), categoria: cat, contacto: $('c-ed-contacto').value.trim(), correo,
-    notas: $('c-ed-notas').value.trim(), telefono: $('c-ed-tel').value.trim(), municipio: $('c-ed-muni').value.trim(),
-    zona: $('c-ed-zona').value.trim(), motivo: $('c-ed-motivo').value.trim(), prioridad: $('c-ed-prio').checked }
-  $('c-ed-guardar').disabled = true
-  const { error } = await sb.rpc('mc_rf_admin_candidato_guardar', { p_id: candEditando, p_datos: datos })
-  $('c-ed-guardar').disabled = false
-  if (error) return cAviso('No se ha podido guardar: ' + esc(error.message))
-  $('c-editor').classList.add('oculto'); candEditando = null
-  cAviso(`✅ Guardado: <b>${esc(nombre)}</b>.` + (edEstado === 'si' && !correo ? ' Falta su correo para poder invitarle.' : ''), true)
-  cargarCand()
+function abrirFicha(id) {
+  const c = id ? cands.find(x => x.id === id) : { id: null, nombre: '', tipo: 'restaurante', estado: 'por_llamar', historial: [], cambios: [] }
+  if (!c) return
+  fichaId = c.id
+  cAviso(''); fAviso('')
+  $('c-lista').classList.add('oculto'); $('c-ficha').classList.remove('oculto'); window.scrollTo(0, 0)
+  pintarFicha(c)
+  if (!id) $('f2-nombre').focus()
 }
+function pintarFicha(c) {
+  $('f2-titulo').innerHTML = c.id ? esc(c.nombre) + (c.app?.fundador ? ' <span class="corona" title="Socio fundador">👑</span>' : '') : 'Nuevo negocio'
+  $('f2-estado').innerHTML = c.id ? chipEstado(estadoEf(c)) : ''
+  $('f2-sub').textContent = c.id ? [tipoTxt(c.tipo, c.categoria), c.municipio, c.zona].filter(Boolean).join(' · ') : ''
+  CAMPOS.forEach(k => { $('f2-' + k).value = c[k] || '' })
+  $('f2-prioridad').checked = !!c.prioridad
+  f2Tipo = tipoUi(c); opciones($('f2-tipo'), TIPOS, f2Tipo, v => f2Tipo = v)
+  marcarVacios()
+  const puedeInvitar = c.id && !c.app && !(c.invitacion && !c.invitacion.caducada && !c.invitacion.envio_error)
+  $('f2-invitar').classList.toggle('oculto', !puedeInvitar)
+  const cambios = (c.cambios || []).slice().reverse()
+  $('f2-cambios').innerHTML = cambios.map(x => `<tr><td class="sub" style="white-space:nowrap">${esc(fmtFecha(x.en))}</td><td><b>${esc(CAMPO_TXT[x.campo] || x.campo)}</b></td><td class="antes">${esc(valorTxt(x.campo, x.antes))}</td><td>${esc(valorTxt(x.campo, x.ahora))}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="sub">Aún no se ha cambiado ningún dato.</td></tr>'
+  llEstado = c.id ? c.estado : 'por_llamar'
+  opciones($('f2-ll-estado'), ESTADOS, llEstado, v => llEstado = v)
+  $('f2-ll-nota').value = ''
+  $('f2-ll-apuntar').disabled = !c.id
+  const h = (c.historial || []).slice().reverse()
+  $('f2-llamadas').innerHTML = h.length ? h.map(x => `<div><b style="color:var(--tx)">${esc(fmtFecha(x.en))}</b> · ${esc(EST_TXT[x.estado] || x.estado)}${x.notas ? ' · «' + esc(x.notas) + '»' : ''}</div>`).join('') : (c.id ? '<div>Aún no hay llamadas apuntadas.</div>' : '<div>Guarda primero el negocio.</div>')
+  const a = c.app
+  $('f2-app').classList.toggle('oculto', !a)
+  if (a) $('f2-app').innerHTML = `<h2 style="font-size:18px">En la app</h2>
+    <div class="sub" style="line-height:1.5">Lo que ve el motero (fotos, horario, carta, habitaciones, ofertas) lo cambia <b>el negocio desde su portal</b>, y cada cambio pasa por la revisión. Aquí son <b>nuestros</b> datos para llamarle y llevarle.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <div>Estado: <b>${esc(estadoInv(c))}</b></div>
+      <div>Cuenta del portal: <b>${esc(a.cuenta || '—')}</b></div>
+      <div>Cambios por revisar: <b>${a.cambios_pendientes}</b> · Correos sin contestar: <b>${a.correos_sin_contestar}</b></div>
+      <div>Ofertas publicadas: <b>${a.ofertas}</b> · QR canjeados: <b>${a.canjes}</b></div>
+    </div>`
+}
+function marcarVacios() {
+  let n = 0
+  document.querySelectorAll('#c-ficha [data-falta]').forEach(inp => { const v = !inp.value.trim(); inp.classList.toggle('vacio', v); if (v) n++ })
+  $('f2-faltan').innerHTML = n ? `<span class="falta">Faltan ${n}</span>` : '<span class="completa">Completa</span>'
+}
+document.querySelectorAll('#c-ficha [data-falta]').forEach(inp => inp.addEventListener('input', marcarVacios))
+$('c-nuevo').onclick = () => abrirFicha(null)
+async function guardarNegocio(datos) {
+  const { data, error } = await sb.rpc('mc_rf_admin_negocio_guardar', { p_id: fichaId, p_datos: datos })
+  if (error) { fAviso('No se ha podido guardar: ' + esc(error.message)); return null }
+  fichaId = data
+  await cargarCand()
+  return data
+}
+$('f2-guardar').onclick = async () => {
+  const datos = {}
+  CAMPOS.forEach(k => { datos[k] = $('f2-' + k).value.trim() })
+  if (!datos.nombre) return fAviso('Pon el nombre del negocio.')
+  if (datos.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo)) return fAviso('El correo no parece válido.')
+  if (f2Tipo === 'bar' && !esBar(datos.categoria)) datos.categoria = datos.categoria ? 'Bar, ' + datos.categoria : 'Bar'
+  datos.tipo = tipoBase(f2Tipo); datos.prioridad = $('f2-prioridad').checked
+  $('f2-guardar').disabled = true
+  const ok = await guardarNegocio(datos)
+  $('f2-guardar').disabled = false
+  if (ok) fAviso('✅ Guardado.', true)
+}
+$('f2-ll-apuntar').onclick = async () => {
+  if (!fichaId) return
+  const nota = $('f2-ll-nota').value.trim()
+  $('f2-ll-apuntar').disabled = true
+  const ok = await guardarNegocio({ estado: llEstado, notas: nota })
+  $('f2-ll-apuntar').disabled = false
+  if (ok) fAviso('✅ Llamada apuntada.' + (llEstado === 'si' && !$('f2-correo').value.trim() ? ' Falta su correo para poder invitarle.' : ''), true)
+}
+$('f2-invitar').onclick = () => fichaId && invitarCand(fichaId)
 function invitarCand(id) {
   const c = cands.find(x => x.id === id); if (!c) return
-  if (!c.correo) { abrirEditor(id); return cAviso('Antes de invitar, apunta su correo.') }
+  if (!c.correo) { abrirFicha(id); fAviso('Antes de invitar, apunta su correo en «Datos de contacto».'); $('f2-correo').focus(); return }
   candidatoInvitando = c.id
   verPestana('altas'); aviso('')
   $('f-nombre').value = c.nombre; $('f-cat').value = c.categoria || ''; $('f-contacto').value = c.contacto || ''; $('f-correo').value = c.correo
