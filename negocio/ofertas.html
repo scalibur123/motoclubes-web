@@ -127,6 +127,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
         <div class="tipo-row" id="fila-pct_consumicion" onclick="selectTipo('pct_consumicion')"><div class="tipo-radio sel" id="radio-pct_consumicion"></div><div class="tipo-lbl" id="lbl-pct_consumicion">Descuento % en consumición</div><div class="tipo-sub" id="sub-pct_consumicion">ej. 10% menú</div></div>
         <div class="tipo-row" id="fila-menu_cerrado" onclick="selectTipo('menu_cerrado')"><div class="tipo-radio" id="radio-menu_cerrado"></div><div class="tipo-lbl" id="lbl-menu_cerrado">Menú motero — precio cerrado por persona</div><div class="tipo-sub" id="sub-menu_cerrado">ej. 25€/p</div></div>
         <div class="tipo-row" id="fila-alojamiento" onclick="selectTipo('alojamiento')"><div class="tipo-radio" id="radio-alojamiento"></div><div class="tipo-lbl" id="lbl-alojamiento">Alojamiento — precio por persona/noche</div><div class="tipo-sub" id="sub-alojamiento">ej. 30€/p/n</div></div>
+        <div class="tipo-row" id="fila-precio_cerrado" style="display:none" onclick="selectTipo('precio_cerrado')"><div class="tipo-radio" id="radio-precio_cerrado"></div><div class="tipo-lbl" id="lbl-precio_cerrado">Precio cerrado</div><div class="tipo-sub" id="sub-precio_cerrado">Ej: cambio de aceite y filtro · 69 €</div></div>
         <div class="tipo-row" id="fila-producto_gratis" onclick="selectTipo('producto_gratis')"><div class="tipo-radio" id="radio-producto_gratis"></div><div class="tipo-lbl" id="lbl-producto_gratis">Producto gratuito</div><div class="tipo-sub" id="sub-producto_gratis">café, postre…</div></div>
         <div class="tipo-row" id="fila-pct_servicio" onclick="selectTipo('pct_servicio')"><div class="tipo-radio" id="radio-pct_servicio"></div><div class="tipo-lbl" id="lbl-pct_servicio">Descuento % en servicio</div><div class="tipo-sub" id="sub-pct_servicio">taller, equipación…</div></div>
         <div class="tipo-row" id="fila-otro" onclick="selectTipo('otro')"><div class="tipo-radio" id="radio-otro"></div><div class="tipo-lbl" id="lbl-otro">Otro</div><div class="tipo-sub" id="sub-otro">campo libre corto</div></div>
@@ -137,6 +138,12 @@ main{max-width:800px;margin:0 auto;padding:28px 20px 80px}
         <div class="field"><label>DESCUENTO (%)</label><input type="number" id="f-pct" min="1" max="100" placeholder="10" oninput="updatePreview()"></div>
         <div class="field"><label>APLICA A</label><select id="f-aplica" onchange="updatePreview()"><option value="menú del día">Menú del día</option><option value="carta">Carta</option><option value="desayuno">Desayuno</option><option value="bebidas">Bebidas</option><option value="todo">Todo</option></select></div>
       </div>
+    </div>
+    <!-- MC-RF-TALLER-2OCT-2026 (95.ª, RF-TALLER-1): un servicio de taller a precio cerrado -->
+    <div class="campos" id="campos-precio_cerrado">
+      <div class="field"><label>QUÉ SERVICIO</label><input type="text" id="f-pc-serv" maxlength="60" placeholder="Ej: Cambio de aceite y filtro" oninput="updatePreview()"></div>
+      <div class="field"><label>PRECIO CERRADO (€)</label><input type="number" id="f-pc-precio" min="1" placeholder="69" oninput="updatePreview()"></div>
+      <div class="field"><label>QUÉ INCLUYE <span>(opcional)</span></label><input type="text" id="f-pc-inc" maxlength="80" placeholder="Ej: Aceite, filtro y mano de obra" oninput="updatePreview()"></div>
     </div>
     <div class="campos" id="campos-menu_cerrado">
       <div class="field"><label>PRECIO POR PERSONA (€)</label><input type="number" id="f-precio-menu" min="1" placeholder="25" oninput="updatePreview()"></div>
@@ -238,6 +245,18 @@ async function handleLogout() {
 }
 
 let tipoActual = 'pct_consumicion'
+// MC-RF-TALLER-2OCT-2026 (95.ª, RF-TALLER-1, plan aceptado por Mario): un taller ve solo sus ofertas, como el hotel.
+let esTaller = false
+function prepararTaller() {
+  if (!esTaller) return
+  ;['pct_consumicion', 'menu_cerrado', 'alojamiento'].forEach(t => document.getElementById('fila-' + t).style.display = 'none')
+  document.getElementById('fila-precio_cerrado').style.display = ''
+  const rotulo = { pct_servicio: ['Descuento en un servicio', 'Ej: 10 % en mano de obra'],
+    producto_gratis: ['Detalle gratis', 'Ej: revisión de presión y cadena'], otro: ['Otro', 'Texto libre corto'] }
+  for (const [t, [l, sub]] of Object.entries(rotulo)) { document.getElementById('lbl-' + t).textContent = l; document.getElementById('sub-' + t).textContent = sub }
+  document.getElementById('f-serv').placeholder = 'Ej: mano de obra'
+  document.getElementById('f-producto').placeholder = 'Ej: Revisión de presión y cadena'
+}
 // MC-RF-HOTEL-1OCT-2026 (92.ª): un hotel ve SUS tipos de oferta (pantalla 6 del lienzo) y sus habitaciones.
 let esHotel = false, habitaciones = [], regimen = 'media_pension', precioPor = 'persona'
 const HAB_TXT = { doble_matrimonio: 'Doble · cama de matrimonio', doble_dos_camas: 'Doble · dos camas', individual: 'Individual', triple: 'Triple', familiar: 'Familiar' }
@@ -286,7 +305,8 @@ async function loadOfertas() {
   document.getElementById('biz-name-header').textContent = r.business_name || ''
   const primeraVez = !document.getElementById('f-regimen').innerHTML
   esHotel = r.business_type === 'hotel'; habitaciones = r.habitaciones || []
-  if (primeraVez) { prepararHotel(); if (esHotel) selectTipo('alojamiento') }
+  esTaller = r.business_type === 'taller'
+  if (primeraVez) { prepararHotel(); prepararTaller(); if (esHotel) selectTipo('alojamiento'); if (esTaller) selectTipo('precio_cerrado') }
   // MC-RF-CAMBIOS-1OCT-2026: las ofertas nuevas que esperan revisión (y lo rechazado, con el motivo).
   const cambios = r.cambios || []
   const todas = r.offers || []
@@ -399,6 +419,7 @@ window.updatePreview = function() {
   if (tipoActual === 'pct_consumicion') { const pct = document.getElementById('f-pct').value; const aplica = document.getElementById('f-aplica').value; txt = pct ? `${pct}% de descuento en ${aplica}` : '—' }
   else if (tipoActual === 'menu_cerrado') { const precio = document.getElementById('f-precio-menu').value; const inc = ['primero','segundo','postre','bebida','cafe'].filter(i => document.getElementById('inc-'+i)?.classList.contains('sel')).map(i => i.charAt(0).toUpperCase()+i.slice(1)); txt = precio ? `Menú motero · ${precio}€/persona` + (inc.length ? ' · '+inc.join(' · ') : '') : '—' }
   else if (tipoActual === 'alojamiento') { const precio = document.getElementById('f-precio-aloj').value; txt = precio ? `${TITULO_REGIMEN[regimen]} · ${precio} €/${precioPor === 'persona' ? 'persona' : 'habitación'}` + (lineaHotel() ? '\n' + lineaHotel() : '') : '—' }
+  else if (tipoActual === 'precio_cerrado') { const serv = document.getElementById('f-pc-serv').value.trim(); const precio = document.getElementById('f-pc-precio').value; const inc = document.getElementById('f-pc-inc').value.trim(); txt = serv && precio ? `${serv} · ${precio} €` + (inc ? '\n' + inc : '') : '—' }
   else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); txt = prod ? `${prod} — gratis para moteros` : '—' }
   else if (tipoActual === 'pct_servicio') { const pct = document.getElementById('f-pct-serv').value; const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); txt = pct && serv ? `${pct}% de descuento en ${serv}` : '—' }
   else if (tipoActual === 'otro') { txt = document.getElementById('f-otro').value.trim() || '—' }
@@ -430,6 +451,9 @@ window.handleSave = async function(publish) {
     oferta.noches_min = document.getElementById('f-noches').value || null
     oferta.includes = MOTO.filter(([id]) => document.getElementById(id).classList.contains('sel')).map(([, l]) => l)
     oferta.title = TITULO_REGIMEN[regimen]; oferta.description = lineaHotel() || null }
+  else if (tipoActual === 'precio_cerrado') { const serv = document.getElementById('f-pc-serv').value.trim(); const precio = parseFloat(document.getElementById('f-pc-precio').value)
+    if (!serv) { return fallo('Escribe qué servicio es.') } if (!precio) { return fallo('Introduce el precio.') }
+    oferta.fixed_price = precio; oferta.title = `${serv} · ${precio} €`; oferta.description = document.getElementById('f-pc-inc').value.trim() || null }
   else if (tipoActual === 'producto_gratis') { const prod = document.getElementById('f-producto').value.trim(); if (!prod) { return fallo('Describe el producto.') } oferta.title = prod + ' — gratis para moteros' }
   else if (tipoActual === 'pct_servicio') { const pct = parseInt(document.getElementById('f-pct-serv').value); const serv = esHotel ? 'la habitación' : document.getElementById('f-serv').value.trim(); if (!pct || !serv) { return fallo('Rellena descuento y servicio.') } oferta.discount_pct = pct; oferta.applies_to = serv; oferta.title = `${pct}% de descuento en ${serv}` }
   else if (tipoActual === 'otro') { const txt = document.getElementById('f-otro').value.trim(); if (!txt) { return fallo('Describe la oferta.') } oferta.title = txt }

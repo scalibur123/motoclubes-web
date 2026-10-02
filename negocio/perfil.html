@@ -233,7 +233,8 @@ function turnosComunes() {
 function franjasHtml(turnos, pref) {
   const t = turnos || []
   const f = (i, nombre) => `<div class="hfranja">${nombre} <input type="time" data-f="${pref}" data-i="${i}" data-j="0" value="${(t[i] || [])[0] || ''}"> a <input type="time" data-f="${pref}" data-i="${i}" data-j="1" value="${(t[i] || [])[1] || ''}"></div>`
-  return f(0, 'Mediodía') + f(1, 'Noche')
+  // MC-RF-TALLER-2OCT-2026 (95.ª, RF-TALLER-1): un taller abre de mañana y de tarde.
+  return selectedType === 'taller' ? f(0, 'Mañana') + f(1, 'Tarde') : f(0, 'Mediodía') + f(1, 'Noche')
 }
 function leerFranjas(pref) {
   const v = (i, j) => (document.querySelector(`input[data-f="${pref}"][data-i="${i}"][data-j="${j}"]`) || {}).value || ''
@@ -286,7 +287,7 @@ function pintarCartas() {
   if (!cartas.length) cartas.push({ nombre: '', url: '', precio: null })
   cont.innerHTML = cartas.map((c, i) => `
     <div class="carta-row">
-      <div class="field"><label>NOMBRE</label><input type="text" maxlength="60" value="${esc(c.nombre || '')}" placeholder="Menú motero, Carta, Menú del día…" oninput="cartas[${i}].nombre=this.value;pintarPrevia()"></div>
+      <div class="field"><label>NOMBRE</label><input type="text" maxlength="60" value="${esc(c.nombre || '')}" placeholder="${selectedType === 'taller' ? 'Tarifas 2026, Neumáticos, Revisiones…' : 'Menú motero, Carta, Menú del día…'}" oninput="cartas[${i}].nombre=this.value;pintarPrevia()"></div>
       <div class="field"><label>PRECIO <span>(opcional)</span></label><input type="number" min="0" step="0.5" value="${c.precio ?? ''}" placeholder="18" oninput="cartas[${i}].precio=this.value===''?null:Number(this.value);pintarPrevia()"></div>
       <button type="button" class="btn-mini" onclick="quitarCarta(${i})">Quitar</button>
       <div class="carta-fich">${c.url
@@ -311,7 +312,7 @@ document.getElementById('carta-input').addEventListener('change', async (e) => {
       .uploadToSignedUrl(slot.path, slot.token, r.blob, { contentType: esPdf ? 'application/pdf' : (r.blob.type || 'image/jpeg') })
     if (error) throw new Error(error.message)
     cartas[i].url = slot.public_url
-    if (!cartas[i].nombre) cartas[i].nombre = esPdf ? 'Carta' : 'Menú'
+    if (!cartas[i].nombre) cartas[i].nombre = selectedType === 'taller' ? 'Tarifas' : (esPdf ? 'Carta' : 'Menú')
     pintarCartas()
   } catch (err) { alert('No se pudo subir ' + file.name + ': ' + err.message) }
 })
@@ -362,6 +363,31 @@ function verHotel() {
   document.getElementById('sec-cartas').style.display = !esHotel || comedor ? 'block' : 'none'
   document.getElementById('lbl-horario').textContent = esHotel ? 'Horario del comedor' : 'Horario'
   pintarPreviaHotel()
+  verTaller()
+}
+// ---- MC-RF-TALLER-2OCT-2026 (95.ª, RF-TALLER-1, plan aceptado por Mario): lo que cambia para un TALLER ----
+// «Carta y menús» → «Tarifas y servicios» (la lista de precios en foto o PDF, mismo mecanismo); horario de mañana y tarde;
+// pistas de taller. Nada de la base cambia: las tarifas se guardan donde las cartas y la app ya las enseña con su nombre.
+var tipoPintado = null
+function verTaller() {
+  const t = selectedType === 'taller'
+  const fija = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt }
+  fija('lbl-cartas', t ? 'Tarifas y servicios' : 'Carta y menús')
+  fija('hint-cartas', t ? 'Sube tu lista de precios: cambio de aceite, neumáticos, revisiones… Ponle el nombre que quieras. Foto o PDF.'
+                        : 'Sube tu carta, el menú del día o un menú para moteros. Ponle el nombre que quieras. Foto o PDF.')
+  fija('btn-cartas', t ? '+ Añadir otra lista' : '+ Añadir otra carta o menú')
+  fija('hint-horario', t ? 'Mañana y tarde son opcionales: rellena solo los turnos que abres.' : 'Mediodía y noche son opcionales: rellena solo los turnos que abres.')
+  if (t) fija('lbl-horario', 'Horario del taller')
+  const ph = (id, txt) => { const e = document.getElementById(id); if (e) e.placeholder = txt }
+  ph('f-otros', t ? 'Ej: marcas con las que trabajáis, preparación ITV, cambio de aceite…' : 'Ej: cambio de aceite, grúa, secador de cascos…')
+  ph('f-desc', t ? 'Ej: Taller de motos multimarca, a pie de puerto.' : 'Ej: Asador tradicional en plena sierra.')
+  // Si cambia entre taller y no taller, se repintan horario y cartas (con lo escrito, que se lee antes).
+  if (tipoPintado !== null && tipoPintado !== t && document.getElementById('h-dias')?.innerHTML) {
+    try { leerHorario() } catch (e) { console.warn('[taller] leer horario', e) }
+    try { pintarHorario() } catch (e) { console.warn('[taller] pintar horario', e) }
+    try { pintarCartas() } catch (e) { console.warn('[taller] cartas', e) }
+  }
+  tipoPintado = t
 }
 function iniciarHotel() {
   const a = alojamiento || {}
@@ -613,13 +639,13 @@ async function loadPerfil() {
         <div class="rf-chips" id="h-fest"></div>
         <div class="hfranjas" id="h-fest-franjas"></div>
       </div>
-      <div class="field-hint">Mediodía y noche son opcionales: rellena solo los turnos que abres.</div>
+      <div class="field-hint" id="hint-horario">Mediodía y noche son opcionales: rellena solo los turnos que abres.</div>
     </div>
     <div class="section-block" id="sec-cartas">
-      <div class="section-label">Carta y menús</div>
-      <div class="field-hint" style="margin-bottom:8px">Sube tu carta, el menú del día o un menú para moteros. Ponle el nombre que quieras. Foto o PDF.</div>
+      <div class="section-label" id="lbl-cartas">Carta y menús</div>
+      <div class="field-hint" id="hint-cartas" style="margin-bottom:8px">Sube tu carta, el menú del día o un menú para moteros. Ponle el nombre que quieras. Foto o PDF.</div>
       <div id="cartas"></div>
-      <button type="button" class="btn-mini" style="margin-top:12px" onclick="nuevaCarta()">+ Añadir otra carta o menú</button>
+      <button type="button" class="btn-mini" style="margin-top:12px" onclick="nuevaCarta()" id="btn-cartas">+ Añadir otra carta o menú</button>
     </div>
     <div class="section-block">
       <div class="section-label">📱 Así aparecerá en la app</div>
