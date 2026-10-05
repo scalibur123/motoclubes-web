@@ -368,17 +368,38 @@ var PUERTO_MIN_ELE = 800, PUERTO_MAX_KM = 0.3;
 function puertosEnRuta(t, paradas) {
   if (t.length < 2) return Promise.resolve([]);
   var suyos = (paradas || []).filter(function (p) { return p.w && p.w.waypointType === "puerto"; });
-  var la1 = 90, la2 = -90, lo1 = 180, lo2 = -180;
-  t.forEach(function (p) { la1 = Math.min(la1, p.lat); la2 = Math.max(la2, p.lat); lo1 = Math.min(lo1, p.lng); lo2 = Math.max(lo2, p.lng); });
-  var m = 0.012;
-  var q = "select=id,name,lat,lng,ele&ele=not.is.null" +
-          "&lat=gte." + (la1 - m) + "&lat=lte." + (la2 + m) + "&lng=gte." + (lo1 - m) + "&lng=lte." + (lo2 + m) + "&limit=5000";
-  return fetch(SB_URL + "/rest/v1/puertos?" + q, { headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY } })
-    .then(function (res) { return res.ok ? res.json() : []; })
-    .catch(function () { return []; })
-    .then(function (filas) {
-      filas = Array.isArray(filas) ? filas : [];
-      var acum = kmAcum(t), out = [];
+  /* 🆕 PUERTOS-TROZOS-1 (99.ª, 5-oct). Antes: UN rectángulo de toda la ruta, con puertos de cualquier altura. La base
+     devuelve como mucho 1.000 filas por petición y en la Pirineos transpirenaica (1.782 km) se pasaba: se perdían puertos
+     sin error y los que marcó el rider salían sin altura (Envalira, Tourmalet). Mario: «faltan algunas alturas de puertos».
+     Ahora: trozos de ~80 km con los de 800 m o más, y una caja pequeña alrededor de cada puerto marcado. Igual en la app. */
+  var m = 0.012, acum = kmAcum(t), cajas = [], ini = 0;
+  for (var i = 1; i < t.length; i++) {
+    if (acum[i] - acum[ini] < 80 && i < t.length - 1) continue;
+    var la1 = 90, la2 = -90, lo1 = 180, lo2 = -180;
+    for (var k = ini; k <= i; k++) { la1 = Math.min(la1, t[k].lat); la2 = Math.max(la2, t[k].lat); lo1 = Math.min(lo1, t[k].lng); lo2 = Math.max(lo2, t[k].lng); }
+    cajas.push({ la1: la1 - m, la2: la2 + m, lo1: lo1 - m, lo2: lo2 + m, ele: "ele=gte." + PUERTO_MIN_ELE });
+    ini = i;
+  }
+  suyos.forEach(function (p) {
+    var s = 0.006;
+    cajas.push({ la1: p.w.lat - s, la2: p.w.lat + s, lo1: p.w.lng - s, lo2: p.w.lng + s, ele: "ele=not.is.null" });
+  });
+  function pedir(c) {
+    var q = "select=id,name,lat,lng,ele&" + c.ele +
+            "&lat=gte." + c.la1 + "&lat=lte." + c.la2 + "&lng=gte." + c.lo1 + "&lng=lte." + c.lo2 + "&limit=1000";
+    return fetch(SB_URL + "/rest/v1/puertos?" + q, { headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY } })
+      .then(function (res) { return res.ok ? res.json() : []; })
+      .catch(function () { return []; });
+  }
+  return Promise.all(cajas.map(pedir))
+    .then(function (listas) {
+      var filas = [], vistos = {};
+      listas.forEach(function (l) {
+        if (!Array.isArray(l)) return;
+        if (l.length >= 1000) console.warn("[puertos] una caja llega a 1.000 filas: puede faltar alguno");
+        l.forEach(function (pu) { if (vistos[pu.id]) return; vistos[pu.id] = 1; filas.push(pu); });
+      });
+      var out = [];
       filas.forEach(function (pu) {
         if (pu.ele < PUERTO_MIN_ELE) return;
         var c = tramoCerca(t, pu);
