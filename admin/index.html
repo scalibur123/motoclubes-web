@@ -89,7 +89,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <section id="form" class="card oculto" style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px">
     <div style="display:flex;flex-direction:column;gap:16px">
       <h2 style="font-size:20px">Invitar un negocio</h2>
-      <label>NOMBRE DEL NEGOCIO<input type="text" id="f-nombre" maxlength="120"></label>
+      <label>NOMBRE DEL NEGOCIO<input type="text" id="f-nombre" maxlength="120" list="f-nombres" autocomplete="off" placeholder="Empieza a escribir: si ya está en «Negocios», elígelo"></label><datalist id="f-nombres"></datalist>
       <label>TIPO<div class="opc" id="f-tipo"></div></label>
       <div class="fila"><label>¿Y EXACTAMENTE? (opcional)<input type="text" id="f-cat" maxlength="60" placeholder="Casa rural, asador, taller de motos…"></label>
         <label>PERSONA DE CONTACTO<input type="text" id="f-contacto" maxlength="80" placeholder="El nombre con el que le saludamos"></label></div>
@@ -242,8 +242,30 @@ $('l-entrar').onclick = async () => {
 }
 $('l-clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('l-entrar').click() })
 $('salir').onclick = async () => { await sb.auth.signOut(); entrar() }
-$('b-invitar').onclick = () => { candidatoInvitando = null; $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
+$('b-invitar').onclick = () => { candidatoInvitando = null; desdeFicha = false; $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
 $('b-cancelar').onclick = () => { $('form').classList.add('oculto'); candidatoInvitando = null }
+// MC-ADMIN-INVITA-FICHA-6OCT-2026 (101.ª, `ADMIN-INVITA-FICHA-1`). Mario (Casa Lascorz): había rellenado el contacto y el correo
+// en su ficha de «Negocios», fue a «+ Invitar negocio» y el formulario salió vacío; y al enviarlo se habría creado OTRA ficha.
+// Ahora el nombre propone los negocios de la base y, al elegir uno, se cogen sus datos y la invitación se une a SU ficha.
+const fichaPorNombre = (nombre) => { const q = sinTildes(String(nombre || '').trim()); return q ? cands.find(x => sinTildes(x.nombre).trim() === q) : null }
+const invitacionViva = (c) => !!(c && c.invitacion && !c.invitacion.caducada && !c.invitacion.envio_error)
+function rellenarNombres() {
+  $('f-nombres').innerHTML = cands.map(c => `<option value="${esc(c.nombre)}">${esc([c.municipio, c.contacto].filter(Boolean).join(' · '))}</option>`).join('')
+}
+function tomarFicha(c) {
+  candidatoInvitando = c.id
+  $('f-cat').value = c.categoria || ''; $('f-contacto').value = c.contacto || ''; $('f-correo').value = c.correo || ''
+  tipo = tipoUi(c); opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
+  if (c.app) return aviso(`<b>${esc(c.nombre)}</b> ya está en la app: no hace falta invitarle.`)
+  if (invitacionViva(c)) return aviso(`<b>${esc(c.nombre)}</b> ya tiene una invitación que sigue viva.`)
+  aviso(`Datos tomados de su ficha en «Negocios».${c.correo ? '' : ' Le falta el correo: escríbelo aquí y se guarda también en su ficha.'}`, true)
+}
+let desdeFicha = false // true si se llegó con «Invitar →» desde la ficha: entonces el nombre se puede retocar sin soltarla
+$('f-nombre').addEventListener('input', () => {
+  const c = fichaPorNombre($('f-nombre').value)
+  if (c) { if (c.id !== candidatoInvitando) tomarFicha(c) }
+  else if (candidatoInvitando && !desdeFicha) { candidatoInvitando = null; aviso('') } // ya no es ese negocio
+})
 opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
 opciones($('f-previo'), PREVIO, previo, v => previo = v)
 const ERRORES = { MC_CORREO_YA_TIENE_NEGOCIO: 'Ese correo ya tiene cuenta en el portal de negocios.', MC_FUNDADORES_COMPLETOS: 'Ya hay 10 socios fundadores (contando las invitaciones vivas).', MC_SOLO_ADMIN: 'Tu sesión no es de administrador. Vuelve a entrar.' }
@@ -251,6 +273,10 @@ $('b-enviar').onclick = async () => {
   const nombre = $('f-nombre').value.trim(), correo = $('f-correo').value.trim()
   if (!nombre) return aviso('Pon el nombre del negocio.')
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return aviso('El correo no parece válido.')
+  if (!candidatoInvitando) { const c = fichaPorNombre(nombre); if (c) candidatoInvitando = c.id } // ADMIN-INVITA-FICHA-1: sin fichas repetidas
+  const ya = cands.find(x => x.id === candidatoInvitando)
+  if (ya?.app) return aviso(`<b>${esc(ya.nombre)}</b> ya está en la app: no hace falta invitarle.`)
+  if (invitacionViva(ya)) return aviso(`<b>${esc(ya.nombre)}</b> ya tiene una invitación que sigue viva.`)
   $('b-enviar').disabled = true
   const cat = $('f-cat').value.trim() || (tipo === 'bar' ? 'Bar' : '')
   const { data: invId, error } = await sb.rpc('mc_rf_invitar', { p_nombre: nombre, p_tipo: tipoBase(tipo), p_correo: correo, p_fundador: $('f-fundador').checked,
@@ -306,6 +332,7 @@ async function cargarCand() {
   const { data, error } = await sb.rpc('mc_rf_admin_negocios')
   if (error) return cAviso('No se ha podido cargar la base de datos de negocios: ' + esc(error.message))
   cands = data || []
+  rellenarNombres() // ADMIN-INVITA-FICHA-1
   $('n-cand').textContent = cands.length
   const n = (f) => cands.filter(f).length
   $('c-cifras').innerHTML = [[n(c => estadoEf(c) === 'por_llamar'), 'Por llamar', ''], [n(c => estadoEf(c) === 'volver_a_llamar'), 'Volver a llamar', 'background:#FFF7E6;border-color:#F0D9A8'],
@@ -427,11 +454,19 @@ $('f2-ll-apuntar').onclick = async () => {
   $('f2-ll-apuntar').disabled = false
   if (ok) fAviso('✅ Llamada apuntada.' + (llEstado === 'si' && !$('f2-correo').value.trim() ? ' Falta su correo para poder invitarle.' : ''), true)
 }
-$('f2-invitar').onclick = () => fichaId && invitarCand(fichaId)
+// ADMIN-INVITA-FICHA-1: si acabas de escribir el correo en la ficha y das a «Invitar →» sin «Guardar», antes se invitaba
+// con lo de antes (sin correo). Ahora se guarda primero lo que hay en la ficha.
+$('f2-invitar').onclick = async () => {
+  if (!fichaId) return
+  const c = cands.find(x => x.id === fichaId) || {}
+  const cambiado = CAMPOS.some(k => ($('f2-' + k).value.trim()) !== String(c[k] || '').trim())
+  if (cambiado) { $('f2-guardar').click(); for (let i = 0; i < 40 && $('f2-guardar').disabled; i++) await new Promise(r => setTimeout(r, 100)) }
+  invitarCand(fichaId)
+}
 function invitarCand(id) {
   const c = cands.find(x => x.id === id); if (!c) return
   if (!c.correo) { abrirFicha(id); fAviso('Antes de invitar, apunta su correo en «Datos de contacto».'); $('f2-correo').focus(); return }
-  candidatoInvitando = c.id
+  candidatoInvitando = c.id; desdeFicha = true
   verPestana('altas'); aviso('')
   $('f-nombre').value = c.nombre; $('f-cat').value = c.categoria || ''; $('f-contacto').value = c.contacto || ''; $('f-correo').value = c.correo
   tipo = tipoUi(c); opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
