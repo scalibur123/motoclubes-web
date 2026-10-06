@@ -22,7 +22,7 @@ h1{font-size:26px}.sub{color:var(--g);font-size:14px}
 .cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.cifra b{display:block;font-size:26px}.cifra span{color:var(--g);font-size:13px}
 .btn{background:var(--o);color:#fff;border:none;border-radius:50px;padding:12px 22px;font:700 14px Manrope,sans-serif;cursor:pointer}.btn:disabled{opacity:.6}
 .btn2{background:#fff;color:#6B4423;border:1.5px solid var(--line);border-radius:50px;padding:11px 20px;font:600 14px Manrope,sans-serif;cursor:pointer}
-table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--g);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px}
+table{width:100%;border-collapse:collapse;font-size:14px}th[data-k]{cursor:pointer;user-select:none}th[data-k]:hover{color:var(--tx)}.btnx{background:none;border:0;cursor:pointer;font-size:16px;padding:6px;opacity:.55}.btnx:hover{opacity:1}th{text-align:left;color:var(--g);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px}
 td{padding:13px 14px;border-top:1px solid #EFEAE3;vertical-align:top}.tabla{overflow-x:auto;padding:0}
 .chip{display:inline-block;border-radius:50px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
 .verde{background:#DFF3E4;color:#1E6B34}.amar{background:#FFF1C2;color:#6B5100}.azul{background:#E4EDFB;color:#244A86}.gris{background:#EFEAE3;color:#5C5750}.rojo{background:#FBE3E1;color:#8E1F18}
@@ -105,7 +105,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     </div>
   </section>
 
-  <div class="card tabla"><table><thead><tr><th>Negocio</th><th>Tipo</th><th>Estado</th><th>Correo</th><th style="text-align:center">Pendiente de ti</th></tr></thead><tbody id="filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="a-cab"><tr><th data-k="nombre">Negocio</th><th data-k="tipo">Tipo</th><th data-k="estado">Estado</th><th data-k="correo">Correo</th><th data-k="pendiente" style="text-align:center">Pendiente de ti</th><th></th></tr></thead><tbody id="filas"></tbody></table></div>
   <div class="sub" style="font-size:12px">Estados: Invitación enviada → Abrió el enlace → Cuenta creada → Ficha completa · por revisar → En el mapa. 👑 = socio fundador.</div>
 </main>
 
@@ -125,7 +125,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>ESTADO<select id="c-estado"></select></label>
     <label>DATOS<select id="c-datos"><option value="">Todos</option><option value="falta">Les falta algo</option><option value="ok">Completos</option></select></label>
   </div>
-  <div class="card tabla"><table><thead><tr><th>Negocio</th><th>Tipo</th><th>Contacto</th><th>Estado</th><th>Nos falta</th><th></th></tr></thead><tbody id="c-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="c-cab"><tr><th data-k="nombre">Negocio</th><th data-k="tipo">Tipo</th><th data-k="contacto">Contacto</th><th data-k="estado">Estado</th><th data-k="falta">Nos falta</th><th></th></tr></thead><tbody id="c-filas"></tbody></table></div>
   <div class="sub" style="font-size:12px">«Nos falta» mira persona de contacto, teléfono, correo y web. Estados: Por llamar → Volver a llamar → Dicen que sí → Invitado → En la app (cuando crea la cuenta pasa solo). «No» se queda para no volver a buscarlo.</div>
  </div>
 
@@ -219,13 +219,48 @@ async function cargar() {
   const cambios = altas.reduce((n, a) => n + (a.cambios_pendientes || 0), 0), correos = altas.reduce((n, a) => n + (a.correos_sin_contestar || 0), 0)
   $('resumen').innerHTML = `${mapa} en el mapa · ${curso} invitaciones en curso · ${cambios} cambios por revisar · ${correos} correos sin contestar · <b>Socios fundadores: ${fundadores} de 10</b>`
   $('f-quedan').textContent = `(quedan ${Math.max(0, 10 - fundadores)} de 10)`
+  ALTAS = altas; pintarAltas()
+}
+// MC-ADMIN-BORRAR-6OCT-2026 (101.ª, `ADMIN-BORRAR-1`/`ADMIN-ORDEN-1`). Mario: las pruebas se borran desde la tabla, sin
+// abrir nada (no se marcan «No»: falsean las cifras), y las tablas se ordenan pulsando la cabecera.
+let ALTAS = [], ordenA = { k: null, asc: true }, ordenC = { k: null, asc: true }
+const txtPlano = (h) => String(h || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+function ordenar(lista, orden, valor) {
+  if (!orden.k) return lista
+  return lista.slice().sort((x, y) => { const a = valor(x, orden.k), b = valor(y, orden.k)
+    const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a ?? '').localeCompare(String(b ?? ''), 'es', { sensitivity: 'base' })
+    return orden.asc ? r : -r })
+}
+function marcarCab(id, orden) {
+  document.querySelectorAll('#' + id + ' th[data-k]').forEach(th => { th.textContent = th.textContent.replace(/ [▲▼]$/, '') + (th.dataset.k === orden.k ? (orden.asc ? ' ▲' : ' ▼') : '') })
+}
+function clicCab(id, orden, pintar) {
+  document.querySelectorAll('#' + id + ' th[data-k]').forEach(th => th.onclick = () => {
+    if (orden.k === th.dataset.k) orden.asc = !orden.asc; else { orden.k = th.dataset.k; orden.asc = true }
+    pintar()
+  })
+}
+async function borrar(clase, id, nombre) {
+  const que = clase === 'invitacion' ? `la invitación a «${nombre}» (y su ficha de Negocios, si la tiene)` : `la ficha de «${nombre}» (y su invitación, si no se ha usado)`
+  if (!confirm(`¿Borrar ${que}? No se puede deshacer.`)) return
+  const { error } = await sb.rpc('mc_rf_admin_borrar', { p_clase: clase, p_id: id })
+  if (error) return (clase === 'ficha' ? cAviso : aviso)(error.message.includes('MC_ES_NEGOCIO') ? 'Ese ya es un negocio con cuenta: no se borra desde aquí.' : 'No se ha podido borrar: ' + esc(error.message))
+  if (fichaId === id) verLista()
+  await Promise.all([cargar(), cargarCand()])
+}
+function pintarAltas() {
+  const pend = (a) => (a.cambios_pendientes || 0) + (a.correos_sin_contestar || 0)
+  const altas = ordenar(ALTAS, ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
+  marcarCab('a-cab', ordenA)
   $('filas').innerHTML = altas.map(a => `<tr>
     <td><b>${esc(a.nombre)}</b> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
     <td>${esc(tipoTxt(a.tipo, a.categoria))}</td>
     <td>${estado(a)}${a.envio_error ? `<div class="sub" style="font-size:12px">${esc(a.envio_error).slice(0, 120)}</div>` : ''}</td>
     <td class="sub">${esc(a.correo || '')}</td>
     <td style="text-align:center">${[(a.cambios_pendientes ? a.cambios_pendientes + ' cambio' + (a.cambios_pendientes > 1 ? 's' : '') : ''), (a.correos_sin_contestar ? a.correos_sin_contestar + ' correo' + (a.correos_sin_contestar > 1 ? 's' : '') : '')].filter(Boolean).join(' · ') || '—'}</td>
-  </tr>`).join('') || '<tr><td colspan="5" class="sub">Aún no hay altas.</td></tr>'
+    <td style="text-align:right">${a.clase === 'invitacion' ? `<button class="btnx" title="Borrar esta invitación" data-borra-inv="${a.id}" data-nombre="${esc(a.nombre)}">🗑️</button>` : ''}</td>
+  </tr>`).join('') || '<tr><td colspan="6" class="sub">Aún no hay altas.</td></tr>'
+  $('filas').querySelectorAll('[data-borra-inv]').forEach(b => b.onclick = () => borrar('invitacion', b.dataset.borraInv, b.dataset.nombre))
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
@@ -273,6 +308,7 @@ $('f-nombre').addEventListener('input', () => {
 opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
 opciones($('f-previo'), PREVIO, previo, v => previo = v)
 opciones($('f-idioma'), IDIOMAS, idioma, v => idioma = v)
+clicCab('a-cab', ordenA, () => pintarAltas()); clicCab('c-cab', ordenC, () => pintarCand())
 const ERRORES = { MC_CORREO_YA_TIENE_NEGOCIO: 'Ese correo ya tiene cuenta en el portal de negocios.', MC_FUNDADORES_COMPLETOS: 'Ya hay 10 socios fundadores (contando las invitaciones vivas).', MC_SOLO_ADMIN: 'Tu sesión no es de administrador. Vuelve a entrar.' }
 $('b-enviar').onclick = async () => {
   const nombre = $('f-nombre').value.trim(), correo = $('f-correo').value.trim()
@@ -361,7 +397,9 @@ function pintarCand() {
     (!t || (t === 'bar' ? c.tipo === 'restaurante' && esBar(c.categoria) : t === 'restaurante' ? c.tipo === 'restaurante' && (!esBar(c.categoria) || esRest(c.categoria)) : c.tipo === t)) &&
     (!q || sinTildes([c.nombre, c.municipio, c.zona, c.categoria, c.contacto, c.correo, c.notas, c.notas_fijas].join(' ')).includes(q)
         || (qTel.length >= 3 && [c.telefono, c.telefono2].join(' ').replace(/\D/g, '').includes(qTel))))
-  $('c-filas').innerHTML = lista.map(c => {
+  const listaO = ordenar(lista, ordenC, (c, k) => k === 'tipo' ? tipoTxt(c.tipo, c.categoria) : k === 'estado' ? estadoEf(c) : k === 'falta' ? faltan(c).length : c[k])
+  marcarCab('c-cab', ordenC)
+  $('c-filas').innerHTML = listaO.map(c => {
     const f = faltan(c), inv = estadoInv(c), est = estadoEf(c)
     const accion = est === 'si' ? `<button class="btn3 o" data-inv="${c.id}">Invitar →</button>` : `<button class="btn3" data-ficha="${c.id}">Abrir ficha</button>`
     return `<tr>
@@ -370,15 +408,18 @@ function pintarCand() {
       <td class="sub">${esc(c.contacto || '—')}${c.telefono ? `<div><a class="tel" href="tel:${esc(String(c.telefono).replace(/ ext.*$/i, '').replace(/\s/g, ''))}">${esc(c.telefono)}</a></div>` : ''}</td>
       <td>${chipEstado(est)}${inv && est !== 'app' ? `<div class="sub" style="font-size:12px;margin-top:4px">${esc(inv)}</div>` : (est === 'app' ? `<div class="sub" style="font-size:12px;margin-top:4px">${esc(inv)}</div>` : '')}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">${f.length ? f.map(x => `<span class="falta">${x}</span>`).join('') : '<span class="completa">Completa</span>'}</div></td>
-      <td style="text-align:right">${accion}</td></tr>`
+      <td style="text-align:right;white-space:nowrap">${accion}${c.app ? '' : ` <button class="btnx" title="Borrar esta ficha" data-borra-ficha="${c.id}" data-nombre="${esc(c.nombre)}">🗑️</button>`}</td></tr>`
   }).join('') || '<tr><td colspan="6" class="sub">Ningún negocio con esos filtros.</td></tr>'
   $('c-filas').querySelectorAll('[data-ficha]').forEach(b => b.onclick = () => abrirFicha(b.dataset.ficha))
   $('c-filas').querySelectorAll('[data-inv]').forEach(b => b.onclick = () => invitarCand(b.dataset.inv))
+  $('c-filas').querySelectorAll('[data-borra-ficha]').forEach(b => b.onclick = () => borrar('ficha', b.dataset.borraFicha, b.dataset.nombre))
 }
 $('c-buscar').addEventListener('input', pintarCand)
 ;['c-zona','c-tipo','c-estado','c-datos'].forEach(id => $(id).addEventListener('change', pintarCand))
 function verLista() { fichaId = null; $('c-ficha').classList.add('oculto'); $('c-lista').classList.remove('oculto') }
-$('f2-volver').onclick = () => { verLista(); window.scrollTo(0, 0) }
+// ADMIN-ATRAS-1 (101.ª): abrir una ficha deja una entrada en el historial; «Atrás» del navegador vuelve a la lista.
+$('f2-volver').onclick = () => { if (history.state && history.state.ficha) history.back(); else { verLista(); window.scrollTo(0, 0) } }
+window.addEventListener('popstate', () => { if (!$('c-ficha').classList.contains('oculto')) { verLista(); window.scrollTo(0, 0) } })
 const fmtFecha = (iso) => { try { return new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) } catch { return iso } }
 function valorTxt(campo, v) {
   if (v === null || v === undefined || v === '') return '—'
@@ -390,6 +431,7 @@ function abrirFicha(id) {
   const c = id ? cands.find(x => x.id === id) : { id: null, nombre: '', tipo: 'restaurante', estado: 'por_llamar', historial: [], cambios: [] }
   if (!c) return
   fichaId = c.id
+  if (!(history.state && history.state.ficha)) history.pushState({ ficha: true }, '')
   cAviso(''); fAviso('')
   $('c-lista').classList.add('oculto'); $('c-ficha').classList.remove('oculto'); window.scrollTo(0, 0)
   pintarFicha(c)
