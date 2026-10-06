@@ -95,6 +95,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
         <label>PERSONA DE CONTACTO<input type="text" id="f-contacto" maxlength="80" placeholder="El nombre con el que le saludamos"></label></div>
       <label>CORREO DEL NEGOCIO<input type="email" id="f-correo"></label>
       <label>¿YA HABÉIS HABLADO? (cambia la primera frase del correo)<div class="opc" id="f-previo"></div></label>
+      <label>IDIOMA DEL CORREO Y DE LOS DOCUMENTOS<div class="opc" id="f-idioma"></div></label>
       <label class="check"><input type="checkbox" id="f-fundador" checked> Socio fundador <span id="f-quedan" style="color:var(--gl);font-weight:500"></span></label>
       <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="b-cancelar">Cancelar</button><button class="btn" id="b-enviar">Enviar invitación</button></div>
     </div>
@@ -186,6 +187,9 @@ function tipoTxt(t, cat) {
   return esBar(cat) ? 'Bar' : 'Restaurante'
 }
 const PREVIO = [['telefono','Por teléfono'],['en_persona','En persona'],['cita','Una cita'],['ninguno','No (puerta fría)']]
+// MC-RF-INGLES-6OCT-2026 (101.ª, `RF-INVITA-INGLES-1`): la carta, el asunto y los dos PDF en inglés (Casa Lascorz).
+const IDIOMAS = [['es','Español'],['en','English']]
+let idioma = 'es'
 let tipo = 'restaurante', previo = 'ninguno', fundadores = 0
 function opciones(cont, lista, actual, fijar) {
   cont.innerHTML = lista.map(([v, l]) => `<button type="button" data-v="${v}" class="${v === actual ? 'sel' : ''}">${l}</button>`).join('')
@@ -242,7 +246,7 @@ $('l-entrar').onclick = async () => {
 }
 $('l-clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('l-entrar').click() })
 $('salir').onclick = async () => { await sb.auth.signOut(); entrar() }
-$('b-invitar').onclick = () => { candidatoInvitando = null; desdeFicha = false; $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
+$('b-invitar').onclick = () => { candidatoInvitando = null; desdeFicha = false; idioma = 'es'; opciones($('f-idioma'), IDIOMAS, idioma, v => idioma = v); $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
 $('b-cancelar').onclick = () => { $('form').classList.add('oculto'); candidatoInvitando = null }
 // MC-ADMIN-INVITA-FICHA-6OCT-2026 (101.ª, `ADMIN-INVITA-FICHA-1`). Mario (Casa Lascorz): había rellenado el contacto y el correo
 // en su ficha de «Negocios», fue a «+ Invitar negocio» y el formulario salió vacío; y al enviarlo se habría creado OTRA ficha.
@@ -268,6 +272,7 @@ $('f-nombre').addEventListener('input', () => {
 })
 opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
 opciones($('f-previo'), PREVIO, previo, v => previo = v)
+opciones($('f-idioma'), IDIOMAS, idioma, v => idioma = v)
 const ERRORES = { MC_CORREO_YA_TIENE_NEGOCIO: 'Ese correo ya tiene cuenta en el portal de negocios.', MC_FUNDADORES_COMPLETOS: 'Ya hay 10 socios fundadores (contando las invitaciones vivas).', MC_SOLO_ADMIN: 'Tu sesión no es de administrador. Vuelve a entrar.' }
 $('b-enviar').onclick = async () => {
   const nombre = $('f-nombre').value.trim(), correo = $('f-correo').value.trim()
@@ -280,7 +285,7 @@ $('b-enviar').onclick = async () => {
   $('b-enviar').disabled = true
   const cat = $('f-cat').value.trim() || (tipo === 'bar' ? 'Bar' : '')
   const { data: invId, error } = await sb.rpc('mc_rf_invitar', { p_nombre: nombre, p_tipo: tipoBase(tipo), p_correo: correo, p_fundador: $('f-fundador').checked,
-    p_contacto: $('f-contacto').value.trim() || null, p_categoria: cat || null, p_contacto_previo: previo })
+    p_contacto: $('f-contacto').value.trim() || null, p_categoria: cat || null, p_contacto_previo: previo, p_idioma: idioma })
   $('b-enviar').disabled = false
   if (error) { const k = Object.keys(ERRORES).find(k => error.message.includes(k)); return aviso(k ? ERRORES[k] : 'No se ha podido invitar: ' + esc(error.message)) }
   // MC-ADMIN-NEGOCIOS-2OCT-2026: toda invitación queda en la base de datos de negocios. Si venía de un negocio de la lista,
