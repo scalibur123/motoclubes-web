@@ -85,7 +85,12 @@ function datosResumen(paradas, puertos) {
   var conAlt = puertos.filter(function (p) { return p.ele != null; });
   var bajo = conAlt.length > 1 ? conAlt.reduce(function (a, b) { return !a || b.ele < a.ele ? b : a; }, null) : null;
   var cuenta = {};
-  paradas.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType) cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; });
+  paradas.forEach(function (p) {
+    if (p.inicio || p.fin || !p.w.waypointType) return;
+    cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1;
+    // CENA-EN-PARADA-1, como la app (`contarComer`): el hotel o camping donde también se cena cuenta en «Restaurantes»
+    if ((p.w.waypointType === "hotel" || p.w.waypointType === "camping") && p.w.cena === true) cuenta.restaurante = (cuenta.restaurante || 0) + 1;
+  });
   var cuentas = [["hotel", "Hoteles"], ["camping", "Campings"], ["restaurante", "Restaurantes"], ["gasolinera", "Gasolineras"]]
     .filter(function (c) { return cuenta[c[0]]; }).map(function (c) { return [c[1], String(cuenta[c[0]])]; });
   var lista = puertos.slice().sort(function (a, b) { return a.km - b.km; });
