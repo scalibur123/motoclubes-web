@@ -70,6 +70,25 @@ function pildora(ctx, x, y, w, h, r, fondo) {
 function recortar(txt, n) { txt = String(txt || ""); return txt.length > n ? txt.slice(0, n - 1) + "…" : txt; }
 
 /* ------------------------------------------------------------------ el guion: días, tiempos y cámara */
+/* 🆕 VIDEO-RESUMEN-PUERTOS-1 (7-oct, 102.ª). Mario, con el vídeo de la Transpirenaica para LinkedIn: «que fueran saliendo
+   todos los puertos con su altura, en naranja los tres más altos» y que el resumen diga también el más bajo, hoteles,
+   restaurantes… «que fuera apareciendo». Una pantalla nueva con los puertos (en orden de paso, uno a uno; si son más de
+   24, los 24 más altos) y el resumen con filas que entran una a una. */
+var VIDEO_MAX_PUERTOS = 24;
+function datosResumen(paradas, puertos) {
+  var conAlt = puertos.filter(function (p) { return p.ele != null; });
+  var bajo = conAlt.length > 1 ? conAlt.reduce(function (a, b) { return !a || b.ele < a.ele ? b : a; }, null) : null;
+  var cuenta = {};
+  paradas.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType) cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; });
+  var cuentas = [["hotel", "Hoteles"], ["camping", "Campings"], ["restaurante", "Restaurantes"], ["gasolinera", "Gasolineras"]]
+    .filter(function (c) { return cuenta[c[0]]; }).map(function (c) { return [c[1], String(cuenta[c[0]])]; });
+  var lista = puertos.slice();
+  if (lista.length > VIDEO_MAX_PUERTOS) lista = lista.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO_MAX_PUERTOS);
+  lista.sort(function (a, b) { return a.km - b.km; });
+  var top = lista.filter(function (p) { return p.ele != null; }).slice().sort(function (a, b) { return b.ele - a.ele; }).slice(0, 3);
+  return { bajo: bajo, cuentas: cuentas, lista: lista, top: top };
+}
+
 function guion(r, pts, paradas, puertos, fotos) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
@@ -128,7 +147,11 @@ function guion(r, pts, paradas, puertos, fotos) {
   tramos.push({ tipo: "alejar", a: t, b: t += VIDEO.T_ALEJAR });
   // 🆕 FOTOS-SALIDA-1: tras la ruta, las fotos de los que fueron (Mario: «primero poner la ruta, luego poner las fotos»)
   fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
-  tramos.push({ tipo: "resumen", a: t, b: t += VIDEO.T_RESUMEN });
+  // VIDEO-RESUMEN-PUERTOS-1: los puertos uno a uno (0,3 s cada uno) y el resumen con sus filas entrando una a una
+  var DR = datosResumen(paradas, puertos);
+  if (DR.lista.length >= 2) tramos.push({ tipo: "puertos", a: t, b: t += Math.max(4, Math.min(11, 2.6 + DR.lista.length * 0.3)) });
+  var nFilas = 6 + (DR.bajo ? 1 : 0) + DR.cuentas.length;
+  tramos.push({ tipo: "resumen", a: t, b: t += Math.max(VIDEO.T_RESUMEN, 1.2 + nFilas * 0.3 + 2) });
   tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
   var DUR = t;
 
@@ -150,7 +173,7 @@ function guion(r, pts, paradas, puertos, fotos) {
   }
   function camara(t) {
     var tr = tramoEn(t);
-    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto") return { c: cFit, z: zFit };
+    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
     if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
     return { c: sigue(kmCabeza(t)), z: zDet };
@@ -172,7 +195,7 @@ function guion(r, pts, paradas, puertos, fotos) {
   avisos.sort(function (a, b) { return a.km - b.km; });
 
   return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
-    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos };
+    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR };
 }
 
 /* ------------------------------------------------------------------ teselas */
@@ -323,7 +346,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
 
         // título: en la vista entera del principio y al alejarse al final
         var tv = tr.tipo === "vista" ? tramo(t, 0, 0.7) : tr.tipo === "zoom" ? 1 - tramo(t, tr.a, tr.a + 0.8) : tr.tipo === "alejar" ? tramo(t, tr.a + 0.6, tr.b) : 0;
@@ -420,25 +443,63 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           }
         }
 
-        // resumen
+        // 🆕 VIDEO-RESUMEN-PUERTOS-1: los puertos, uno a uno, en orden de paso; los tres más altos en naranja
+        if (tr.tipo === "puertos") {
+          var DRp = G.DR, lp = DRp.lista, np = lp.length, dos = np > 22, porCol = dos ? Math.ceil(np / 2) : np; // hasta 22, en una columna
+          var fila = Math.min(dos ? 110 : 108, Math.floor(1480 / porCol)), apr = !dos && fila < 90, mini = !dos && fila < 72;
+          var altoP = porCol * fila + 220, y0 = Math.max(110, (H - altoP) / 2);
+          var vis = tramo(t, tr.a, tr.a + 0.5) * (1 - tramo(t, tr.b - 0.35, tr.b));
+          var paso = Math.min(0.3, (tr.b - tr.a - 2.4) / np);
+          ctx.globalAlpha = vis;
+          pildora(ctx, 60, y0, W - 120, altoP, 40, "rgba(14,14,14,.9)");
+          ctx.font = "800 60px Manrope, system-ui, sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
+          escribir(ctx, "🏔️ " + puertos.length + " puertos", W / 2, y0 + 92, "center");
+          lp.forEach(function (pu, i) {
+            var en = tramo(t, tr.a + 0.6 + i * paso, tr.a + 0.6 + i * paso + 0.35);
+            if (en <= 0) return;
+            var col = dos && i >= porCol ? 1 : 0, fi = dos ? i % porCol : i;
+            var xa = dos ? 110 + col * 450 : 150, xb = dos ? xa + 410 : W - 150, y = y0 + 190 + fi * fila + (1 - en) * 24;
+            var esTop = DRp.top.indexOf(pu) >= 0;
+            ctx.globalAlpha = vis * en;
+            ctx.font = (esTop ? "800 " : "600 ") + (dos ? "30px" : mini ? "33px" : apr ? "38px" : "42px") + " Manrope, system-ui, sans-serif";
+            ctx.fillStyle = esTop ? "#FF7A1A" : "rgba(255,255,255,.88)";
+            escribir(ctx, recortar(pu.name, dos ? 13 : 28), xa, y, "left");
+            ctx.font = "800 " + (dos ? "32px" : mini ? "36px" : apr ? "42px" : "46px") + " Manrope, system-ui, sans-serif";
+            ctx.fillStyle = esTop ? "#FF7A1A" : "#fff";
+            escribir(ctx, pu.ele != null ? fmtMiles(pu.ele) + " m" : "—", xb, y, "right");
+          });
+          ctx.globalAlpha = 1;
+        }
+
+        // resumen · VIDEO-RESUMEN-PUERTOS-1: + el más bajo, hoteles, restaurantes…, y las filas entran una a una
         if (tr.tipo === "resumen") {
           var rs = tramo(t, tr.a, tr.a + 0.5) * (1 - tramo(t, tr.b - 0.35, tr.b));
-          ctx.globalAlpha = rs;
-          pildora(ctx, 90, 600, W - 180, 800, 40, "rgba(14,14,14,.88)");
+          var DRr = G.DR;
           var filas = [
             ["Distancia", fmtMiles(kmRuta) + " km"],
             ["Días", String(G.dias > 1 ? G.dias : 1)],
             ["Tiempo", minutos ? Math.floor(minutos / 60) + " h " + (Math.round(minutos % 60) ? Math.round(minutos % 60) + " min" : "") : "—"],
             ["Desnivel", r.elevation_gain_m != null ? fmtMiles(r.elevation_gain_m) + " m" : "—"],
             ["Puertos", String(puertos.length)],
-            ["El más alto", alto ? fmtMiles(alto.ele) + " m" : "—"]
+            ["El más alto", alto ? fmtMiles(alto.ele) + " m" : "—", alto ? alto.name : "", true]
           ];
+          if (DRr.bajo) filas.push(["El más bajo", fmtMiles(DRr.bajo.ele) + " m", DRr.bajo.name]);
+          DRr.cuentas.forEach(function (c) { filas.push(c); });
+          var conNombre = filas.filter(function (fl) { return fl[2]; }).length;
+          var paso2 = 100, altoR = filas.length * paso2 + conNombre * 44 + 120, yR = Math.max(200, (H - altoR) / 2);
+          ctx.globalAlpha = rs;
+          pildora(ctx, 90, yR, W - 180, altoR, 40, "rgba(14,14,14,.88)");
+          var y = yR + 100;
           filas.forEach(function (fl, i) {
-            var y = 690 + i * 112;
-            ctx.font = "700 40px Manrope, system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.fillText(fl[0], 150, y);
-            ctx.font = "800 56px Manrope, system-ui, sans-serif"; ctx.fillStyle = i === 5 ? "#FF7A1A" : "#fff"; escribir(ctx, fl[1], W - 150, y, "right");
+            var en = tramo(t, tr.a + 0.4 + i * 0.3, tr.a + 0.75 + i * 0.3);
+            if (en > 0) {
+              ctx.globalAlpha = rs * en;
+              ctx.font = "700 40px Manrope, system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.fillText(fl[0], 150, y);
+              ctx.font = "800 56px Manrope, system-ui, sans-serif"; ctx.fillStyle = fl[3] ? "#FF7A1A" : "#fff"; escribir(ctx, fl[1], W - 150, y, "right");
+              if (fl[2]) { ctx.font = "600 34px Manrope, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.62)"; escribir(ctx, recortar(fl[2], 30), W - 150, y + 54, "right"); }
+            }
+            y += paso2 + (fl[2] ? 44 : 0);
           });
-          if (alto) { ctx.font = "600 34px Manrope, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.62)"; escribir(ctx, recortar(alto.name, 30), W - 150, 690 + 5 * 112 + 58, "right"); }
           ctx.globalAlpha = 1;
         }
 
