@@ -80,7 +80,7 @@ function recortar(txt, n) { txt = String(txt || ""); return txt.length > n ? txt
    todos los puertos con su altura, en naranja los tres más altos» y que el resumen diga también el más bajo, hoteles,
    restaurantes… «que fuera apareciendo». Una pantalla nueva con los puertos (en orden de paso, uno a uno; si son más de
    24, los 24 más altos) y el resumen con filas que entran una a una. */
-var VIDEO_MAX_PUERTOS = 24;
+var VIDEO_PUERTOS_PAGINA = 15; // 7-oct, Mario con 28 puertos: «alguno se corta el nombre» → páginas de hasta 15, una columna
 function datosResumen(paradas, puertos) {
   var conAlt = puertos.filter(function (p) { return p.ele != null; });
   var bajo = conAlt.length > 1 ? conAlt.reduce(function (a, b) { return !a || b.ele < a.ele ? b : a; }, null) : null;
@@ -88,11 +88,12 @@ function datosResumen(paradas, puertos) {
   paradas.forEach(function (p) { if (!p.inicio && !p.fin && p.w.waypointType) cuenta[p.w.waypointType] = (cuenta[p.w.waypointType] || 0) + 1; });
   var cuentas = [["hotel", "Hoteles"], ["camping", "Campings"], ["restaurante", "Restaurantes"], ["gasolinera", "Gasolineras"]]
     .filter(function (c) { return cuenta[c[0]]; }).map(function (c) { return [c[1], String(cuenta[c[0]])]; });
-  var lista = puertos.slice();
-  if (lista.length > VIDEO_MAX_PUERTOS) lista = lista.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO_MAX_PUERTOS);
-  lista.sort(function (a, b) { return a.km - b.km; });
+  var lista = puertos.slice().sort(function (a, b) { return a.km - b.km; });
+  var npag = Math.max(1, Math.ceil(lista.length / VIDEO_PUERTOS_PAGINA)), porPag = Math.ceil(lista.length / npag);
+  var paginas = [];
+  for (var k = 0; k < npag; k++) paginas.push(lista.slice(k * porPag, (k + 1) * porPag));
   var top = lista.filter(function (p) { return p.ele != null; }).slice().sort(function (a, b) { return b.ele - a.ele; }).slice(0, 3);
-  return { bajo: bajo, cuentas: cuentas, lista: lista, top: top };
+  return { bajo: bajo, cuentas: cuentas, lista: lista, top: top, paginas: paginas };
 }
 
 function guion(r, pts, paradas, puertos, fotos, captura) {
@@ -156,7 +157,9 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
   fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
   // VIDEO-RESUMEN-PUERTOS-1: los puertos uno a uno (0,3 s cada uno) y el resumen con sus filas entrando una a una
   var DR = datosResumen(paradas, puertos);
-  if (DR.lista.length >= 2) tramos.push({ tipo: "puertos", a: t, b: t += Math.max(4, Math.min(11, 2.6 + DR.lista.length * 0.3)) });
+  if (DR.lista.length >= 2) DR.paginas.forEach(function (pg, k) {
+    tramos.push({ tipo: "puertos", pag: k, a: t, b: t += Math.max(4, 2.4 + pg.length * 0.3) });
+  });
   var nFilas = 6 + (DR.bajo ? 1 : 0) + DR.cuentas.length;
   tramos.push({ tipo: "resumen", a: t, b: t += Math.max(VIDEO.T_RESUMEN, 1.2 + nFilas * 0.3 + 2) });
   tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
@@ -469,30 +472,34 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           ctx.globalAlpha = 1;
         }
 
-        // 🆕 VIDEO-RESUMEN-PUERTOS-1: los puertos, uno a uno, en orden de paso; los tres más altos en naranja
+        // 🆕 VIDEO-RESUMEN-PUERTOS-1: los puertos, uno a uno, en orden de paso, por páginas de hasta 15 y con el nombre
+        // entero; los tres más altos de toda la ruta en naranja
         if (tr.tipo === "puertos") {
-          var DRp = G.DR, lp = DRp.lista, np = lp.length, dos = np > 22, porCol = dos ? Math.ceil(np / 2) : np; // hasta 22, en una columna
-          var fila = Math.min(dos ? 110 : 108, Math.floor(1480 / porCol)), apr = !dos && fila < 90, mini = !dos && fila < 72;
-          var altoP = porCol * fila + 220, y0 = Math.max(110, (H - altoP) / 2);
+          var DRp = G.DR, lp = DRp.paginas[tr.pag] || [], np = lp.length, npg = DRp.paginas.length;
+          var fila = Math.min(104, Math.floor(1440 / Math.max(1, np)));
+          var altoP = np * fila + (npg > 1 ? 250 : 220), y0 = Math.max(110, (H - altoP) / 2);
           var vis = tramo(t, tr.a, tr.a + 0.5) * (1 - tramo(t, tr.b - 0.35, tr.b));
-          var paso = Math.min(0.3, (tr.b - tr.a - 2.4) / np);
+          var paso = Math.min(0.3, (tr.b - tr.a - 2.2) / Math.max(1, np));
           ctx.globalAlpha = vis;
           pildora(ctx, 60, y0, W - 120, altoP, 40, "rgba(14,14,14,.9)");
           ctx.font = "800 60px Manrope, system-ui, sans-serif"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
           escribir(ctx, "🏔️ " + puertos.length + " puertos", W / 2, y0 + 92, "center");
+          if (npg > 1) { ctx.font = "600 34px Manrope, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.55)"; escribir(ctx, (tr.pag + 1) + " de " + npg, W / 2, y0 + 150, "center"); }
+          var yIni = y0 + (npg > 1 ? 220 : 190);
           lp.forEach(function (pu, i) {
             var en = tramo(t, tr.a + 0.6 + i * paso, tr.a + 0.6 + i * paso + 0.35);
             if (en <= 0) return;
-            var col = dos && i >= porCol ? 1 : 0, fi = dos ? i % porCol : i;
-            var xa = dos ? 110 + col * 450 : 150, xb = dos ? xa + 410 : W - 150, y = y0 + 190 + fi * fila + (1 - en) * 24;
-            var esTop = DRp.top.indexOf(pu) >= 0;
+            var y = yIni + i * fila + (1 - en) * 24, esTop = DRp.top.indexOf(pu) >= 0;
             ctx.globalAlpha = vis * en;
-            ctx.font = (esTop ? "800 " : "600 ") + (dos ? "30px" : mini ? "33px" : apr ? "38px" : "42px") + " Manrope, system-ui, sans-serif";
-            ctx.fillStyle = esTop ? "#FF7A1A" : "rgba(255,255,255,.88)";
-            escribir(ctx, recortar(pu.name, dos ? 13 : 28), xa, y, "left");
-            ctx.font = "800 " + (dos ? "32px" : mini ? "36px" : apr ? "42px" : "46px") + " Manrope, system-ui, sans-serif";
+            ctx.font = "800 46px Manrope, system-ui, sans-serif";
+            var alt = pu.ele != null ? fmtMiles(pu.ele) + " m" : "—", wAlt = ctx.measureText(alt).width;
             ctx.fillStyle = esTop ? "#FF7A1A" : "#fff";
-            escribir(ctx, pu.ele != null ? fmtMiles(pu.ele) + " m" : "—", xb, y, "right");
+            escribir(ctx, alt, W - 140, y, "right");
+            ctx.font = (esTop ? "800 " : "600 ") + "42px Manrope, system-ui, sans-serif";
+            ctx.fillStyle = esTop ? "#FF7A1A" : "rgba(255,255,255,.88)";
+            var nom = String(pu.name || ""), hueco = W - 140 - wAlt - 40 - 140;
+            while (nom.length > 4 && ctx.measureText(nom).width > hueco) nom = nom.slice(0, -2).trim() + "…"; // solo si de verdad no cabe
+            escribir(ctx, nom, 140, y, "left");
           });
           ctx.globalAlpha = 1;
         }
