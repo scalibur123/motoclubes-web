@@ -25,9 +25,15 @@
    Así que vuelve la V4». 🟢 DECIDIDO: la de siempre es la v5 (la que Mario llama «V4»); la v6 sigue con «&video=6». */
 var VIDEO_V6 = /[?&]video=6(&|$)/.test(location.search);
 
+/* 🆕 VIDEO-CAPTURA-1 (7-oct, 102.ª). Mario, para el vídeo de la Transpirenaica en LinkedIn: «te paso la captura y haces una
+   pequeña traslación de arriba abajo». Solo con «&captura=<nombre>» en el enlace: carga /img/video/<nombre>.jpg y, tras
+   alejarse al final de la ruta, la enseña en una ventana redondeada que baja despacio. Sin el parámetro, el vídeo de
+   siempre. Hoy: «&captura=transpi-tiempo» (el tiempo de cada etapa en la tarjeta de la salida). */
+var VIDEO_CAPTURA = (location.search.match(/[?&]captura=([a-z0-9-]{1,40})(?:&|$)/) || [])[1] || null;
+
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
-  T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3,
+  T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3, T_CAPTURA: 6,
   // 🔄 v5 (Mario: «va muy rápido y no te da tiempo a ver los nombres»): km/15 por segundo, entre 20 y 58 s de dibujo
   DIBUJO_MIN: 20, DIBUJO_MAX: 58, KM_POR_S: 15,
   ESTILO: "outdoors-v12"
@@ -89,7 +95,7 @@ function datosResumen(paradas, puertos) {
   return { bajo: bajo, cuentas: cuentas, lista: lista, top: top };
 }
 
-function guion(r, pts, paradas, puertos, fotos) {
+function guion(r, pts, paradas, puertos, fotos, captura) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
@@ -145,6 +151,7 @@ function guion(r, pts, paradas, puertos, fotos) {
     tramos.push({ tipo: "dibujo", dia: d, a: t, b: t += tDibujo * (limites[d + 1] - limites[d]) / total });
   }
   tramos.push({ tipo: "alejar", a: t, b: t += VIDEO.T_ALEJAR });
+  if (captura) tramos.push({ tipo: "captura", a: t, b: t += VIDEO.T_CAPTURA }); // VIDEO-CAPTURA-1
   // 🆕 FOTOS-SALIDA-1: tras la ruta, las fotos de los que fueron (Mario: «primero poner la ruta, luego poner las fotos»)
   fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
   // VIDEO-RESUMEN-PUERTOS-1: los puertos uno a uno (0,3 s cada uno) y el resumen con sus filas entrando una a una
@@ -173,7 +180,7 @@ function guion(r, pts, paradas, puertos, fotos) {
   }
   function camara(t) {
     var tr = tramoEn(t);
-    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos") return { c: cFit, z: zFit };
+    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
     if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
     return { c: sigue(kmCabeza(t)), z: zDet };
@@ -195,7 +202,7 @@ function guion(r, pts, paradas, puertos, fotos) {
   avisos.sort(function (a, b) { return a.km - b.km; });
 
   return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
-    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR };
+    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR, captura: captura || null };
 }
 
 /* ------------------------------------------------------------------ teselas */
@@ -244,11 +251,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     return out.slice(0, 12);
   })();
   var cache = {}, lista = [];
+  var capturaIm = null; // VIDEO-CAPTURA-1: si no carga, el vídeo sale sin ella
+  var capturaLista = VIDEO_CAPTURA ? cargarImagen("/img/video/" + VIDEO_CAPTURA + ".jpg").then(function (im) { capturaIm = im; }).catch(function () {}) : Promise.resolve();
   var fotosListas = Promise.all(fotosR.map(function (f) {
     return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor }; }).catch(function () { return null; });
-  })).then(function (rs) {
+  })).then(function (rs) { return capturaLista.then(function () { return rs; }); }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
-    G = guion(r, pts, paradas, puertos, fotosIm);
+    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm);
     // 1) qué teselas va a ver la cámara, simulándola entera
     for (var s = 0; s <= G.DUR; s += 0.1) {
       var cs = G.camara(s);
@@ -346,7 +355,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
 
         // título: en la vista entera del principio y al alejarse al final
         var tv = tr.tipo === "vista" ? tramo(t, 0, 0.7) : tr.tipo === "zoom" ? 1 - tramo(t, tr.a, tr.a + 0.8) : tr.tipo === "alejar" ? tramo(t, tr.a + 0.6, tr.b) : 0;
@@ -441,6 +450,23 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             pildora(ctx, (W - wp) / 2, H - 290, wp, 90, 45, "rgba(14,14,14,.8)");
             ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; escribir(ctx, pie, W / 2, H - 245, "center");
           }
+        }
+
+        // 🆕 VIDEO-CAPTURA-1: la captura en una ventana redondeada que baja despacio de arriba abajo
+        if (tr.tipo === "captura" && G.captura) {
+          var ci = G.captura, vc = tramo(t, tr.a, tr.a + 0.5) * (1 - tramo(t, tr.b - 0.4, tr.b));
+          var vw = 900, vh = 1250, vx = (W - vw) / 2, vy = 400 + (1 - tramo(t, tr.a, tr.a + 0.6)) * 80;
+          var ihc = ci.height * vw / ci.width, rec = Math.max(0, ihc - vh), uc = tramo(t, tr.a + 0.9, tr.b - 0.8);
+          ctx.globalAlpha = vc;
+          ctx.fillStyle = "rgba(14,14,14,.55)"; ctx.fillRect(0, 0, W, H);
+          textoSombra(ctx, "El tiempo de cada etapa", W / 2, 215, "800 60px Manrope, system-ui, sans-serif", "#fff");
+          textoSombra(ctx, "a la hora de salir y de llegar", W / 2, 295, "600 44px Manrope, system-ui, sans-serif", "rgba(255,255,255,.85)");
+          pildora(ctx, vx - 8, vy - 8, vw + 16, vh + 16, 52, "rgba(255,255,255,.95)");
+          ctx.save();
+          pildora(ctx, vx, vy, vw, vh, 44, "#f3ece4"); ctx.clip();
+          ctx.drawImage(ci, vx, vy - rec * uc, vw, ihc);
+          ctx.restore();
+          ctx.globalAlpha = 1;
         }
 
         // 🆕 VIDEO-RESUMEN-PUERTOS-1: los puertos, uno a uno, en orden de paso; los tres más altos en naranja
