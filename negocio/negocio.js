@@ -88,3 +88,58 @@ window.mcHorarioHoy = function (h, fecha) {
     : ''
   return (d.abre ? 'Hoy: ' + window.mcTurnosTxt(d.turnos) : 'Hoy cerrado') + cierra
 }
+
+// ---- MC-RF-OPINIONES-13OCT-2026 (107.ª, `RF-OPINIONES-1`) · lo que dicen los moteros del negocio ----
+// Mario: «que vea que hay una opinión buena […] las fotos y los comentarios». Lo usan registro.html (antes de darse de alta)
+// y el panel. `op` = { n, media, opiniones: [{ id?, estrellas, comentario, hizo, fotos, aparcamiento, autor, fecha, respuesta? }] },
+// tal como lo devuelve mc_rf_opiniones_sitio. Va con data-noi18n: lo escrito por los moteros no se traduce; los rótulos
+// salen en el idioma elegido (MC_LANG). `extra(o, div)` deja al panel añadir cosas a cada opinión (contestar).
+window.mcOpiniones = function (cont, op, extra) {
+  var en = window.MC_LANG === 'en'
+  cont.setAttribute('data-noi18n', '')
+  cont.innerHTML = ''
+  if (!op || !op.n || !(op.opiniones || []).length) { cont.style.display = 'none'; return }
+  var HIZO = en
+    ? { dormir: 'stayed the night', cenar: 'had dinner', desayunar: 'had breakfast', comer: 'had lunch', tomar: 'had a drink', repostar: 'filled up', reparar: 'got the bike fixed' }
+    : { dormir: 'durmió', cenar: 'cenó', desayunar: 'desayunó', comer: 'comió', tomar: 'tomó algo', repostar: 'repostó', reparar: 'le arreglaron la moto' }
+  var APARCA = en ? { gratis: 'Free parking', pago: 'Paid parking', no: 'No parking' }
+    : { gratis: 'Aparcamiento gratis', pago: 'Aparcamiento de pago', no: 'Sin aparcamiento' }
+  var el = function (tag, css, txt) { var d = document.createElement(tag); if (css) d.style.cssText = css; if (txt != null) d.textContent = txt; return d }
+  var mini = function (u) {
+    return u.indexOf('/storage/v1/object/public/') >= 0
+      ? u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?width=240&height=240&resize=cover&quality=60' : u
+  }
+  cont.style.cssText = 'display:block;background:var(--cream);border:1.5px solid var(--card);border-radius:14px;padding:14px 16px;margin-bottom:18px'
+  var media = op.media != null ? Number(op.media).toLocaleString(en ? 'en-GB' : 'es-ES') : null
+  var cab = el('div', 'font-size:15px;font-weight:800;margin-bottom:4px')
+  cab.textContent = en ? 'What riders already say about you' : 'Lo que ya dicen de vosotros los moteros'
+  cont.appendChild(cab)
+  var sub = el('div', 'font-size:13px;color:var(--gray);margin-bottom:6px')
+  sub.textContent = (en ? (op.n === 1 ? '1 review' : op.n + ' reviews') : (op.n === 1 ? '1 opinión' : op.n + ' opiniones')) + (media ? ' · ★ ' + media : '')
+  cont.appendChild(sub)
+  op.opiniones.forEach(function (o) {
+    var d = el('div', 'border-top:1px solid var(--card);padding:12px 0 4px')
+    var l1 = el('div', 'font-size:13px')
+    if (o.estrellas) { var s = el('span', 'color:#F5C518;letter-spacing:1px', '★'.repeat(o.estrellas)); l1.appendChild(s); l1.appendChild(el('span', 'color:#666;letter-spacing:1px', '★'.repeat(5 - o.estrellas))); l1.appendChild(document.createTextNode('  ')) }
+    l1.appendChild(el('span', 'color:var(--gray)', o.autor || (en ? 'A rider' : 'Un motero')))
+    if (o.fecha) l1.appendChild(el('span', 'color:var(--gray-light)', ' · ' + new Date(o.fecha).toLocaleDateString(en ? 'en-GB' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' })))
+    d.appendChild(l1)
+    var h = (o.hizo || []).map(function (x) { return HIZO[x] }).filter(Boolean)
+    var datos = []
+    if (h.length) { var t = h.length === 1 ? h[0] : h.slice(0, -1).join(', ') + (en ? ' and ' : ' y ') + h[h.length - 1]; datos.push(t.charAt(0).toUpperCase() + t.slice(1)) }
+    if (o.aparcamiento && APARCA[o.aparcamiento]) datos.push(APARCA[o.aparcamiento])
+    if (datos.length) d.appendChild(el('div', 'font-size:12px;color:var(--gray);margin-top:3px', datos.join(' · ')))
+    if (o.comentario) d.appendChild(el('div', 'font-size:14px;line-height:1.5;margin-top:6px;white-space:pre-line', '«' + o.comentario + '»'))
+    if ((o.fotos || []).length) {
+      var f = el('div', 'display:flex;gap:8px;margin-top:8px;flex-wrap:wrap')
+      o.fotos.forEach(function (u) {
+        var a = el('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener'
+        var im = el('img', 'width:88px;height:88px;object-fit:cover;border-radius:10px;display:block'); im.src = mini(u); im.alt = ''; im.loading = 'lazy'
+        a.appendChild(im); f.appendChild(a)
+      })
+      d.appendChild(f)
+    }
+    if (extra) extra(o, d)
+    cont.appendChild(d)
+  })
+}

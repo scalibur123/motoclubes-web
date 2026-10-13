@@ -67,6 +67,8 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
     </div>
     <div id="form-view" style="display:none">
       <div class="inv-banner" id="inv-banner" style="display:none"><b id="inv-nombre"></b><span id="inv-sub"></span></div>
+      <!-- MC-RF-OPINIONES-13OCT-2026 (107.ª): lo que ya han dicho los moteros, antes de darse de alta (negocio.js · mcOpiniones) -->
+      <div id="opiniones" style="display:none"></div>
       <div class="card-title">Crea tu cuenta</div>
       <div class="card-sub">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></div>
       <div class="alert error" id="alert-error"></div>
@@ -137,6 +139,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     ? 'Socio fundador de Rider Friendly · gratis para siempre'
     : 'Rider Friendly · MOTOCLUBes'
   document.getElementById('inv-banner').style.display = 'block'
+  mcOpiniones(document.getElementById('opiniones'), inv.opiniones)
   document.getElementById('biz-name').value = inv.nombre || ''
   document.getElementById('email').value = inv.correo || ''
   document.getElementById('categoria').value = inv.categoria || ''
