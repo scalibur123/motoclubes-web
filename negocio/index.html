@@ -60,6 +60,7 @@ main{max-width:800px;margin:0 auto;padding:28px 20px}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 <link rel="stylesheet" href="negocio.css"><!-- MC-PORTAL-OSCURO-21SEP-2026 -->
+<script src="negocio.js"></script><!-- RF-RESPUESTAS-1: mcOpiniones -->
 </head>
 <body class="tema-claro"><!-- MC-PORTAL-CLARO-21SEP-2026 -->
 <header>
@@ -155,7 +156,7 @@ async function loadPanel() {
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-num">—</div><div class="stat-lbl">Visitas este mes</div></div>
       <div class="stat-card"><div class="stat-num">${canjes ?? 0}</div><div class="stat-lbl">Canjes este mes</div></div>
-      <div class="stat-card"><div class="stat-num">${biz?.rating_avg ? biz.rating_avg.toFixed(1) : '—'}</div><div class="stat-lbl">Valoración media</div></div>
+      <div class="stat-card"><div class="stat-num">${d.opiniones?.media != null ? Number(d.opiniones.media).toFixed(1) : (biz?.rating_avg ? biz.rating_avg.toFixed(1) : '—')}</div><div class="stat-lbl">Valoración media</div>${d.opiniones?.n ? '<div class="stat-lbl" data-noi18n>' + d.opiniones.n + (window.MC_LANG === 'en' ? (d.opiniones.n === 1 ? ' review' : ' reviews') : (d.opiniones.n === 1 ? ' opinión' : ' opiniones')) + '</div>' : ''}</div>
     </div>
     <div class="btn-row">
       <a href="perfil.html" class="btn-outline">✏️ Editar perfil</a>
@@ -165,6 +166,9 @@ async function loadPanel() {
     ${(d.cambios || []).filter(c => c.estado === 'rechazado').slice(0, 1).map(c => `<a href="perfil.html" style="display:block;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:rgba(214,58,58,.10);border:1px solid rgba(214,58,58,.35);color:var(--red);text-decoration:none;font-size:14px">✋ <b>No hemos publicado un cambio:</b> ${String(c.motivo || '').replace(/</g, '&lt;')}</a>`).join('')}
     <!-- MC-RF-CAMBIOS-1OCT-2026 (92.ª, RF-REVISION-CAMBIOS-1) -->
     ${d.qr_pendientes ? `<a href="ofertas.html" style="display:block;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:rgba(255,122,26,.10);color:var(--black);text-decoration:none;font-size:14px">📱 <b>${d.qr_pendientes}</b> ${d.qr_pendientes === 1 ? 'motero tiene su QR' : 'moteros tienen su QR'} sin canjear todavía. <span style="color:var(--orange);font-weight:700">Ver quiénes</span></a>` : ''}
+    <!-- MC-RF-RESPUESTAS-13OCT-2026 (107.ª, RF-RESPUESTAS-1): las opiniones de los moteros y contestarlas -->
+    <div id="opiniones-panel"></div>
+    ${d.opiniones?.n ? '' : '<div class="empty-state" style="margin-bottom:24px">Todavía no os ha valorado ningún motero. Cuando lo haga, saldrá aquí, podréis contestarle y os llegará un correo.</div>'}
     <div class="section-title">Últimas ofertas</div>
     <div class="ofertas-list">
       ${ofertas && ofertas.length > 0
@@ -180,12 +184,66 @@ async function loadPanel() {
         : '<div class="empty-state">Aún no tienes ofertas publicadas.<br>Las ofertas son opcionales, pero son lo que más llama la atención de los moteros. Te recomendamos crear al menos una.</div>'
       }
     </div>
-    <button class="btn-ghost" onclick="window.location.href='mailto:admin@motoclubes.es'">✉️ Contactar con MOTOCLUBes</button>
+    <button class="btn-ghost" onclick="window.location.href='mailto:negocios@motoclubes.es'">✉️ Contactar con MOTOCLUBes</button>
   `
+  pintarOpiniones(d.opiniones)
 }
-
-
-
+// MC-RF-RESPUESTAS-13OCT-2026 (107.ª, RF-RESPUESTAS-1). Mario: «que pueda comentar y agradecer y que aparezcan en la app
+// los comentarios de los negocios». Cada opinión lleva «Responder» (o la respuesta, con «Cambiar»). La respuesta sale en la
+// app debajo de la opinión y al motero le llega un aviso la primera vez. El bloque va sin traducir (data-noi18n, lo
+// escrito por los moteros): los rótulos salen según MC_LANG.
+function pintarOpiniones(op) {
+  const cont = document.getElementById('opiniones-panel')
+  if (!cont) return
+  const en = window.MC_LANG === 'en'
+  const T = en
+    ? { responder: 'Reply', cambiar: 'Edit', quitar: 'Remove reply', publicar: 'Publish reply', guardando: 'Saving…', cancelar: 'Cancel',
+        vuestra: 'Your reply', pista: 'The rider will see it in the app, under their review.', hueco: 'Thank them, answer what they said…' }
+    : { responder: 'Responder', cambiar: 'Cambiar', quitar: 'Quitar respuesta', publicar: 'Publicar respuesta', guardando: 'Guardando…', cancelar: 'Cancelar',
+        vuestra: 'Vuestra respuesta', pista: 'La verá el motero en la app, debajo de su opinión.', hueco: 'Agradecedle la visita, contestad a lo que dice…' }
+  const boton = (txt, principal) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = txt
+    b.style.cssText = principal
+      ? 'background:var(--orange);color:#fff;border:none;padding:9px 18px;border-radius:50px;font:700 13px Manrope,sans-serif;cursor:pointer'
+      : 'background:transparent;color:var(--orange);border:1.5px solid var(--orange);padding:8px 16px;border-radius:50px;font:600 13px Manrope,sans-serif;cursor:pointer'
+    return b
+  }
+  mcOpiniones(cont, op, (o, div) => {
+    const zona = document.createElement('div'); zona.style.cssText = 'margin:10px 0 6px'
+    div.appendChild(zona)
+    let editar
+    const ver = () => {
+      zona.innerHTML = ''
+      if (o.respuesta) {
+        const r = document.createElement('div')
+        r.style.cssText = 'border-left:3px solid var(--orange);padding:6px 10px;margin-bottom:8px;font-size:14px;line-height:1.5;white-space:pre-line'
+        const t = document.createElement('div'); t.style.cssText = 'font-size:12px;font-weight:700;color:var(--orange);margin-bottom:2px'; t.textContent = T.vuestra
+        r.appendChild(t); r.appendChild(document.createTextNode(o.respuesta)); zona.appendChild(r)
+      }
+      const b = boton(o.respuesta ? T.cambiar : T.responder, !o.respuesta)
+      b.onclick = editar; zona.appendChild(b)
+    }
+    editar = () => {
+      zona.innerHTML = ''
+      const ta = document.createElement('textarea'); ta.maxLength = 1000; ta.rows = 3; ta.value = o.respuesta || ''; ta.placeholder = T.hueco
+      ta.style.cssText = 'width:100%;padding:10px 12px;font:14px Manrope,sans-serif;border-radius:10px;border:1.5px solid var(--card);background:var(--white);color:var(--black);resize:vertical'
+      const pista = document.createElement('div'); pista.style.cssText = 'font-size:12px;color:var(--gray-light);margin:4px 0 8px'; pista.textContent = T.pista
+      const fila = document.createElement('div'); fila.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap'
+      const pub = boton(T.publicar, true)
+      const guardar = async (texto) => {
+        fila.querySelectorAll('button').forEach((x) => { x.disabled = true }); pub.textContent = T.guardando
+        try { const r = await api('opinion_responder', { id: o.id, texto }); o.respuesta = r.respuesta || null; ver() }
+        catch (e) { alert(e.message); fila.querySelectorAll('button').forEach((x) => { x.disabled = false }); pub.textContent = T.publicar }
+      }
+      pub.onclick = () => { if (ta.value.trim()) guardar(ta.value.trim()) }
+      const can = boton(T.cancelar, false); can.onclick = ver
+      fila.appendChild(pub); fila.appendChild(can)
+      if (o.respuesta) { const q = boton(T.quitar, false); q.onclick = () => guardar(''); fila.appendChild(q) }
+      zona.appendChild(ta); zona.appendChild(pista); zona.appendChild(fila); ta.focus()
+    }
+    ver()
+  })
+}
 loadPanel()
 </script>
 <script src="/assets/visita.js" defer></script>
