@@ -10,7 +10,9 @@
           "/confirm",
           "/confirm/*",
           "/invitacion",
-          "/invitacion/*"
+          "/invitacion/*",
+          "/guias",
+          "/guias/*"
         ]
       }
     ]
