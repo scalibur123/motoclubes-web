@@ -176,7 +176,7 @@
       f.email.placeholder = 'tu@gmail.com';
     } else {
       etiqueta.textContent = 'Tu correo';
-      ayuda.textContent = 'Ahí te llega la invitación de Apple, con el nombre TestFlight: es la app de Apple para probar apps antes de que salgan en la tienda.';
+      ayuda.textContent = 'Ahí te mandamos la invitación para instalarla con TestFlight, la app de Apple para probar apps antes de que salgan en la tienda.';
       f.email.placeholder = 'tu@correo.com';
     }
   };
@@ -204,7 +204,7 @@
         document.getElementById('hecho').hidden = false;
         document.getElementById('hecho-plat').textContent = plat() === 'android'
           ? 'Te llegará un enlace de Google Play. Ábrelo en tu móvil Android, en Chrome: el que tiene en Play Store el mismo Gmail que has puesto aquí.'
-          : 'Te llegará un correo de Apple (TestFlight) con los pasos para instalarla.';
+          : 'Al confirmar te enseñamos cómo instalarla en tu iPhone con TestFlight, y te lo mandamos también por correo.';
         window.scrollTo(0, 0);
       } else if (r.status === 400) decir('Revisa el correo, parece que no está bien escrito.');
       else decir('No se ha podido enviar. Inténtalo de nuevo en un momento.');

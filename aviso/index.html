@@ -27,6 +27,11 @@
     <h1 id="titulo">…</h1>
     <p id="texto"></p>
     <button class="boton boton-principal" id="accion" style="display:none;cursor:pointer;font:inherit;font-weight:700;margin:0 auto 14px"></button>
+    <!-- TESTERS-COMPANEROS-1 (109.ª): iPhone que llega por /probar/ → los dos pasos de TestFlight, aquí mismo. -->
+    <div id="tf" style="display:none;margin:0 0 18px">
+      <a class="boton boton-principal" id="tf-app" href="#" style="width:100%;justify-content:center;margin-bottom:10px">1 · Instalar TestFlight</a>
+      <a class="boton boton-principal" id="tf-inv" href="#" style="width:100%;justify-content:center">2 · Abrir la invitación</a>
+    </div>
     <a class="boton boton-suave" href="/" id="volver">motoclubes.es</a>
   </div>
 </div>
@@ -37,6 +42,7 @@
           ya: 'Ya estaba confirmado', yat: 'No tienes que hacer nada más: te avisaremos cuando salga.',
           oktp: 'En cuanto te demos de alta te llega la invitación para instalar MOTOCLUBes. ¡Nos vemos en la carretera!',
           yatp: 'No tienes que hacer nada más: en cuanto te demos de alta te llega la invitación para instalarla.',
+          tf: '¡Ya estás dentro!', tft: 'Instalar MOTOCLUBes en tu iPhone son dos pasos. Hazlos desde el iPhone: 1. Instala TestFlight, la app de Apple para probar apps. 2. Abre la invitación y pulsa Aceptar e Instalar. También te lo hemos mandado por correo.',
           baja: 'Te hemos dado de baja', bajat: 'No te escribiremos más. Si cambias de idea, vuelve a apuntarte en la web.',
           mal: 'Este enlace no vale', malt: 'Puede que haya caducado. Vuelve a apuntarte en la web y te mandamos otro.',
           err: 'Algo ha fallado', errt: 'Inténtalo de nuevo en un momento.' },
@@ -85,6 +91,13 @@
       if (x.s !== 200) return poner('err', 'errt');
       if (baja) return poner('baja', 'bajat');
       // TESTERS-COMPANEROS-1 (109.ª): si viene de /probar/, el texto de tester (solo hay versión en castellano: la página es en castellano).
+      if (x.j.testflight && t.tf) {
+        document.getElementById('tf-app').href = x.j.testflight_app;
+        document.getElementById('tf-inv').href = x.j.testflight;
+        document.getElementById('tf').style.display = 'block';
+        document.getElementById('volver').style.display = 'none';
+        return poner('tf', 'tft');
+      }
       var p = x.j.probar && t.oktp ? 'p' : '';
       poner(x.j.estado === 'ya' ? 'ya' : 'ok', (x.j.estado === 'ya' ? 'yat' : 'okt') + p);
     }).catch(function () { poner('err', 'errt'); })
