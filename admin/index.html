@@ -68,7 +68,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Testers <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -173,7 +173,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <!-- MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1): la lista «Avísame» de la web que pidió probar la app, y la invitación.
      Nada sale solo: el envío lo lanza Mario con el botón. La función web-invitar-testers comprueba que es admin. -->
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-    <div style="flex-grow:1"><h1>Testers de la web</h1><div class="sub">Los que se apuntaron en motoclubes.es, marcaron «quiero probarla» y confirmaron el correo. iPhone: la invitación lleva el enlace de TestFlight y entran solos. Android: ponen su Gmail de Play Store y te llega el aviso para darles de alta.</div></div>
+    <div style="flex-grow:1"><h1>Solicitudes para probar la app</h1><div class="sub">Los que se apuntaron en motoclubes.es, marcaron «quiero probarla» y confirmaron el correo. iPhone: la invitación lleva el enlace de TestFlight y entran solos. Android: ponen su Gmail de Play Store y te llega el aviso para darles de alta.</div></div>
   </div>
   <div id="t-aviso"></div>
   <div class="cifras" id="t-cifras"></div>
@@ -325,7 +325,9 @@ async function entrar() {
   // PLAY-DIRECTO-1 (15-oct, Mario: «queda muy feo todo esto»): si llega desde el aviso y aún no se le mandó el enlace de Play,
   // la pregunta sale sola al abrir la ficha: un solo «Aceptar».
   if (fichaUrl) { history.replaceState(null, '', location.pathname); verFicha(fichaUrl, 'test').then(() => { if ($('f-play') && !FICHA?.web?.play_enviado_at) $('f-play').click() }) }
-  await Promise.all([cargar(), cargarCand(), cargarRiders()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
+  // SOLICITUDES-1 (15-oct, Mario: «cuando entro en el portal no me lo refresca […] son solicitudes más que testers»): la
+  // pestaña se llama «Solicitudes» y su cifra (los que faltan por invitar) se carga al entrar, como Riders.
+  await Promise.all([cargar(), cargarCand(), cargarRiders(), cargarTesters()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
 }
 $('l-entrar').onclick = async () => {
   $('l-error').classList.add('oculto'); $('l-entrar').disabled = true
