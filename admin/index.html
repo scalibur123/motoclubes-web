@@ -322,7 +322,9 @@ async function entrar() {
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
-  if (fichaUrl) { history.replaceState(null, '', location.pathname); verFicha(fichaUrl, 'test') }
+  // PLAY-DIRECTO-1 (15-oct, Mario: «queda muy feo todo esto»): si llega desde el aviso y aún no se le mandó el enlace de Play,
+  // la pregunta sale sola al abrir la ficha: un solo «Aceptar».
+  if (fichaUrl) { history.replaceState(null, '', location.pathname); verFicha(fichaUrl, 'test').then(() => { if ($('f-play') && !FICHA?.web?.play_enviado_at) $('f-play').click() }) }
   await Promise.all([cargar(), cargarCand(), cargarRiders()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
 }
 $('l-entrar').onclick = async () => {
