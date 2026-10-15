@@ -31,6 +31,70 @@ var VIDEO_V6 = /[?&]video=6(&|$)/.test(location.search);
    siempre. Hoy: «&captura=transpi-tiempo» (el tiempo de cada etapa en la tarjeta de la salida). */
 var VIDEO_CAPTURA = (location.search.match(/[?&]captura=([a-z0-9-]{1,40})(?:&|$)/) || [])[1] || null;
 
+/* 🆕 VIDEO-DESTACAR-1 (15-oct, 109.ª). Mario, para los reels de la Transpirenaica: «pusieras en amarillo cada carretera más
+   bonita de cada una de las etapas». Solo con «&destacar=…» en el enlace (sin él, el vídeo de siempre). Cada tramo:
+     «Pueblo A>Pueblo B~Letrero»   o   «km:120-165~Letrero»   (varios separados por «;», 6 como mucho; el letrero es opcional)
+   Los pueblos se buscan primero entre los puertos y paradas de la ruta y, si no, en el buscador de Mapbox dentro del
+   recuadro de la ruta; vale el punto de la ruta más cercano (a menos de 5 km). Al pasar por un tramo: la línea en
+   AMARILLO y más gruesa, la cámara un nivel más cerca, 2,5 veces más despacio y el letrero «⭐ …» arriba. */
+var VIDEO_DESTACAR = (function () {
+  var m = location.search.match(/[?&]destacar=([^&]*)/); if (!m) return [];
+  var txt; try { txt = decodeURIComponent(m[1].replace(/\+/g, " ")); } catch (e) { return []; }
+  return txt.split(";").map(function (it) {
+    it = it.trim(); if (!it) return null;
+    var partes = it.split("~"), que = partes[0].trim(), letrero = (partes[1] || "").trim();
+    var k = que.match(/^km:\s*(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)$/i);
+    if (k) return { kmA: parseFloat(k[1].replace(",", ".")), kmB: parseFloat(k[2].replace(",", ".")), txt: letrero || ("km " + k[1] + "-" + k[2]) };
+    var ab = que.split(">"); if (ab.length !== 2 || !ab[0].trim() || !ab[1].trim()) return null;
+    return { a: ab[0].trim(), b: ab[1].trim(), txt: letrero || (ab[0].trim() + " → " + ab[1].trim()) };
+  }).filter(Boolean).slice(0, 6);
+})();
+var DESTACAR = { LENTO: 2.5, ZOOM: 1, BORDE_KM: 3, MAX_KM_LEJOS: 5 };
+function sinTildesV(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+/* Pasa los tramos de VIDEO_DESTACAR a km del trazado completo. Devuelve { tramos: [{a, b, txt}], fallos: [texto] }. */
+function resolverDestacados(pts, puertos, paradas) {
+  if (!VIDEO_DESTACAR.length || pts.length < 2) return Promise.resolve({ tramos: [], fallos: [] });
+  var acum = kmAcum(pts), total = acum[acum.length - 1];
+  var lat1 = 90, lat2 = -90, lng1 = 180, lng2 = -180;
+  pts.forEach(function (p) { if (p.lat < lat1) lat1 = p.lat; if (p.lat > lat2) lat2 = p.lat; if (p.lng < lng1) lng1 = p.lng; if (p.lng > lng2) lng2 = p.lng; });
+  var bbox = [lng1 - 0.2, lat1 - 0.2, lng2 + 0.2, lat2 + 0.2].map(function (v) { return v.toFixed(4); }).join(",");
+  function masCerca(lat, lng) { // el punto de la ruta más cercano: km y distancia
+    var mejor = { km: 0, d: 1e9 };
+    for (var i = 0; i < pts.length; i++) { var d = hav({ lat: lat, lng: lng }, pts[i]); if (d < mejor.d) mejor = { km: acum[i], d: d }; }
+    return mejor;
+  }
+  function buscar(nombre) {
+    var q = sinTildesV(nombre);
+    var pu = puertos.filter(function (p) { return sinTildesV(p.name).indexOf(q) >= 0; })[0];
+    if (pu && pu.km != null) return Promise.resolve(pu.km);
+    var pa = paradas.filter(function (p) { return sinTildesV(p.nombre).indexOf(q) >= 0; })[0];
+    if (pa && pa.km != null) return Promise.resolve(pa.km);
+    var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(nombre) + ".json?access_token=" + MAPBOX_TOKEN +
+      "&bbox=" + bbox + "&limit=5&language=es";
+    return fetch(url).then(function (r) { return r.ok ? r.json() : { features: [] }; }).then(function (j) {
+      var mejor = null;
+      (j.features || []).forEach(function (f) {
+        if (!f.center) return; var c = masCerca(f.center[1], f.center[0]);
+        if (c.d <= DESTACAR.MAX_KM_LEJOS && (!mejor || c.d < mejor.d)) mejor = c;
+      });
+      return mejor ? mejor.km : null;
+    }).catch(function () { return null; });
+  }
+  var fallos = [];
+  return Promise.all(VIDEO_DESTACAR.map(function (it) {
+    if (it.kmA != null) return Promise.resolve({ a: Math.max(0, Math.min(it.kmA, it.kmB)), b: Math.min(total, Math.max(it.kmA, it.kmB)), txt: it.txt });
+    return Promise.all([buscar(it.a), buscar(it.b)]).then(function (k) {
+      if (k[0] == null || k[1] == null) { fallos.push(k[0] == null ? it.a : it.b); return null; }
+      if (Math.abs(k[1] - k[0]) < 0.5) { fallos.push(it.a + " > " + it.b); return null; }
+      return { a: Math.min(k[0], k[1]), b: Math.max(k[0], k[1]), txt: it.txt };
+    });
+  })).then(function (rs) {
+    var tramos = rs.filter(Boolean).sort(function (x, y) { return x.a - y.a; });
+    console.log("[video] tramos destacados", tramos, "no encontrados", fallos);
+    return { tramos: tramos, fallos: fallos };
+  });
+}
+
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
   T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3, T_CAPTURA: 6,
@@ -101,7 +165,7 @@ function datosResumen(paradas, puertos) {
   return { bajo: bajo, cuentas: cuentas, lista: lista, top: top, paginas: paginas };
 }
 
-function guion(r, pts, paradas, puertos, fotos, captura) {
+function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
@@ -138,6 +202,26 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
     return mejor;
   };
 
+  // VIDEO-DESTACAR-1: los tramos en km del trazado aligerado
+  var dest = (destacados || []).map(function (d) { return { a: kmF(d.a), b: kmF(d.b), txt: d.txt }; });
+  function solape(x, y) { var s = 0; dest.forEach(function (d) { s += Math.max(0, Math.min(y, d.b) - Math.max(x, d.a)); }); return s; }
+  function largoPesado(x, y) { return (y - x) + (DESTACAR.LENTO - 1) * solape(x, y); } // los tramos destacados «pesan» más: van más despacio
+  function kmDePeso(x, y, w) { // dentro de [x, y], el km al que se llega tras recorrer un largo «pesado» w
+    var cortes = [x]; dest.forEach(function (d) { if (d.a > x && d.a < y) cortes.push(d.a); if (d.b > x && d.b < y) cortes.push(d.b); });
+    cortes.push(y); cortes.sort(function (p, q) { return p - q; });
+    for (var i = 0; i < cortes.length - 1; i++) {
+      var c0 = cortes[i], c1 = cortes[i + 1], mid = (c0 + c1) / 2;
+      var pz = dest.some(function (d) { return mid >= d.a && mid <= d.b; }) ? DESTACAR.LENTO : 1, lw = (c1 - c0) * pz;
+      if (w <= lw) return c0 + w / pz;
+      w -= lw;
+    }
+    return y;
+  }
+  function cercania(km) { // 0 lejos de un tramo destacado, 1 dentro (con rampas de BORDE_KM)
+    var m = 0; dest.forEach(function (d) { m = Math.max(m, tramo(km, d.a - DESTACAR.BORDE_KM, d.a) * (1 - tramo(km, d.b, d.b + DESTACAR.BORDE_KM))); });
+    return m;
+  }
+
   // Encuadres: la vista entera y el zoom de detalle.
   var x1 = 1, x2 = 0, y1 = 1, y2 = 0;
   M.forEach(function (p) { if (p.x < x1) x1 = p.x; if (p.x > x2) x2 = p.x; if (p.y < y1) y1 = p.y; if (p.y > y2) y2 = p.y; });
@@ -154,7 +238,7 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
   tramos.push({ tipo: "zoom", a: t, b: t += VIDEO.T_ZOOM });
   for (var d = 0; d < dias; d++) {
     tramos.push({ tipo: "tarjeta", dia: d, a: t, b: t += VIDEO.T_TARJETA });
-    tramos.push({ tipo: "dibujo", dia: d, a: t, b: t += tDibujo * (limites[d + 1] - limites[d]) / total });
+    tramos.push({ tipo: "dibujo", dia: d, a: t, b: t += tDibujo * largoPesado(limites[d], limites[d + 1]) / total }); // VIDEO-DESTACAR-1
   }
   tramos.push({ tipo: "alejar", a: t, b: t += VIDEO.T_ALEJAR });
   if (captura) tramos.push({ tipo: "captura", a: t, b: t += VIDEO.T_CAPTURA }); // VIDEO-CAPTURA-1
@@ -175,7 +259,10 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
     var tr = tramoEn(t);
     if (tr.tipo === "vista" || tr.tipo === "zoom") return 0;
     if (tr.tipo === "tarjeta") return limites[tr.dia];
-    if (tr.tipo === "dibujo") return limites[tr.dia] + (limites[tr.dia + 1] - limites[tr.dia]) * Math.min(1, (t - tr.a) / (tr.b - tr.a));
+    if (tr.tipo === "dibujo") { // VIDEO-DESTACAR-1: más despacio en los tramos destacados
+      var x0 = limites[tr.dia], x1 = limites[tr.dia + 1];
+      return kmDePeso(x0, x1, largoPesado(x0, x1) * Math.min(1, (t - tr.a) / (tr.b - tr.a)));
+    }
     return total;
   }
   function sigue(km) { // la cámara mira un poco por delante y promedia para no dar tirones
@@ -191,7 +278,8 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
     if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
     if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
-    return { c: sigue(kmCabeza(t)), z: zDet };
+    var kc = kmCabeza(t);
+    return { c: sigue(kc), z: zDet + DESTACAR.ZOOM * cercania(kc), fundir: dest.length > 0 }; // VIDEO-DESTACAR-1: más cerca en los tramos
   }
 
   // Lo que sale abajo al pasar: pueblos (el «Pueblo» de «Carretera · Pueblo»), puertos y paradas con su icono.
@@ -210,7 +298,8 @@ function guion(r, pts, paradas, puertos, fotos, captura) {
   avisos.sort(function (a, b) { return a.km - b.km; });
 
   return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
-    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR, captura: captura || null };
+    noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR, captura: captura || null,
+    dest: dest, cercania: cercania };
 }
 
 /* ------------------------------------------------------------------ teselas */
@@ -261,11 +350,19 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   var cache = {}, lista = [];
   var capturaIm = null; // VIDEO-CAPTURA-1: si no carga, el vídeo sale sin ella
   var capturaLista = VIDEO_CAPTURA ? cargarImagen("/img/video/" + VIDEO_CAPTURA + ".jpg").then(function (im) { capturaIm = im; }).catch(function () {}) : Promise.resolve();
+  var destListos = resolverDestacados(pts, puertos, paradas); // VIDEO-DESTACAR-1
+  var destacados = [];
   var fotosListas = Promise.all(fotosR.map(function (f) {
     return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor }; }).catch(function () { return null; });
   })).then(function (rs) { return capturaLista.then(function () { return rs; }); }).then(function (rs) {
+    return destListos.then(function (dr) {
+      destacados = dr.tramos;
+      if (dr.fallos.length && avisar.aviso) avisar.aviso("No encuentro en la ruta: " + dr.fallos.join(", ") + ". Sale sin ese tramo.");
+      return rs;
+    });
+  }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
-    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm);
+    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados);
     // 1) qué teselas va a ver la cámara, simulándola entera
     for (var s = 0; s <= G.DUR; s += 0.1) {
       var cs = G.camara(s);
@@ -339,6 +436,17 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         var n = 1; while (n < G.acum.length && G.acum[n] <= km) n++;
         var cab = pr(G.enKm(km));
         [[16, "#ffffff"], [9, "#7C3AED"]].forEach(function (c) { linea(P, n, c[0], c[1]); if (km > 0) ctx.lineTo(cab.x, cab.y); ctx.stroke(); });
+        // VIDEO-DESTACAR-1: lo ya recorrido de cada tramo destacado, en amarillo y más gordo
+        G.dest.forEach(function (d) {
+          if (km <= d.a) return;
+          var hastaKm = Math.min(km, d.b), ini = pr(G.enKm(d.a)), fin = pr(G.enKm(hastaKm));
+          [[26, "#ffffff"], [16, "#FFC400"]].forEach(function (c) {
+            ctx.beginPath(); ctx.lineWidth = c[0]; ctx.strokeStyle = c[1]; ctx.lineJoin = "round"; ctx.lineCap = "round";
+            ctx.moveTo(ini.x, ini.y);
+            for (var i = 1; i < G.acum.length; i++) { if (G.acum[i] <= d.a) continue; if (G.acum[i] >= hastaKm) break; ctx.lineTo(P[i].x, P[i].y); }
+            ctx.lineTo(fin.x, fin.y); ctx.stroke();
+          });
+        });
 
         // paradas y puertos ya alcanzados
         var detalle = cam.z > G.zFit + 1;
@@ -364,6 +472,23 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
         // casco
         if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+
+        // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
+        if (tr.tipo === "dibujo" && G.dest.length) {
+          var dAct = null; G.dest.forEach(function (d) { if (km >= d.a - DESTACAR.BORDE_KM && km <= d.b + DESTACAR.BORDE_KM) dAct = d; });
+          var aD = G.cercania(km);
+          if (dAct && aD > 0.02) {
+            ctx.globalAlpha = aD;
+            var txL = "⭐ " + recortar(dAct.txt, 34), fL = 52;
+            do { ctx.font = "800 " + fL + "px Manrope, system-ui, sans-serif"; fL -= 2; } while (fL >= 34 && ctx.measureText(txL).width + 72 > W - 64);
+            var wL = ctx.measureText(txL).width + 72, hL = 96, xL = (W - wL) / 2, yL = 210;
+            ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
+            pildora(ctx, xL, yL, wL, hL, hL / 2, "#FFC400");
+            ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+            ctx.fillStyle = "#111"; ctx.textBaseline = "middle"; escribir(ctx, txL, xL + 36, yL + hL / 2 + 2, "left");
+            ctx.globalAlpha = 1;
+          }
+        }
 
         // título: en la vista entera del principio y al alejarse al final
         var tv = tr.tipo === "vista" ? tramo(t, 0, 0.7) : tr.tipo === "zoom" ? 1 - tramo(t, tr.a, tr.a + 0.8) : tr.tipo === "alejar" ? tramo(t, tr.a + 0.6, tr.b) : 0;

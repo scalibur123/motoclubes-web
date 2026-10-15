@@ -626,7 +626,9 @@ function pintar(r) {
         cargando: function (n, de) { estado.textContent = "Preparando el mapa… " + n + " de " + de + " · puede tardar un minuto, no cierres esta pantalla"; },
         lienzo: function (cv) { vista.appendChild(cv); },
         progreso: function (t, dur) { estado.textContent = "Grabando… " + Math.min(Math.round(t), Math.round(dur)) + " s de " + Math.round(dur); },
-        cancelado: function () { return cancelado; }
+        cancelado: function () { return cancelado; },
+        // VIDEO-DESTACAR-1: si un tramo de «&destacar=» no se encuentra en la ruta, se dice (y el vídeo sale sin él)
+        aviso: function (txt) { var pa = document.createElement("p"); pa.className = "aviso-video"; pa.style.cssText = "color:#FFC400;font-weight:700;margin:6px 0 0"; pa.textContent = txt; estado.parentNode.insertBefore(pa, estado.nextSibling); }
       });
     }).then(function (res) {
       if (cancelado) return;
