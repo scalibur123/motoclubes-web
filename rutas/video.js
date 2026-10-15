@@ -130,6 +130,10 @@ if (/[?&]mapa=satelite(&|$)/.test(location.search)) VIDEO.ESTILO = "satellite-st
 // 🆕 SOLO-LINEA-1 (15-oct, 109.ª). Mario, para el reel del día 1: «quitaría todos los puntos […] solamente con la línea».
 //   &solo=puertos → fuera gasolineras, comidas, hoteles y demás paradas (en el mapa y abajo); quedan los puertos.
 //   &solo=linea   → fuera también los puertos: solo la línea, los tramos amarillos y sus carteles.
+// 🆕 REEL-CORTO-1 (15-oct, 109.ª). Mario: «yo lo haría más sencillo, se hace largo, es otra vez toda la carrera» → «exacto»:
+//   &corto=1 (con &destacar=) → el día entero ya dibujado 2,6 s, vuelo a cada tramo destacado (zoom a sus curvas, la línea
+//   amarilla se dibuja con su cartel y la flecha), se aleja, las fotos y el cierre. Sin recorrer el resto del día.
+var VIDEO_CORTO = /[?&]corto=1(&|$)/.test(location.search);
 var VIDEO_SOLO = (location.search.match(/[?&]solo=(puertos|linea)(?:&|$)/) || [])[1] || null;
 
 function mercX(lng) { return (lng + 180) / 360; }
@@ -293,9 +297,37 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
   var DUR = t;
 
+  // REEL-CORTO-1: otro guion, solo con los tramos destacados
+  var corto = VIDEO_CORTO && dest.length > 0, camTramo = [];
+  if (corto) {
+    dest.forEach(function (d) { // el encuadre de cada tramo: que quepa entero con sus curvas
+      var bx1 = 1, bx2 = 0, by1 = 1, by2 = 0, paso = (d.b - d.a) / 60;
+      for (var k = 0; k <= 60; k++) { var q = enKm(d.a + k * paso); bx1 = Math.min(bx1, q.x); bx2 = Math.max(bx2, q.x); by1 = Math.min(by1, q.y); by2 = Math.max(by2, q.y); }
+      var zt = Math.min(Math.log2(400 / (512 * Math.max(bx2 - bx1, 1e-9))), Math.log2(520 / (512 * Math.max(by2 - by1, 1e-9))));
+      camTramo.push({ c: { x: (bx1 + bx2) / 2, y: (by1 + by2) / 2 }, z: Math.max(zFit + 1, Math.min(13.5, zt)) });
+    });
+    tramos = []; t = 0;
+    tramos.push({ tipo: "vista", a: t, b: t += 2.6 });
+    dest.forEach(function (d, i) {
+      tramos.push({ tipo: "vuelo", i: i, a: t, b: t += 1.8 });
+      tramos.push({ tipo: "tramo", i: i, a: t, b: t += Math.max(4, Math.min(7, (d.b - d.a) / 8)) });
+    });
+    tramos.push({ tipo: "alejar", a: t, b: t += 1.6 });
+    fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
+    tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
+    DUR = t;
+  }
+  var EMPUJE = 0.25; // en el tramo, la cámara se acerca un poco mientras se dibuja
+
   function tramoEn(t) { for (var i = 0; i < tramos.length; i++) if (t < tramos[i].b) return tramos[i]; return tramos[tramos.length - 1]; }
   function kmCabeza(t) {
     var tr = tramoEn(t);
+    if (corto) { // REEL-CORTO-1
+      if (tr.tipo === "vista") return 0;
+      if (tr.tipo === "vuelo") return dest[tr.i].a;
+      if (tr.tipo === "tramo") { var dd = dest[tr.i]; return dd.a + (dd.b - dd.a) * suave((t - tr.a) / (tr.b - tr.a)); }
+      return total;
+    }
     if (tr.tipo === "vista" || tr.tipo === "zoom") return 0;
     if (tr.tipo === "tarjeta") return limites[tr.dia];
     if (tr.tipo === "dibujo") { // VIDEO-DESTACAR-1: más despacio en los tramos destacados
@@ -314,6 +346,16 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   }
   function camara(t) {
     var tr = tramoEn(t);
+    if (corto) { // REEL-CORTO-1
+      var fin = function (i) { return { c: camTramo[i].c, z: camTramo[i].z + EMPUJE }; };
+      if (tr.tipo === "vuelo") {
+        var de = tr.i ? fin(tr.i - 1) : { c: cFit, z: zFit }, va = camTramo[tr.i];
+        var cv = interp(de.c, va.c, tramo(t, tr.a, tr.b), de.z, va.z); cv.fundir = true; return cv;
+      }
+      if (tr.tipo === "tramo") { var ct = camTramo[tr.i]; return { c: ct.c, z: ct.z + EMPUJE * Math.min(1, (t - tr.a) / (tr.b - tr.a)), fundir: true }; }
+      if (tr.tipo === "alejar") { var de2 = fin(dest.length - 1), cl = interp(de2.c, cFit, tramo(t, tr.a, tr.b), de2.z, zFit); cl.fundir = true; return cl; }
+      return { c: cFit, z: zFit };
+    }
     if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
     if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
@@ -338,7 +380,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
 
   return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
     noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR, captura: captura || null,
-    dest: dest, cercania: cercania };
+    dest: dest, cercania: cercania, corto: corto };
 }
 
 /* ------------------------------------------------------------------ teselas */
@@ -474,8 +516,9 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         // la ruta entera, tenue (se ve hacia dónde se va) y lo ya recorrido, fuerte
         linea(P, P.length, 7, "rgba(255,255,255,.55)"); ctx.stroke();
         var n = 1; while (n < G.acum.length && G.acum[n] <= km) n++;
+        if (G.corto) n = P.length; // REEL-CORTO-1: el día entero ya dibujado
         var cab = pr(G.enKm(km));
-        [[16, "#ffffff"], [9, "#7C3AED"]].forEach(function (c) { linea(P, n, c[0], c[1]); if (km > 0) ctx.lineTo(cab.x, cab.y); ctx.stroke(); });
+        [[16, "#ffffff"], [9, "#7C3AED"]].forEach(function (c) { linea(P, n, c[0], c[1]); if (km > 0 && !G.corto) ctx.lineTo(cab.x, cab.y); ctx.stroke(); });
         // VIDEO-DESTACAR-1: lo ya recorrido de cada tramo destacado, en amarillo y más gordo
         G.dest.forEach(function (d) {
           if (km <= d.a) return;
@@ -489,7 +532,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // CARTEL-CARRETERA-1: el número de la carretera en su cartel, sobre lo amarillo, ~190 px por detrás del casco
-        if (tr.tipo === "dibujo") G.dest.forEach(function (d) {
+        if (tr.tipo === "dibujo" || tr.tipo === "tramo") G.dest.forEach(function (d) {
           if (!d.num || km <= d.a) return;
           var aC = Math.min(1, (km - d.a) / 0.6) * G.cercania(km); if (aC <= 0.02) return;
           var pxKm = d.pxKm * Math.pow(2, cam.z - d.zPx);
@@ -530,12 +573,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura" && (!G.corto || tr.tipo === "tramo" || tr.tipo === "vuelo")) { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
 
         // 🆕 SUPERCARRETERA-1 (15-oct, 109.ª). Mario, con el reel de referencia: «la carretera marcada en amarillo y una flecha
         // moviéndose que decía supercarretera […] con un poco de gracia». En cada tramo destacado, encima del casco, una flecha
         // que rebota apuntándole y el letrero «¡SUPERCARRETERA! 🔥» (entra y sale con la cercanía al tramo, como el zoom).
-        if (tr.tipo === "dibujo" && G.dest.length) {
+        if ((tr.tipo === "dibujo" || tr.tipo === "tramo") && G.dest.length) {
           var aS = G.cercania(km);
           if (aS > 0.05) {
             var rebote = Math.sin(t * 7) * 14, inclina = Math.sin(t * 3) * 0.06;
@@ -562,7 +605,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         }
 
         // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
-        if (tr.tipo === "dibujo" && G.dest.length) {
+        if ((tr.tipo === "dibujo" || tr.tipo === "tramo") && G.dest.length) {
           var dAct = null; G.dest.forEach(function (d) { if (km >= d.a - DESTACAR.BORDE_KM && km <= d.b + DESTACAR.BORDE_KM) dAct = d; });
           var aD = G.cercania(km);
           if (dAct && aD > 0.02) {
