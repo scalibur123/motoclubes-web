@@ -579,7 +579,7 @@ const CORREO_TXT = { delivered: '✅ Entregado', sent: 'Enviado, entregándose',
   suppressed: '❌ No enviado: dirección bloqueada', opened: '✅ Abierto', clicked: '✅ Pulsado' }
 const correoTxt = (c) => !c ? 'Sin datos (enviado antes del seguimiento)' : c.error ? 'No se ha podido consultar' : (CORREO_TXT[c.estado] || esc(c.estado || '—'))
 async function verFicha(email, vuelve) {
-  fichaVuelve = vuelve; verPestana('ficha'); window.scrollTo(0, 0)
+  fichaVuelve = vuelve; verPestana('ficha'); window.scrollTo(0, 0); $('f-aviso').innerHTML = ''
   $('f-cuerpo').innerHTML = '<div class="sub">Cargando la ficha…</div>'
   let f
   try { f = await invitar({ modo: 'ficha', email }) } catch (e) { $('f-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido cargar la ficha: ${esc(e.message)}</div>`; return }
@@ -590,7 +590,7 @@ async function verFicha(email, vuelve) {
       (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
       (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
       (w.plataforma === 'android' ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
-        (!c ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
+        (!c && w.confirmado_at && w.quiere_probar && !w.baja_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
@@ -623,7 +623,11 @@ async function verFicha(email, vuelve) {
 }
 let FICHA = null
 $('f-cuerpo').onclick = (ev) => {
-  if (ev.target.closest('#f-play') && FICHA) { ev.target.disabled = true; mandarPlay(FICHA.email).then(() => verFicha(FICHA.email, fichaVuelve)); return }
+  if (ev.target.closest('#f-play') && FICHA) {
+    ev.target.disabled = true
+    mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
+    return
+  }
   if (ev.target.closest('#f-avisar') && FICHA) return abrirAviso(FICHA.email, FICHA.perfil?.nickname || FICHA.email, FICHA.perfil?.app_version_at, FICHA.perfil?.app_platform, FICHA.perfil?.app_version)
   const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve)
 }
