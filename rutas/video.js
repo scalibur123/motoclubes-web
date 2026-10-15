@@ -37,6 +37,14 @@ var VIDEO_CAPTURA = (location.search.match(/[?&]captura=([a-z0-9-]{1,40})(?:&|$)
    Los pueblos se buscan primero entre los puertos y paradas de la ruta y, si no, en el buscador de Mapbox dentro del
    recuadro de la ruta; vale el punto de la ruta más cercano (a menos de 5 km). Al pasar por un tramo: la línea en
    AMARILLO y más gruesa, la cámara un nivel más cerca, 2,5 veces más despacio y el letrero «⭐ …» arriba. */
+/* 🆕 CARTEL-CARRETERA-1 (15-oct, 109.ª). Mario: «es lo importante, marcar la carretera, decir el número de carretera más
+   bonitas con la franja en amarillo». Las teselas de Mapbox no pintan los números de más de 6 letras (NA-2012, GI-2634…)
+   y la franja amarilla tapa los que sí salen. Si el letrero lleva un número de carretera («NA-2012 · Selva de Irati»), se
+   dibuja un cartel blanco con borde negro y ese número encima de la franja amarilla, un poco por detrás del casco. */
+function numCarretera(txt) {
+  var m = String(txt || "").match(/(?:^|[^A-Za-z0-9])([A-Z]{1,4}-\d{1,5}[a-z]?|[DN]\d{2,4})(?![A-Za-z0-9])/);
+  return m ? m[1] : null;
+}
 var VIDEO_DESTACAR = (function () {
   var m = location.search.match(/[?&]destacar=([^&]*)/); if (!m) return [];
   var txt; try { txt = decodeURIComponent(m[1].replace(/\+/g, " ")); } catch (e) { return []; }
@@ -44,9 +52,9 @@ var VIDEO_DESTACAR = (function () {
     it = it.trim(); if (!it) return null;
     var partes = it.split("~"), que = partes[0].trim(), letrero = (partes[1] || "").trim();
     var k = que.match(/^km:\s*(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)$/i);
-    if (k) return { kmA: parseFloat(k[1].replace(",", ".")), kmB: parseFloat(k[2].replace(",", ".")), txt: letrero || ("km " + k[1] + "-" + k[2]) };
+    if (k) return { kmA: parseFloat(k[1].replace(",", ".")), kmB: parseFloat(k[2].replace(",", ".")), txt: letrero || ("km " + k[1] + "-" + k[2]), num: numCarretera(letrero) };
     var ab = que.split(">"); if (ab.length !== 2 || !ab[0].trim() || !ab[1].trim()) return null;
-    return { a: ab[0].trim(), b: ab[1].trim(), txt: letrero || (ab[0].trim() + " → " + ab[1].trim()) };
+    return { a: ab[0].trim(), b: ab[1].trim(), txt: letrero || (ab[0].trim() + " → " + ab[1].trim()), num: numCarretera(letrero) };
   }).filter(Boolean).slice(0, 6);
 })();
 var DESTACAR = { LENTO: 2.5, ZOOM: 1, BORDE_KM: 3, MAX_KM_LEJOS: 5 };
@@ -82,11 +90,11 @@ function resolverDestacados(pts, puertos, paradas) {
   }
   var fallos = [];
   return Promise.all(VIDEO_DESTACAR.map(function (it) {
-    if (it.kmA != null) return Promise.resolve({ a: Math.max(0, Math.min(it.kmA, it.kmB)), b: Math.min(total, Math.max(it.kmA, it.kmB)), txt: it.txt });
+    if (it.kmA != null) return Promise.resolve({ a: Math.max(0, Math.min(it.kmA, it.kmB)), b: Math.min(total, Math.max(it.kmA, it.kmB)), txt: it.txt, num: it.num });
     return Promise.all([buscar(it.a), buscar(it.b)]).then(function (k) {
       if (k[0] == null || k[1] == null) { fallos.push(k[0] == null ? it.a : it.b); return null; }
       if (Math.abs(k[1] - k[0]) < 0.5) { fallos.push(it.a + " > " + it.b); return null; }
-      return { a: Math.min(k[0], k[1]), b: Math.max(k[0], k[1]), txt: it.txt };
+      return { a: Math.min(k[0], k[1]), b: Math.max(k[0], k[1]), txt: it.txt, num: it.num };
     });
   })).then(function (rs) {
     var tramos = rs.filter(Boolean).sort(function (x, y) { return x.a - y.a; });
@@ -203,7 +211,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   };
 
   // VIDEO-DESTACAR-1: los tramos en km del trazado aligerado
-  var dest = (destacados || []).map(function (d) { return { a: kmF(d.a), b: kmF(d.b), txt: d.txt }; });
+  var dest = (destacados || []).map(function (d) { return { a: kmF(d.a), b: kmF(d.b), txt: d.txt, num: d.num || null }; });
   function solape(x, y) { var s = 0; dest.forEach(function (d) { s += Math.max(0, Math.min(y, d.b) - Math.max(x, d.a)); }); return s; }
   function largoPesado(x, y) { return (y - x) + (DESTACAR.LENTO - 1) * solape(x, y); } // los tramos destacados «pesan» más: van más despacio
   function kmDePeso(x, y, w) { // dentro de [x, y], el km al que se llega tras recorrer un largo «pesado» w
@@ -230,6 +238,16 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   var cFit = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 + 10 / (512 * Math.pow(2, zFit)) };
   var zDet = Math.max(zFit + 1, Math.min(11.5, zFit + 3.3)); // en La ruta del silencio: unos 28 km de ancho de pantalla
   if (VIDEO_V6) zDet = Math.max(zFit + 1, Math.min(12.5, zFit + 4.3)); // v6: un nivel más cerca, la mitad de ancho (~14 km)
+
+  // CARTEL-CARRETERA-1: cuántos píxeles de pantalla mide 1 km de cada tramo con la cámara ya cerca (para poner el cartel
+  // siempre a la misma distancia por detrás del casco, sobre lo amarillo ya dibujado: la cámara mira por delante y lo de
+  // atrás se sale enseguida de la pantalla, así que un cartel fijo en el mapa casi nunca se llegaba a ver)
+  var zDest = zDet + DESTACAR.ZOOM;
+  dest.forEach(function (d) {
+    var largoM = 0, paso = (d.b - d.a) / 40;
+    for (var k = 0; k < 40; k++) { var p0 = enKm(d.a + k * paso), p1 = enKm(d.a + (k + 1) * paso); largoM += Math.hypot(p1.x - p0.x, p1.y - p0.y); }
+    d.pxKm = Math.max(1, largoM * 512 * Math.pow(2, zDest) * 2 / Math.max(d.b - d.a, 0.01)); d.zPx = zDest;
+  });
 
   // Tiempos.
   var tDibujo = Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
@@ -446,6 +464,25 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             for (var i = 1; i < G.acum.length; i++) { if (G.acum[i] <= d.a) continue; if (G.acum[i] >= hastaKm) break; ctx.lineTo(P[i].x, P[i].y); }
             ctx.lineTo(fin.x, fin.y); ctx.stroke();
           });
+        });
+
+        // CARTEL-CARRETERA-1: el número de la carretera en su cartel, sobre lo amarillo, ~190 px por detrás del casco
+        if (tr.tipo === "dibujo") G.dest.forEach(function (d) {
+          if (!d.num || km <= d.a) return;
+          var aC = Math.min(1, (km - d.a) / 0.6) * G.cercania(km); if (aC <= 0.02) return;
+          var pxKm = d.pxKm * Math.pow(2, cam.z - d.zPx);
+          var kS = Math.max(d.a, Math.min(d.b, km - 190 / pxKm)), q = pr(G.enKm(kS));
+          ctx.globalAlpha = aC;
+          ctx.font = "800 44px Manrope, system-ui, sans-serif";
+          var wC = ctx.measureText(d.num).width + 40, hC = 66;
+          var xC = Math.max(24, Math.min(W - 24 - wC, q.x - wC / 2)), yC = Math.max(340, Math.min(H - 300, q.y - hC / 2)); // dentro de la pantalla, siempre entero
+          if (Math.abs(xC + wC / 2 - cab.x) < wC / 2 + 50 && Math.abs(yC + hC / 2 - cab.y) < 90) yC = cab.y - 70 - hC; // si choca con el casco, encima de él
+          ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
+          pildora(ctx, xC, yC, wC, hC, 12, "#111");
+          ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+          pildora(ctx, xC + 5, yC + 5, wC - 10, hC - 10, 8, "#fff");
+          ctx.fillStyle = "#111"; ctx.textBaseline = "middle"; escribir(ctx, d.num, xC + wC / 2, yC + hC / 2 + 2, "center");
+          ctx.globalAlpha = 1;
         });
 
         // paradas y puertos ya alcanzados
