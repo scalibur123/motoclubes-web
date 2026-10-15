@@ -477,7 +477,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           ctx.font = "800 44px Manrope, system-ui, sans-serif";
           var wC = ctx.measureText(d.num).width + 40, hC = 66;
           var xC = Math.max(24, Math.min(W - 24 - wC, q.x - wC / 2)), yC = Math.max(340, Math.min(H - 300, q.y - hC / 2)); // dentro de la pantalla, siempre entero
-          if (Math.abs(xC + wC / 2 - cab.x) < wC / 2 + 50 && Math.abs(yC + hC / 2 - cab.y) < 90) yC = cab.y - 70 - hC; // si choca con el casco, encima de él
+          if (Math.abs(xC + wC / 2 - cab.x) < wC / 2 + 50 && Math.abs(yC + hC / 2 - cab.y) < 90) yC = cab.y + 70; // si choca con el casco, debajo de él (encima va la flecha de SUPERCARRETERA-1)
           ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
           pildora(ctx, xC, yC, wC, hC, 12, "#111");
           ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
@@ -510,6 +510,35 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
         // casco
         if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura") { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+
+        // 🆕 SUPERCARRETERA-1 (15-oct, 109.ª). Mario, con el reel de referencia: «la carretera marcada en amarillo y una flecha
+        // moviéndose que decía supercarretera […] con un poco de gracia». En cada tramo destacado, encima del casco, una flecha
+        // que rebota apuntándole y el letrero «¡SUPERCARRETERA! 🔥» (entra y sale con la cercanía al tramo, como el zoom).
+        if (tr.tipo === "dibujo" && G.dest.length) {
+          var aS = G.cercania(km);
+          if (aS > 0.05) {
+            var rebote = Math.sin(t * 7) * 14, inclina = Math.sin(t * 3) * 0.06;
+            var ax = Math.max(220, Math.min(W - 220, cab.x)), ay = Math.max(560, cab.y) - 120 + rebote;
+            ctx.save(); ctx.globalAlpha = Math.min(1, aS * 1.4);
+            ctx.translate(ax, ay); ctx.rotate(inclina);
+            // la flecha, apuntando abajo, al casco
+            ctx.beginPath(); ctx.moveTo(-26, -70); ctx.lineTo(26, -70); ctx.lineTo(26, -20); ctx.lineTo(54, -20); ctx.lineTo(0, 34);
+            ctx.lineTo(-54, -20); ctx.lineTo(-26, -20); ctx.closePath();
+            ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
+            ctx.fillStyle = "#FF7A1A"; ctx.fill(); ctx.shadowColor = "transparent";
+            ctx.lineWidth = 6; ctx.strokeStyle = "#fff"; ctx.stroke();
+            // el letrero, encima, un pelín girado
+            ctx.rotate(-0.05);
+            ctx.font = "900 50px Manrope, system-ui, sans-serif";
+            var txS = "¡SUPERCARRETERA! 🔥", wS = ctx.measureText(txS).width + 56, hS = 84;
+            var xS = Math.max(24 - ax, Math.min(W - 24 - ax - wS, -wS / 2));
+            ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+            pildora(ctx, xS, -70 - 22 - hS, wS, hS, 20, "#111");
+            ctx.shadowColor = "transparent";
+            ctx.fillStyle = "#FFC400"; ctx.textBaseline = "middle"; escribir(ctx, txS, xS + 28, -70 - 22 - hS / 2 + 2, "left");
+            ctx.restore();
+          }
+        }
 
         // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
         if (tr.tipo === "dibujo" && G.dest.length) {
