@@ -37,7 +37,7 @@ img{max-width:100%;display:block}
 .barra .envoltura{display:flex;align-items:center;gap:14px;height:62px}
 .marca{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.4px;font-size:17px}
 .marca img{width:30px;height:30px;border-radius:9px}
-.marca span{color:var(--naranja)}
+.marca span{color:var(--naranja);margin-left:-10px} /* 109.ª: «MOTOCLUB» y «es» juntos (el gap de .marca los separaba en toda la web) */
 .barra nav{margin-left:auto;display:flex;align-items:center;gap:22px}
 .barra nav a{font-size:14px;color:var(--texto-2);font-weight:600}
 .barra nav a:hover{color:var(--texto)}
