@@ -68,7 +68,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Testers <span class="n" id="n-test">0</span></button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Testers <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -183,7 +183,25 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <span style="flex-grow:1"></span>
     <button class="btn" id="t-enviar" disabled>Enviar invitación</button>
   </div>
+  <!-- FICHA-RIDER-1 (15-oct, Mario): apuntar a quien he conocido en persona (Pablo, Vicente…) y luego invitarle con su botón -->
+  <div class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div style="width:100%;font-weight:800">Añadir a alguien con quien has hablado en persona</div>
+    <label style="flex:2 1 220px">CORREO<input type="email" id="a-correo" placeholder="su@correo.com"></label>
+    <label style="flex:1 1 140px">NOMBRE<input type="text" id="a-nombre" placeholder="Pablo"></label>
+    <label style="flex:1 1 120px">MÓVIL<select id="a-movil"><option value="">Elige…</option><option value="ios">iPhone</option><option value="android">Android</option></select></label>
+    <button class="btn2" id="a-anadir">Añadir a la lista</button>
+    <div class="sub" style="width:100%">Entra como «Por invitar», con «En persona» como origen. Después pulsas su botón Invitar y le llega el correo.</div>
+  </div>
   <div class="card tabla"><table><thead><tr><th>Correo</th><th>Móvil</th><th>Se apuntó</th><th>De dónde</th><th>Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
+</main>
+<main id="v-rid" class="oculto">
+  <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
+  <div id="r-aviso"></div>
+  <div class="card tabla"><table><thead><tr><th>Rider</th><th>Correo</th><th>Móvil</th><th>Versión</th><th>Abrió la app</th><th>Alta</th><th>De dónde</th></tr></thead><tbody id="r-filas"></tbody></table></div>
+</main>
+<main id="v-ficha" class="oculto">
+  <button class="volver" id="f-volver">← Volver</button>
+  <div id="f-cuerpo"></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -280,13 +298,13 @@ function pintarAltas() {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   verPestana('altas')
-  await Promise.all([cargar(), cargarCand()])
+  await Promise.all([cargar(), cargarCand(), cargarRiders()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
 }
 $('l-entrar').onclick = async () => {
   $('l-error').classList.add('oculto'); $('l-entrar').disabled = true
@@ -362,8 +380,9 @@ const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: '
 const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
 let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
 function verPestana(cual) {
-  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test')
+  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
+  $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
 }
 // ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
 function tAviso(txt, bien) { $('t-aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
@@ -388,8 +407,8 @@ async function cargarTesters() {
   const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
   $('t-filas').innerHTML = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]).map(t => `<tr>
-    <td>${esc(t.email)}</td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
-    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(t.origen || '')}</td><td>${est(t)}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">Nadie en la lista.</td></tr>'
+    <td><button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
+    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${est(t)}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">Nadie en la lista.</td></tr>'
 }
 async function verCorreo(plataforma) {
   const w = window.open('', '_blank'); if (!w) return tAviso('El navegador ha bloqueado la ventana: permite las ventanas emergentes de motoclubes.es.')
@@ -397,8 +416,93 @@ async function verCorreo(plataforma) {
   catch (e) { w.close(); tAviso('No se ha podido preparar la muestra: ' + esc(e.message)) }
 }
 $('p-test').onclick = () => { verPestana('test'); tAviso(''); cargarTesters() }
+
+// ── FICHA-RIDER-1 (15-oct-2026, 109.ª) · Mario: «entrar en la ficha de cada uno, ver cuándo se apuntó, ver cuándo se le invitó,
+// ver qué usos ha hecho […] si ha invitado a otros riders». Todo sale de web-invitar-testers (modos riders · ficha · alta). ──
+const fechaHora = (iso) => iso ? new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+const hace = (iso) => {
+  if (!iso) return '—'
+  const m = Math.round((Date.now() - new Date(iso)) / 60000)
+  return m < 60 ? `hace ${Math.max(m, 1)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`
+}
+const movilTxt = (p) => p === 'ios' ? 'iPhone' : p === 'android' ? 'Android' : '—'
+const ORIG = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', google: 'Google', bmwmotos: 'Foro BMW', youtube: 'YouTube', tiktok: 'TikTok', whatsapp: 'WhatsApp', directo: 'Directo', web: 'La web' }
+function deDonde(o) {
+  if (!o) return '—'
+  if (o === 'probar-lista') return 'Invitación a la lista de la web'
+  if (o.startsWith('probar-')) return 'Invitado por ' + o.slice(7)
+  if (o === 'probar') return 'Página «Probar»'
+  if (o.startsWith('personal')) return 'En persona' + (o.length > 9 ? ' · ' + o.slice(9).replace(/-/g, ' ').replace(/(^| )\S/g, (x) => x.toUpperCase()) : '')
+  return ORIG[o] || o
+}
+let RIDERS = []
+async function cargarRiders() {
+  $('r-aviso').innerHTML = ''
+  try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
+  $('n-rid').textContent = RIDERS.length
+  $('r-filas').innerHTML = RIDERS.slice().sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')).map(r => `<tr>
+    <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
+    <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}</td>
+    <td>${hace(r.abrio)}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td></tr>`).join('') || '<tr><td colspan="7" class="sub">Sin cuentas.</td></tr>'
+}
+$('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
+$('r-filas').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') }
+let fichaVuelve = 'test'
+$('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else cargarRiders() }
+const dato = (k, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3"><span class="sub">${k}</span><b style="text-align:right">${v}</b></div>`
+const cifra = (n, t) => `<div class="card cifra" style="padding:16px"><b>${n}</b><span>${t}</span></div>`
+async function verFicha(email, vuelve) {
+  fichaVuelve = vuelve; verPestana('ficha'); window.scrollTo(0, 0)
+  $('f-cuerpo').innerHTML = '<div class="sub">Cargando la ficha…</div>'
+  let f
+  try { f = await invitar({ modo: 'ficha', email }) } catch (e) { $('f-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido cargar la ficha: ${esc(e.message)}</div>`; return }
+  const w = f.web, p = f.perfil, u = f.uso, c = f.cuenta
+  const web = w ? dato('Se apuntó', fechaHora(w.creado_at)) + dato('Confirmó el correo', w.confirmado_at ? fechaHora(w.confirmado_at) : 'Aún no') +
+      dato('Quiere probar la app', w.quiere_probar ? 'Sí · ' + movilTxt(w.plataforma) : 'No') + dato('Invitación', w.invitado_at ? 'Enviada el ' + fechaHora(w.invitado_at) : 'Sin enviar') +
+      dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
+    : '<div class="sub">No está en la lista de la web.</div>'
+  const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
+      dato('Versión', esc(p?.app_version || '—') + (p?.app_build ? ' (' + esc(p.app_build) + ')' : '')) +
+      dato('Abrió la app por última vez', p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') +
+      dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
+    : '<div class="sub">Todavía no tiene cuenta en la app.</div>'
+  const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}
+      ${cifra(u.salidas_grupo, `Salidas en grupo · ${u.km_grupo} km`)}${cifra(u.grupos, 'Grupos')}${cifra(u.radio_veces, `Veces con la radio · ${u.radio_min} min`)}
+      ${cifra(u.dias_app, 'Días con la app abierta (90 días)')}${cifra(u.sesiones, 'Sesiones (90 días)')}</div>
+      <div style="margin-top:12px">${dato('Última ruta planificada', u.ultima_planificada ? esc(u.ultima_planificada.titulo) + ' · ' + fecha(u.ultima_planificada.fecha) : '—')}
+      ${dato('Última salida rodada', u.ultima_rodada ? esc(u.ultima_rodada.titulo) + ' · ' + (u.ultima_rodada.km ?? 0) + ' km · ' + fecha(u.ultima_rodada.fecha) : '—')}
+      ${dato('Última vez con la radio', u.radio_ultima ? fechaHora(u.radio_ultima) : '—')}</div>` : ''
+  const ses = u && u.ultimas_sesiones.length ? `<table><thead><tr><th>Empezó</th><th>Duró</th><th>Móvil</th><th>Versión</th><th>Acciones</th></tr></thead><tbody>${u.ultimas_sesiones.map(s =>
+      `<tr><td>${fechaHora(s.desde)}</td><td>${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))} min</td><td class="sub">${esc(s.dispositivo || '—')}</td><td class="sub">${esc(s.version || '—')}</td><td>${s.acciones}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="sub" style="padding:16px">Sin sesiones registradas en los últimos 90 días.</div>'
+  const inv = f.invitados.length ? `<table><thead><tr><th>Correo</th><th>Móvil</th><th>Se apuntó</th><th>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
+      `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub">${fecha(i.creado_at)}</td>
+      <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie con «Invita a tu grupo».' : '—'}</div>`
+  $('f-cuerpo').innerHTML = `<div><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
+    <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
+      <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
+      <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a</div>${inv}</div></div>
+    <div class="col"><div class="card"><div style="font-weight:800;margin-bottom:6px">En la web</div>${web}</div>
+      <div class="card"><div style="font-weight:800;margin-bottom:6px">En la app</div>${app}</div></div></div>`
+}
+$('f-cuerpo').onclick = (ev) => { const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve) }
+$('a-anadir').onclick = async () => {
+  const email = $('a-correo').value.trim(), plataforma = $('a-movil').value, nombre = $('a-nombre').value.trim()
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return tAviso('Pon un correo válido.')
+  if (!plataforma) return tAviso('Elige si tiene iPhone o Android.')
+  $('a-anadir').disabled = true
+  try {
+    await invitar({ modo: 'alta', email, plataforma, nombre })
+    tAviso(`✅ ${esc(email)} añadido a la lista. Pulsa su botón «Invitar» cuando quieras mandarle el correo.`, true)
+    $('a-correo').value = ''; $('a-nombre').value = ''; $('a-movil').value = ''
+  } catch (e) { tAviso('No se ha podido añadir: ' + esc(e.message)) }
+  $('a-anadir').disabled = false
+  await cargarTesters()
+}
 // INVITAR-UNO-1 (15-oct, Mario): «al lado se pone un botón de invitar, lo pulso y voy viendo cómo funciona»
 $('t-filas').onclick = async (ev) => {
+  const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'test')
   const b = ev.target.closest('.t-uno'); if (!b) return
   const email = b.dataset.email
   if (!confirm(`¿Mandar la invitación a ${email}?`)) return
