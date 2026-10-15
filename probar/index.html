@@ -118,7 +118,7 @@
     <div class="pr-hecho" id="hecho" hidden>
       <div class="gran">📬</div>
       <h1>¡Ya casi estás dentro!</h1>
-      <p>Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.</p>
+      <p id="hecho-confirmar">Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.</p>
       <p id="hecho-alta">En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.</p>
       <p id="hecho-plat"></p>
       <p>¿No te llega en unos minutos? Mira en <b>Spam</b> o en <b>Promociones</b>: a veces se esconde ahí.</p>
@@ -134,6 +134,9 @@
   var q = new URLSearchParams(location.search);
   // El nickname de la app: letras, números y guion bajo (signup.tsx). Cualquier otra cosa se ignora.
   var de = (q.get('de') || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 30);
+  // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
+  // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
+  var lista = q.get('o') === 'lista';
   var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
 
   if (q.get('compartir') === '1') {
@@ -185,6 +188,7 @@
     }
   };
   f.querySelectorAll('input[name=plat]').forEach(function (r) { r.addEventListener('change', pintar); });
+  if (q.get('plat') === 'android') f.querySelector('input[value=android]').checked = true;
   pintar();
 
   var decir = function (t) { msgA.className = 'pr-msg error'; msgA.textContent = t; };
@@ -199,7 +203,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        t: 'alta', f: 'probar', email: email, i: 'es', o: de ? 'probar-' + de.toLowerCase() : 'probar',
+        t: 'alta', f: 'probar', email: email, i: 'es', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : 'probar'),
         probar: true, plat: plat(), acepta: true, web: f.web.value
       })
     }).then(function (r) {
@@ -207,6 +211,10 @@
         f.hidden = true;
         document.getElementById('hecho').hidden = false;
         document.getElementById('hecho-alta').hidden = plat() === 'ios'; // iPhone entra solo: no hay «te damos de alta»
+        if (lista) { // ya confirmado: el siguiente correo es el de la invitación (o, si ha puesto otro correo, el de confirmar)
+          document.getElementById('hecho-confirmar').innerHTML = 'Te escribimos a ese correo con el siguiente paso.';
+          document.getElementById('hecho-alta').hidden = true; // sin «en cuanto lo confirmes»: ya lo está
+        }
         document.getElementById('hecho-plat').textContent = plat() === 'android'
           ? 'Te llegará un enlace de Google Play. Ábrelo en tu móvil Android, en Chrome: el que tiene en Play Store el mismo Gmail que has puesto aquí.'
           : 'Al confirmar te enseñamos cómo instalarla en tu iPhone con TestFlight, y te lo mandamos también por correo.';

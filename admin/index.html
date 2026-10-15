@@ -68,7 +68,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Testers <span class="n" id="n-test">0</span></button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -169,6 +169,22 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   </div>
  </div>
 </main>
+<main id="v-test" class="oculto">
+<!-- MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1): la lista «Avísame» de la web que pidió probar la app, y la invitación.
+     Nada sale solo: el envío lo lanza Mario con el botón. La función web-invitar-testers comprueba que es admin. -->
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1"><h1>Testers de la web</h1><div class="sub">Los que se apuntaron en motoclubes.es, marcaron «quiero probarla» y confirmaron el correo. iPhone: la invitación lleva el enlace de TestFlight y entran solos. Android: ponen su Gmail de Play Store y te llega el aviso para darles de alta.</div></div>
+  </div>
+  <div id="t-aviso"></div>
+  <div class="cifras" id="t-cifras"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <button class="btn2" id="t-ver-ios">Ver el correo de iPhone</button>
+    <button class="btn2" id="t-ver-and">Ver el correo de Android</button>
+    <span style="flex-grow:1"></span>
+    <button class="btn" id="t-enviar" disabled>Enviar invitación</button>
+  </div>
+  <div class="card tabla"><table><thead><tr><th>Correo</th><th>Móvil</th><th>Se apuntó</th><th>De dónde</th><th>Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -264,7 +280,7 @@ function pintarAltas() {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
@@ -346,8 +362,53 @@ const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: '
 const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
 let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
 function verPestana(cual) {
-  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand')
-  $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand')
+  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test')
+  $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
+}
+// ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
+function tAviso(txt, bien) { $('t-aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
+const fecha = (iso) => iso ? new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : ''
+async function invitar(cuerpo) {
+  const { data, error } = await sb.functions.invoke('web-invitar-testers', { body: cuerpo })
+  if (error) { let m = error.message; try { m = (await error.context.json()).error || m } catch (e) {} ; throw new Error(m) }
+  return data
+}
+let TESTERS = []
+async function cargarTesters() {
+  try { TESTERS = (await invitar({ modo: 'lista' })).filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
+  const por = TESTERS.filter(t => t.estado === 'por_invitar'), inv = TESTERS.filter(t => t.estado === 'invitado'), app = TESTERS.filter(t => t.estado === 'tiene_app')
+  const n = (l, p) => l.filter(t => t.plataforma === p).length
+  $('n-test').textContent = por.length
+  $('t-cifras').innerHTML = `<div class="card cifra"><b>${por.length}</b><span>Por invitar · ${n(por, 'ios')} iPhone · ${n(por, 'android')} Android</span></div>
+    <div class="card cifra"><b>${inv.length}</b><span>Invitados</span></div>
+    <div class="card cifra"><b>${app.length}</b><span>Ya tienen la app</span></div>
+    <div class="card cifra"><b>${TESTERS.length}</b><span>Total en la lista</span></div>`
+  $('t-enviar').textContent = por.length ? `Enviar invitación a ${por.length}` : 'Nadie por invitar'
+  $('t-enviar').disabled = !por.length
+  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : '<span class="chip gris">Por invitar</span>'
+  const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
+  $('t-filas').innerHTML = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]).map(t => `<tr>
+    <td>${esc(t.email)}</td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
+    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(t.origen || '')}</td><td>${est(t)}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">Nadie en la lista.</td></tr>'
+}
+async function verCorreo(plataforma) {
+  const w = window.open('', '_blank'); if (!w) return tAviso('El navegador ha bloqueado la ventana: permite las ventanas emergentes de motoclubes.es.')
+  try { const d = await invitar({ modo: 'muestra', plataforma }); w.document.write(d.html); w.document.title = d.asunto; w.document.close() }
+  catch (e) { w.close(); tAviso('No se ha podido preparar la muestra: ' + esc(e.message)) }
+}
+$('p-test').onclick = () => { verPestana('test'); tAviso(''); cargarTesters() }
+$('t-ver-ios').onclick = () => verCorreo('ios')
+$('t-ver-and').onclick = () => verCorreo('android')
+$('t-enviar').onclick = async () => {
+  const por = TESTERS.filter(t => t.estado === 'por_invitar')
+  if (!por.length) return
+  if (!confirm(`¿Mandar la invitación a ${por.length} personas ahora? Se manda una sola vez a cada una.`)) return
+  $('t-enviar').disabled = true; tAviso('Enviando…', true)
+  try {
+    const r = await invitar({ modo: 'enviar' })
+    tAviso(r.fallos && r.fallos.length ? `Enviadas ${r.enviados} de ${r.total}. No salieron: ${esc(r.fallos.join(', '))}` : `✅ Enviadas ${r.enviados} invitaciones.`, !(r.fallos && r.fallos.length))
+  } catch (e) { tAviso('No se ha podido enviar: ' + esc(e.message)) }
+  await cargarTesters()
 }
 $('p-altas').onclick = () => verPestana('altas')
 $('p-cand').onclick = () => { verPestana('cand'); verLista() }
