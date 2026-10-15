@@ -385,7 +385,7 @@ async function cargarTesters() {
     <div class="card cifra"><b>${TESTERS.length}</b><span>Total en la lista</span></div>`
   $('t-enviar').textContent = por.length ? `Enviar invitación a ${por.length}` : 'Nadie por invitar'
   $('t-enviar').disabled = !por.length
-  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : '<span class="chip gris">Por invitar</span>'
+  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
   $('t-filas').innerHTML = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]).map(t => `<tr>
     <td>${esc(t.email)}</td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
@@ -397,6 +397,18 @@ async function verCorreo(plataforma) {
   catch (e) { w.close(); tAviso('No se ha podido preparar la muestra: ' + esc(e.message)) }
 }
 $('p-test').onclick = () => { verPestana('test'); tAviso(''); cargarTesters() }
+// INVITAR-UNO-1 (15-oct, Mario): «al lado se pone un botón de invitar, lo pulso y voy viendo cómo funciona»
+$('t-filas').onclick = async (ev) => {
+  const b = ev.target.closest('.t-uno'); if (!b) return
+  const email = b.dataset.email
+  if (!confirm(`¿Mandar la invitación a ${email}?`)) return
+  b.disabled = true; b.textContent = 'Enviando…'; tAviso('')
+  try {
+    const r = await invitar({ modo: 'enviar', email })
+    tAviso(r.enviados ? `✅ Invitación enviada a ${esc(email)}.` : `No ha salido la invitación a ${esc(email)}.`, !!r.enviados)
+  } catch (e) { tAviso('No se ha podido enviar: ' + esc(e.message)) }
+  await cargarTesters()
+}
 $('t-ver-ios').onclick = () => verCorreo('ios')
 $('t-ver-and').onclick = () => verCorreo('android')
 $('t-enviar').onclick = async () => {
