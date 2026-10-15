@@ -22,7 +22,7 @@ h1{font-size:26px}.sub{color:var(--g);font-size:14px}
 .cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.cifra b{display:block;font-size:26px}.cifra span{color:var(--g);font-size:13px}
 .btn{background:var(--o);color:#fff;border:none;border-radius:50px;padding:12px 22px;font:700 14px Manrope,sans-serif;cursor:pointer}.btn:disabled{opacity:.6}
 .btn2{background:#fff;color:#6B4423;border:1.5px solid var(--line);border-radius:50px;padding:11px 20px;font:600 14px Manrope,sans-serif;cursor:pointer}
-table{width:100%;border-collapse:collapse;font-size:14px}th[data-k]{cursor:pointer;user-select:none}th[data-k]:hover{color:var(--tx)}.btnx{background:none;border:0;cursor:pointer;font-size:16px;padding:6px;opacity:.55}.btnx:hover{opacity:1}th{text-align:left;color:var(--g);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px}
+table{width:100%;border-collapse:collapse;font-size:14px}th[data-k],th[data-o]{cursor:pointer;user-select:none}th[data-k]:hover,th[data-o]:hover{color:var(--tx)}.btnx{background:none;border:0;cursor:pointer;font-size:16px;padding:6px;opacity:.55}.btnx:hover{opacity:1}th{text-align:left;color:var(--g);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px}
 td{padding:13px 14px;border-top:1px solid #EFEAE3;vertical-align:top}.tabla{overflow-x:auto;padding:0}
 .chip{display:inline-block;border-radius:50px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
 .verde{background:#DFF3E4;color:#1E6B34}.amar{background:#FFF1C2;color:#6B5100}.azul{background:#E4EDFB;color:#244A86}.gris{background:#EFEAE3;color:#5C5750}.rojo{background:#FBE3E1;color:#8E1F18}
@@ -153,7 +153,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <section class="card" style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:18px">Historial de cambios</h2>
       <div class="sub" style="font-size:13px">Cada dato que se cambia queda aquí con lo que había antes. Nada se pierde.</div>
-      <div style="overflow-x:auto"><table class="tcambios"><thead><tr><th>Cuándo</th><th>Qué</th><th>Antes</th><th>Ahora</th></tr></thead><tbody id="f2-cambios"></tbody></table></div>
+      <div style="overflow-x:auto"><table class="tcambios ordenable"><thead><tr><th data-o>Cuándo</th><th data-o>Qué</th><th data-o>Antes</th><th data-o>Ahora</th></tr></thead><tbody id="f2-cambios"></tbody></table></div>
     </section>
    </div>
    <div class="col">
@@ -192,12 +192,12 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <button class="btn2" id="a-anadir">Añadir a la lista</button>
     <div class="sub" style="width:100%">Entra como «Por invitar», con «En persona» como origen. Después pulsas su botón Invitar y le llega el correo.</div>
   </div>
-  <div class="card tabla"><table><thead><tr><th>Correo</th><th>Móvil</th><th>Se apuntó</th><th>De dónde</th><th>Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
 </main>
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
   <div id="r-aviso"></div>
-  <div class="card tabla"><table><thead><tr><th>Rider</th><th>Correo</th><th>Móvil</th><th>Versión</th><th>Abrió la app</th><th>Alta</th><th>De dónde</th></tr></thead><tbody id="r-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
 <main id="v-ficha" class="oculto">
   <button class="volver" id="f-volver">← Volver</button>
@@ -406,7 +406,9 @@ async function cargarTesters() {
   $('t-enviar').disabled = !por.length
   const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
-  $('t-filas').innerHTML = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]).map(t => `<tr>
+  const base = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
+  marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
+  $('t-filas').innerHTML = ordenar(base, ordenT, (t, k) => k === 'estado' ? orden[t.estado] : k === 'origen' ? deDonde(t.origen) : k === 'plataforma' ? movilTxt(t.plataforma) : t[k]).map(t => `<tr>
     <td><button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
     <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${est(t)}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">Nadie en la lista.</td></tr>'
 }
@@ -436,16 +438,34 @@ function deDonde(o) {
   return ORIG[o] || o
 }
 let RIDERS = []
+// ORDENAR-TODO-1 (15-oct, Mario): «todas las columnas las tengo que tener ordenadas de más a menos […] todas las filas que
+// aparezcan en la web de admin». Testers y Riders con los helpers de ADMIN-ORDEN-1; las tablas de las fichas, ordenables al
+// pulsar la cabecera (clase «ordenable»: ordena las filas que ya están pintadas por su data-v o, si no, por el texto).
+let ordenT = { k: null, asc: true }, ordenR = { k: null, asc: true }
+document.addEventListener('click', (ev) => {
+  const th = ev.target.closest('table.ordenable th[data-o]'); if (!th) return
+  const tabla = th.closest('table'), tb = tabla.tBodies[0], col = [...th.parentNode.children].indexOf(th)
+  const asc = !(tabla.dataset.col == col && tabla.dataset.asc === '1')
+  tabla.dataset.col = col; tabla.dataset.asc = asc ? '1' : '0'
+  const val = (tr) => { const td = tr.children[col]; if (!td) return ''; const v = td.dataset.v ?? td.textContent.trim(); return v !== '' && !isNaN(v) ? Number(v) : v }
+  const filas = [...tb.rows].filter(tr => tr.children.length > 1)
+  filas.sort((x, y) => { const a = val(x), b = val(y); const r = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'es', { sensitivity: 'base', numeric: true }); return asc ? r : -r })
+  filas.forEach(tr => tb.appendChild(tr))
+  th.parentNode.querySelectorAll('th[data-o]').forEach(h => { h.textContent = h.textContent.replace(/ [▲▼]$/, '') + (h === th ? (asc ? ' ▲' : ' ▼') : '') })
+})
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
-  $('r-filas').innerHTML = RIDERS.slice().sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')).map(r => `<tr>
+  const base = RIDERS.slice().sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')) // sin columna elegida: el último que abrió arriba
+  marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
+  $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
     <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}</td>
     <td>${hace(r.abrio)}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td></tr>`).join('') || '<tr><td colspan="7" class="sub">Sin cuentas.</td></tr>'
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
+clicCab('t-cab', ordenT, () => cargarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-filas').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') }
 let fichaVuelve = 'test'
 $('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else cargarRiders() }
@@ -472,11 +492,11 @@ async function verFicha(email, vuelve) {
       <div style="margin-top:12px">${dato('Última ruta planificada', u.ultima_planificada ? esc(u.ultima_planificada.titulo) + ' · ' + fecha(u.ultima_planificada.fecha) : '—')}
       ${dato('Última salida rodada', u.ultima_rodada ? esc(u.ultima_rodada.titulo) + ' · ' + (u.ultima_rodada.km ?? 0) + ' km · ' + fecha(u.ultima_rodada.fecha) : '—')}
       ${dato('Última vez con la radio', u.radio_ultima ? fechaHora(u.radio_ultima) : '—')}</div>` : ''
-  const ses = u && u.ultimas_sesiones.length ? `<table><thead><tr><th>Empezó</th><th>Duró</th><th>Móvil</th><th>Versión</th><th>Acciones</th></tr></thead><tbody>${u.ultimas_sesiones.map(s =>
-      `<tr><td>${fechaHora(s.desde)}</td><td>${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))} min</td><td class="sub">${esc(s.dispositivo || '—')}</td><td class="sub">${esc(s.version || '—')}</td><td>${s.acciones}</td></tr>`).join('')}</tbody></table>`
+  const ses = u && u.ultimas_sesiones.length ? `<table class="ordenable"><thead><tr><th data-o>Empezó</th><th data-o>Duró</th><th data-o>Móvil</th><th data-o>Versión</th><th data-o>Acciones</th></tr></thead><tbody>${u.ultimas_sesiones.map(s =>
+      `<tr><td data-v="${esc(s.desde)}">${fechaHora(s.desde)}</td><td data-v="${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))}">${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))} min</td><td class="sub">${esc(s.dispositivo || '—')}</td><td class="sub">${esc(s.version || '—')}</td><td>${s.acciones}</td></tr>`).join('')}</tbody></table>`
     : '<div class="sub" style="padding:16px">Sin sesiones registradas en los últimos 90 días.</div>'
-  const inv = f.invitados.length ? `<table><thead><tr><th>Correo</th><th>Móvil</th><th>Se apuntó</th><th>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
-      `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub">${fecha(i.creado_at)}</td>
+  const inv = f.invitados.length ? `<table class="ordenable"><thead><tr><th data-o>Correo</th><th data-o>Móvil</th><th data-o>Se apuntó</th><th data-o>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
+      `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
       <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
     : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie con «Invita a tu grupo».' : '—'}</div>`
   $('f-cuerpo').innerHTML = `<div><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
@@ -625,7 +645,7 @@ function pintarFicha(c) {
   const puedeInvitar = c.id && !c.app && !(c.invitacion && !c.invitacion.caducada && !c.invitacion.envio_error)
   $('f2-invitar').classList.toggle('oculto', !puedeInvitar)
   const cambios = (c.cambios || []).slice().reverse()
-  $('f2-cambios').innerHTML = cambios.map(x => `<tr><td class="sub" style="white-space:nowrap">${esc(fmtFecha(x.en))}</td><td><b>${esc(CAMPO_TXT[x.campo] || x.campo)}</b></td><td class="antes">${esc(valorTxt(x.campo, x.antes))}</td><td>${esc(valorTxt(x.campo, x.ahora))}</td></tr>`).join('')
+  $('f2-cambios').innerHTML = cambios.map(x => `<tr><td class="sub" style="white-space:nowrap" data-v="${esc(x.en)}">${esc(fmtFecha(x.en))}</td><td><b>${esc(CAMPO_TXT[x.campo] || x.campo)}</b></td><td class="antes">${esc(valorTxt(x.campo, x.antes))}</td><td>${esc(valorTxt(x.campo, x.ahora))}</td></tr>`).join('')
     || '<tr><td colspan="4" class="sub">Aún no se ha cambiado ningún dato.</td></tr>'
   llEstado = c.id ? c.estado : 'por_llamar'
   opciones($('f2-ll-estado'), ESTADOS, llEstado, v => llEstado = v)
