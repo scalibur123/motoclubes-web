@@ -177,6 +177,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   </div>
   <div id="t-aviso"></div>
   <div class="cifras" id="t-cifras"></div>
+  <div class="card" id="t-embudo" style="padding:18px 22px"></div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
     <button class="btn2" id="t-ver-ios">Ver el correo de iPhone</button>
     <button class="btn2" id="t-ver-and">Ver el correo de Android</button>
@@ -197,8 +198,19 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
   <div id="r-aviso"></div>
-  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th></tr></thead><tbody id="r-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
+<!-- TESTERS-SEGUIMIENTO-1: el aviso (push) a un rider -->
+<div id="push-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
+  <div class="card" style="max-width:460px;width:100%;display:flex;flex-direction:column;gap:12px">
+    <div style="font-weight:800;font-size:18px">Mandar un aviso a <span id="push-quien"></span></div>
+    <div class="sub">Le llega como notificación al móvil, como los avisos de la app.</div>
+    <label>TÍTULO<input type="text" id="push-titulo" maxlength="80"></label>
+    <label>TEXTO<textarea id="push-texto" rows="3" maxlength="240"></textarea></label>
+    <div id="push-aviso"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
+  </div>
+</div>
 <main id="v-ficha" class="oculto">
   <button class="volver" id="f-volver">← Volver</button>
   <div id="f-cuerpo"></div>
@@ -402,9 +414,12 @@ async function cargarTesters() {
     <div class="card cifra"><b>${inv.length}</b><span>Invitados</span></div>
     <div class="card cifra"><b>${app.length}</b><span>Ya tienen la app</span></div>
     <div class="card cifra"><b>${TESTERS.length}</b><span>Total en la lista</span></div>`
+  pintarEmbudo() // TESTERS-SEGUIMIENTO-1
   $('t-enviar').textContent = por.length ? `Enviar invitación a ${por.length}` : 'Nadie por invitar'
   $('t-enviar').disabled = !por.length
-  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
+  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
+    : t.estado === 'invitado' && sinRespuesta(t) ? `<span class="chip rojo">Sin respuesta</span> <span class="sub">invitado el ${fecha(t.invitado_at)} · recordatorio el ${fecha(t.recordatorio_at)}</span>`
+    : t.estado === 'invitado' && t.recordatorio_at && !t.clic_at ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span> <span class="chip amar">Recordatorio el ${fecha(t.recordatorio_at)}</span>` : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
   const base = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
   marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
@@ -437,6 +452,46 @@ function deDonde(o) {
   if (o.startsWith('personal')) return 'En persona' + (o.length > 9 ? ' · ' + o.slice(9).replace(/-/g, ' ').replace(/(^| )\S/g, (x) => x.toUpperCase()) : '')
   return ORIG[o] || o
 }
+// ── TESTERS-SEGUIMIENTO-1 (15-oct-2026, 109.ª) · embudo, «Sin respuesta», dormidos, versión vieja y el aviso (push) ──
+const dias = (iso) => iso ? (Date.now() - new Date(iso)) / 864e5 : Infinity
+const sinRespuesta = (t) => t.recordatorio_at && !t.clic_at && dias(t.recordatorio_at) > 3
+const dormido = (abrio) => dias(abrio) > 7
+const chipsUso = (abrio, rodadas) => ' ' + (dormido(abrio) ? `<span class="chip rojo">${abrio ? 'Sin abrir la app ' + Math.floor(dias(abrio)) + ' días' : 'No ha abierto la app'}</span>` : '<span class="chip verde">Activo esta semana</span>') +
+  (rodadas ? ` <span class="chip verde">${rodadas} ${rodadas === 1 ? 'salida' : 'salidas'}</span>` : '')
+function pintarEmbudo() {
+  const T = TESTERS, app = (t) => t.estado === 'tiene_app'
+  const pasos = [['Apuntados', T.length], ['Invitados', T.filter(t => t.invitado_at || app(t)).length], ['Pulsaron el correo', T.filter(t => t.clic_at || app(t)).length],
+    ['Tienen la app', T.filter(app).length], ['Activos esta semana', T.filter(t => app(t) && !dormido(t.abrio)).length], ['Han rodado', T.filter(t => app(t) && t.rodadas > 0).length]]
+  $('t-embudo').innerHTML = `<div style="font-weight:800;margin-bottom:10px">De la lista a rodar</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">${pasos.map((p, i) =>
+    `${i ? '<div style="align-self:center;color:var(--gl)">→</div>' : ''}<div style="flex:1 1 120px;background:var(--bg);border-radius:12px;padding:12px 14px"><b style="font-size:22px">${p[1]}</b>` +
+    `<div class="sub" style="font-size:12px">${p[0]}${i && pasos[i - 1][1] ? ' · ' + Math.round(100 * p[1] / pasos[i - 1][1]) + ' %' : ''}</div></div>`).join('')}</div>
+    <div class="sub" style="font-size:12px;margin-top:8px">Quien ya tiene la app cuenta como invitado y como que pulsó. «Activos» = han abierto la app en los últimos 7 días.</div>`
+}
+let ULTIMA = null // la última versión publicada de cada móvil (status.json de la web)
+async function cargarUltima() { if (ULTIMA) return; try { ULTIMA = (await (await fetch('/status.json?x=' + Date.now())).json()).version || null } catch (e) { ULTIMA = null } }
+const cmpVer = (a, b) => { const x = String(a || '').split('.').map(Number), y = String(b || '').split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d } return 0 }
+const vieja = (movil, version) => !!(ULTIMA && version && ULTIMA[movil] && cmpVer(version, ULTIMA[movil]) < 0)
+let pushPara = null
+function abrirAviso(email, quien, abrio, movil, version) {
+  pushPara = email; $('push-quien').textContent = quien; $('push-aviso').innerHTML = ''
+  const v = vieja(movil, version)
+  $('push-titulo').value = v ? '🏍️ Nueva versión de MOTOCLUBes' : '¿Salimos a rodar? 🏍️'
+  $('push-texto').value = v ? (movil === 'ios' ? 'Ya tienes la versión nueva con lo último. Ábrela en TestFlight y pulsa Actualizar.' : 'Ya tienes la versión nueva con lo último. Actualízala en Play Store.')
+    : 'Planifica tu próxima ruta con curvas y puertos y sal con tu grupo, todos en el mapa y hablando por la radio del casco.'
+  $('push-capa').classList.remove('oculto')
+}
+$('push-cancelar').onclick = () => $('push-capa').classList.add('oculto')
+$('push-enviar').onclick = async () => {
+  const titulo = $('push-titulo').value.trim(), texto = $('push-texto').value.trim()
+  if (!titulo) return ($('push-aviso').innerHTML = '<div class="aviso mal">Pon un título.</div>')
+  $('push-enviar').disabled = true
+  try {
+    const r = await invitar({ modo: 'avisar', email: pushPara, titulo, texto })
+    $('push-aviso').innerHTML = r.enviados ? `<div class="aviso ok">✅ Aviso enviado a ${r.enviados} ${r.enviados === 1 ? 'móvil' : 'móviles'}.</div>`
+      : '<div class="aviso mal">No le ha llegado: no tiene las notificaciones activadas o no ha abierto la app desde que las pidió.</div>'
+  } catch (e) { $('push-aviso').innerHTML = `<div class="aviso mal">No se ha podido mandar: ${esc(e.message)}</div>` }
+  $('push-enviar').disabled = false
+}
 let RIDERS = []
 // ORDENAR-TODO-1 (15-oct, Mario): «todas las columnas las tengo que tener ordenadas de más a menos […] todas las filas que
 // aparezcan en la web de admin». Testers y Riders con los helpers de ADMIN-ORDEN-1; las tablas de las fichas, ordenables al
@@ -455,18 +510,24 @@ document.addEventListener('click', (ev) => {
 })
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
+  await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
   const base = RIDERS.slice().sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')) // sin columna elegida: el último que abrió arriba
   marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
   $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
-    <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}</td>
-    <td>${hace(r.abrio)}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td></tr>`).join('') || '<tr><td colspan="7" class="sub">Sin cuentas.</td></tr>'
+    <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
+    <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
+    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || '<tr><td colspan="7" class="sub">Sin cuentas.</td></tr>'
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
 clicCab('t-cab', ordenT, () => cargarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
-$('r-filas').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') }
+$('r-filas').onclick = (ev) => {
+  const a = ev.target.closest('.r-avisar')
+  if (a) { const r = RIDERS.find(x => x.email === a.dataset.email); return abrirAviso(r.email, r.rider || r.email, r.abrio, r.movil, r.version) }
+  const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid')
+}
 let fichaVuelve = 'test'
 $('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else cargarRiders() }
 const dato = (k, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3"><span class="sub">${k}</span><b style="text-align:right">${v}</b></div>`
@@ -482,15 +543,18 @@ async function verFicha(email, vuelve) {
   $('f-cuerpo').innerHTML = '<div class="sub">Cargando la ficha…</div>'
   let f
   try { f = await invitar({ modo: 'ficha', email }) } catch (e) { $('f-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido cargar la ficha: ${esc(e.message)}</div>`; return }
+  FICHA = f
   const w = f.web, p = f.perfil, u = f.uso, c = f.cuenta
   const web = w ? dato('Se apuntó', fechaHora(w.creado_at)) + dato('Confirmó el correo', w.confirmado_at ? fechaHora(w.confirmado_at) : 'Aún no') +
       dato('Quiere probar la app', w.quiere_probar ? 'Sí · ' + movilTxt(w.plataforma) : 'No') + dato('Invitación', w.invitado_at ? 'Enviada el ' + fechaHora(w.invitado_at) : 'Sin enviar') +
       (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
+      (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
       dato('Versión', esc(p?.app_version || '—') + (p?.app_build ? ' (' + esc(p.app_build) + ')' : '')) +
-      dato('Abrió la app por última vez', p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') +
+      dato('Abrió la app por última vez', (p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') + (dormido(p?.app_version_at) ? ' <span class="chip rojo">Dormido</span>' : '')) +
+      (vieja(p?.app_platform, p?.app_version) ? dato('Al día', '<span class="chip amar">Versión vieja</span>') : '') +
       dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
     : '<div class="sub">Todavía no tiene cuenta en la app.</div>'
   const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}
@@ -506,14 +570,20 @@ async function verFicha(email, vuelve) {
       `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
       <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
     : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie con «Invita a tu grupo».' : '—'}</div>`
-  $('f-cuerpo').innerHTML = `<div><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
+  await cargarUltima()
+  $('f-cuerpo').innerHTML = `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><div style="flex-grow:1"><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
+    ${c ? '<button class="btn2" id="f-avisar">Mandarle un aviso</button>' : ''}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a</div>${inv}</div></div>
     <div class="col"><div class="card"><div style="font-weight:800;margin-bottom:6px">En la web</div>${web}</div>
       <div class="card"><div style="font-weight:800;margin-bottom:6px">En la app</div>${app}</div></div></div>`
 }
-$('f-cuerpo').onclick = (ev) => { const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve) }
+let FICHA = null
+$('f-cuerpo').onclick = (ev) => {
+  if (ev.target.closest('#f-avisar') && FICHA) return abrirAviso(FICHA.email, FICHA.perfil?.nickname || FICHA.email, FICHA.perfil?.app_version_at, FICHA.perfil?.app_platform, FICHA.perfil?.app_version)
+  const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve)
+}
 $('a-anadir').onclick = async () => {
   const email = $('a-correo').value.trim(), plataforma = $('a-movil').value, nombre = $('a-nombre').value.trim()
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return tAviso('Pon un correo válido.')
