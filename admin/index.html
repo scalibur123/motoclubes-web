@@ -193,11 +193,13 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <button class="btn2" id="a-anadir">Añadir a la lista</button>
     <div class="sub" style="width:100%">Entra como «Por invitar», con «En persona» como origen. Después pulsas su botón Invitar y le llega el correo.</div>
   </div>
+  <div class="opc" id="t-periodo"></div><!-- PERIODO-1 -->
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
 </main>
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
   <div id="r-aviso"></div>
+  <div class="opc" id="r-periodo"></div><!-- PERIODO-1 -->
   <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
 <!-- TESTERS-SEGUIMIENTO-1: el aviso (push) a un rider -->
@@ -422,11 +424,12 @@ async function cargarTesters() {
     : t.estado === 'invitado' && sinRespuesta(t) ? `<span class="chip rojo">Sin respuesta</span> <span class="sub">invitado el ${fecha(t.invitado_at)} · recordatorio el ${fecha(t.recordatorio_at)}</span>`
     : t.estado === 'invitado' && t.recordatorio_at && !t.clic_at ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span> <span class="chip amar">Recordatorio el ${fecha(t.recordatorio_at)}</span>` : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
-  const base = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
+  pintarPeriodo('t-periodo', TESTERS, (t) => t.apuntado, 'se apuntaron', perT, (k) => { perT = k; cargarTesters() }) // PERIODO-1
+  const base = TESTERS.filter(t => enPeriodo(t.apuntado, perT)).sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
   marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
   $('t-filas').innerHTML = ordenar(base, ordenT, (t, k) => k === 'estado' ? orden[t.estado] : k === 'origen' ? deDonde(t.origen) : k === 'plataforma' ? movilTxt(t.plataforma) : t[k]).map(t => `<tr>
     <td><button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
-    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${est(t)}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">Nadie en la lista.</td></tr>'
+    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${est(t)}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">${perT === 'todos' ? 'Nadie en la lista.' : 'Nadie se apuntó en ese periodo.'}</td></tr>`
 }
 async function verCorreo(plataforma) {
   const w = window.open('', '_blank'); if (!w) return tAviso('El navegador ha bloqueado la ventana: permite las ventanas emergentes de motoclubes.es.')
@@ -496,6 +499,24 @@ $('push-enviar').onclick = async () => {
   } catch (e) { $('push-aviso').innerHTML = `<div class="aviso mal">No se ha podido mandar: ${esc(e.message)}</div>` }
   $('push-enviar').disabled = false
 }
+// PERIODO-1 (15-oct, Mario): «necesito poder verlos por nuevos en días, semanas, etc.». Botones encima de Testers (por el día en
+// que se apuntaron) y de Riders (por el día del alta), cada uno con cuántos hay. «Hoy» y «Ayer» son días de calendario; el resto,
+// los últimos N días contando hoy.
+const PERIODOS = [['todos', 'Todos'], ['hoy', 'Hoy'], ['ayer', 'Ayer'], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días']]
+let perT = 'todos', perR = 'todos'
+function enPeriodo(iso, k) {
+  if (k === 'todos') return true
+  if (!iso) return false
+  const d = new Date(iso), hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  if (k === 'hoy') return d >= hoy
+  if (k === 'ayer') { const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1); return d >= ayer && d < hoy }
+  const desde = new Date(hoy); desde.setDate(desde.getDate() - (Number(k) - 1)); return d >= desde
+}
+function pintarPeriodo(id, lista, fechaDe, verbo, actual, elegir) {
+  $(id).innerHTML = PERIODOS.map(([k, t]) => `<button type="button" data-p="${k}" class="${k === actual ? 'sel' : ''}">${t} · ${lista.filter(x => enPeriodo(fechaDe(x), k)).length}</button>`).join('') +
+    `<span class="sub" style="align-self:center;margin-left:4px">${actual === 'todos' ? '' : 'Solo los que ' + verbo + ' en ese periodo'}</span>`
+  $(id).onclick = (ev) => { const b = ev.target.closest('button[data-p]'); if (b) elegir(b.dataset.p) }
+}
 let RIDERS = []
 // ORDENAR-TODO-1 (15-oct, Mario): «todas las columnas las tengo que tener ordenadas de más a menos […] todas las filas que
 // aparezcan en la web de admin». Testers y Riders con los helpers de ADMIN-ORDEN-1; las tablas de las fichas, ordenables al
@@ -517,13 +538,14 @@ async function cargarRiders() {
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
-  const base = RIDERS.slice().sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')) // sin columna elegida: el último que abrió arriba
+  pintarPeriodo('r-periodo', RIDERS, (r) => r.alta, 'se dieron de alta', perR, (k) => { perR = k; cargarRiders() }) // PERIODO-1
+  const base = RIDERS.filter(r => enPeriodo(r.alta, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')) // sin columna elegida: el último que abrió arriba
   marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
   $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
     <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
     <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
-    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || '<tr><td colspan="7" class="sub">Sin cuentas.</td></tr>'
+    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="8" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie se dio de alta en ese periodo.'}</td></tr>`
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
 clicCab('t-cab', ordenT, () => cargarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
