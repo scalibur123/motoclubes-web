@@ -120,7 +120,7 @@
       <div class="gran">📬</div>
       <h1>¡Ya casi estás dentro!</h1>
       <p>Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.</p>
-      <p>En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.</p>
+      <p id="hecho-alta">En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.</p>
       <p id="hecho-plat"></p>
       <p>¿No te llega en unos minutos? Mira en <b>Spam</b> o en <b>Promociones</b>: a veces se esconde ahí.</p>
       <p style="margin-top:18px;font-size:14px">¿Algún problema para instalarla? Escríbenos a <a href="mailto:soporte@motoclubes.es" style="color:var(--naranja);font-weight:700">soporte@motoclubes.es</a></p>
@@ -203,6 +203,7 @@
       if (r.ok) {
         f.hidden = true;
         document.getElementById('hecho').hidden = false;
+        document.getElementById('hecho-alta').hidden = plat() === 'ios'; // iPhone entra solo: no hay «te damos de alta»
         document.getElementById('hecho-plat').textContent = plat() === 'android'
           ? 'Te llegará un enlace de Google Play. Ábrelo en tu móvil Android, en Chrome: el que tiene en Play Store el mismo Gmail que has puesto aquí.'
           : 'Al confirmar te enseñamos cómo instalarla en tu iPhone con TestFlight, y te lo mandamos también por correo.';
