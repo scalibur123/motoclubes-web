@@ -418,7 +418,7 @@ async function invitar(cuerpo) {
 let TESTERS = []
 async function cargarTesters() {
   try { TESTERS = (await invitar({ modo: 'lista' })).filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
-  const por = TESTERS.filter(t => t.estado === 'por_invitar'), inv = TESTERS.filter(t => t.estado === 'invitado'), app = TESTERS.filter(t => t.estado === 'tiene_app')
+  const por = TESTERS.filter(porInvitar), inv = TESTERS.filter(t => t.estado === 'invitado'), app = TESTERS.filter(t => t.estado === 'tiene_app')
   const n = (l, p) => l.filter(t => t.plataforma === p).length
   $('n-test').textContent = por.length
   $('t-cifras').innerHTML = `<div class="card cifra"><b>${por.length}</b><span>Por invitar · ${n(por, 'ios')} iPhone · ${n(por, 'android')} Android</span></div>
@@ -430,7 +430,7 @@ async function cargarTesters() {
   $('t-enviar').disabled = !por.length
   const est = (t) => playChip(t) + (t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
     : t.estado === 'invitado' && sinRespuesta(t) ? `<span class="chip rojo">Sin respuesta</span> <span class="sub">invitado el ${fecha(t.invitado_at)} · recordatorio el ${fecha(t.recordatorio_at)}</span>`
-    : t.estado === 'invitado' && t.recordatorio_at && !t.clic_at ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span> <span class="chip amar">Recordatorio el ${fecha(t.recordatorio_at)}</span>` : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`)
+    : t.estado === 'invitado' && t.recordatorio_at && !t.clic_at ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span> <span class="chip amar">Recordatorio el ${fecha(t.recordatorio_at)}</span>` : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : t.play_enviado_at ? '' : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`)
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
   pintarPeriodo('t-periodo', TESTERS, (t) => t.apuntado, 'se apuntaron', perT, (k) => { perT = k; cargarTesters() }) // PERIODO-1
   const base = TESTERS.filter(t => enPeriodo(t.apuntado, perT)).sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
@@ -510,6 +510,9 @@ $('push-enviar').onclick = async () => {
 // ENLACE-PLAY-1 (15-oct): Android que pasó por el formulario (pulsó la invitación o vino por /probar/) y aún no tiene la app:
 // botón para mandarle el correo de la marca con el enlace de Play en cuanto Mario le ha dado de alta en Play Console.
 const pasoFormulario = (t) => t.plataforma === 'android' && t.estado !== 'tiene_app' && (t.clic_at || (t.origen || '').startsWith('probar'))
+// PLAY-SIN-INVITAR-1 (15-oct, Mario: «¿cómo puede ser?»): a quien ya le mandaste el enlace de Play no le hace falta la invitación
+// de la lista: ni «Por invitar», ni su botón, ni entra en «Enviar invitación a N».
+function porInvitar(t) { return t.estado === 'por_invitar' && !t.play_enviado_at }
 const playChip = (t) => t.play_enviado_at ? `<span class="chip verde">Enlace de Play el ${fecha(t.play_enviado_at)}</span>${t.play_clic_at ? ' <span class="chip verde">Lo pulsó</span>' : ''} `
   : pasoFormulario(t) ? `<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button> ` : ''
 async function mandarPlay(email) {
@@ -665,14 +668,17 @@ $('t-filas').onclick = async (ev) => {
 $('t-ver-ios').onclick = () => verCorreo('ios')
 $('t-ver-and').onclick = () => verCorreo('android')
 $('t-enviar').onclick = async () => {
-  const por = TESTERS.filter(t => t.estado === 'por_invitar')
+  const por = TESTERS.filter(porInvitar)
   if (!por.length) return
   if (!confirm(`¿Mandar la invitación a ${por.length} personas ahora? Se manda una sola vez a cada una.`)) return
   $('t-enviar').disabled = true; tAviso('Enviando…', true)
-  try {
-    const r = await invitar({ modo: 'enviar' })
-    tAviso(r.fallos && r.fallos.length ? `Enviadas ${r.enviados} de ${r.total}. No salieron: ${esc(r.fallos.join(', '))}` : `✅ Enviadas ${r.enviados} invitaciones.`, !(r.fallos && r.fallos.length))
-  } catch (e) { tAviso('No se ha podido enviar: ' + esc(e.message)) }
+  // PLAY-SIN-INVITAR-1: uno a uno, solo a los de la lista de arriba (el envío «a todos» de la función no sabe lo del enlace de Play)
+  let enviados = 0; const fallos = []
+  for (const t of por) {
+    try { const r = await invitar({ modo: 'enviar', email: t.email }); if (r.enviados) enviados += r.enviados; else fallos.push(t.email) }
+    catch (e) { fallos.push(t.email) }
+  }
+  tAviso(fallos.length ? `Enviadas ${enviados} de ${por.length}. No salieron: ${esc(fallos.join(', '))}` : `✅ Enviadas ${enviados} invitaciones.`, !fallos.length)
   await cargarTesters()
 }
 $('p-altas').onclick = () => verPestana('altas')
