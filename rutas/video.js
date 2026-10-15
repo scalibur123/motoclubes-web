@@ -358,7 +358,8 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
   // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
   var fotosR = (function () {
-    var todas = Array.isArray(r.fotos) ? r.fotos : [], porDia = {};
+    // TRANSPI-PORTADA-1 (15-oct): la madre puede llevar de portada fotos que también están en su etapa: sin repetir (por URL).
+    var vistas = {}, todas = (Array.isArray(r.fotos) ? r.fotos : []).filter(function (f) { if (!f || vistas[f.url]) return false; vistas[f.url] = 1; return true; }), porDia = {};
     todas.forEach(function (f) { (porDia[f.dia] = porDia[f.dia] || []).push(f); });
     var diasF = Object.keys(porDia).sort(function (a, b) { return a - b; });
     var cupo = diasF.length ? Math.ceil(12 / diasF.length) : 0, out = [];
