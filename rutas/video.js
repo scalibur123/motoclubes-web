@@ -300,24 +300,39 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   // REEL-CORTO-1: otro guion, solo con los tramos destacados
   var corto = VIDEO_CORTO && dest.length > 0, camTramo = [];
   if (corto) {
-    dest.forEach(function (d) { // el encuadre de cada tramo: que quepa entero con sus curvas
-      var bx1 = 1, bx2 = 0, by1 = 1, by2 = 0, paso = (d.b - d.a) / 60;
-      for (var k = 0; k <= 60; k++) { var q = enKm(d.a + k * paso); bx1 = Math.min(bx1, q.x); bx2 = Math.max(bx2, q.x); by1 = Math.min(by1, q.y); by2 = Math.max(by2, q.y); }
+    // 🔁 ZOOM-CERCA-1 (15-oct, 109.ª). Mario, con el primer reel corto: «deberías hacer un zoom más de detalle porque no se ve
+    // casi nada». Antes la cámara encuadraba el tramo entero y se quedaba quieta (de lejos, las curvas no se veían). Ahora:
+    // vuela hasta el principio del tramo, lo SIGUE de cerca mientras se pinta (de ancho de pantalla, lo que se rueda en ~2 s,
+    // 5 km como poco) y al acabar se aleja 1,4 s para ver el tramo entero en amarillo.
+    dest.forEach(function (d) {
+      var bx1 = 1, bx2 = 0, by1 = 1, by2 = 0, paso = (d.b - d.a) / 60, largoU = 0, prev = null;
+      for (var k = 0; k <= 60; k++) {
+        var q = enKm(d.a + k * paso); bx1 = Math.min(bx1, q.x); bx2 = Math.max(bx2, q.x); by1 = Math.min(by1, q.y); by2 = Math.max(by2, q.y);
+        if (prev) largoU += Math.hypot(q.x - prev.x, q.y - prev.y); prev = q;
+      }
       var zt = Math.min(Math.log2(400 / (512 * Math.max(bx2 - bx1, 1e-9))), Math.log2(520 / (512 * Math.max(by2 - by1, 1e-9))));
-      camTramo.push({ c: { x: (bx1 + bx2) / 2, y: (by1 + by2) / 2 }, z: Math.max(zFit + 1, Math.min(13.5, zt)) });
+      var largo = Math.max(d.b - d.a, 0.5), dur = Math.max(6, Math.min(10, largo / 3));
+      var anchoKm = Math.max(5, 2 * largo / dur), uKm = largoU / largo; // unidades del mapa por km de ruta
+      camTramo.push({ c: { x: (bx1 + bx2) / 2, y: (by1 + by2) / 2 }, z: Math.max(zFit + 1, Math.min(13.5, zt)),
+        zCerca: Math.max(zFit + 2, Math.min(13.5, Math.log2(540 / (512 * anchoKm * uKm)))), ancho: anchoKm, dur: dur });
     });
     tramos = []; t = 0;
     tramos.push({ tipo: "vista", a: t, b: t += 2.6 });
     dest.forEach(function (d, i) {
       tramos.push({ tipo: "vuelo", i: i, a: t, b: t += 1.8 });
-      tramos.push({ tipo: "tramo", i: i, a: t, b: t += Math.max(4, Math.min(7, (d.b - d.a) / 8)) });
+      tramos.push({ tipo: "tramo", i: i, a: t, b: t += camTramo[i].dur });
+      tramos.push({ tipo: "ver", i: i, a: t, b: t += 1.4 });
     });
     tramos.push({ tipo: "alejar", a: t, b: t += 1.6 });
     fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
     tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
     DUR = t;
   }
-  var EMPUJE = 0.25; // en el tramo, la cámara se acerca un poco mientras se dibuja
+  function sigueCerca(i, km) { // ZOOM-CERCA-1: mira un poco por delante del casco, en proporción al zoom
+    var w = camTramo[i].ancho, d = dest[i];
+    var ps = [km - 0.1 * w, km, km + 0.15 * w, km + 0.3 * w].map(function (k) { return enKm(Math.max(d.a - w, Math.min(d.b + w, Math.max(0, Math.min(total, k))))); });
+    return { x: (ps[0].x + ps[1].x + ps[2].x + ps[3].x) / 4, y: (ps[0].y + ps[1].y + ps[2].y + ps[3].y) / 4 };
+  }
 
   function tramoEn(t) { for (var i = 0; i < tramos.length; i++) if (t < tramos[i].b) return tramos[i]; return tramos[tramos.length - 1]; }
   function kmCabeza(t) {
@@ -326,6 +341,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
       if (tr.tipo === "vista") return 0;
       if (tr.tipo === "vuelo") return dest[tr.i].a;
       if (tr.tipo === "tramo") { var dd = dest[tr.i]; return dd.a + (dd.b - dd.a) * suave((t - tr.a) / (tr.b - tr.a)); }
+      if (tr.tipo === "ver") return dest[tr.i].b;
       return total;
     }
     if (tr.tipo === "vista" || tr.tipo === "zoom") return 0;
@@ -347,13 +363,14 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   function camara(t) {
     var tr = tramoEn(t);
     if (corto) { // REEL-CORTO-1
-      var fin = function (i) { return { c: camTramo[i].c, z: camTramo[i].z + EMPUJE }; };
+      var entero = function (i) { return { c: camTramo[i].c, z: camTramo[i].z }; }; // ZOOM-CERCA-1
       if (tr.tipo === "vuelo") {
-        var de = tr.i ? fin(tr.i - 1) : { c: cFit, z: zFit }, va = camTramo[tr.i];
-        var cv = interp(de.c, va.c, tramo(t, tr.a, tr.b), de.z, va.z); cv.fundir = true; return cv;
+        var de = tr.i ? entero(tr.i - 1) : { c: cFit, z: zFit }, va = sigueCerca(tr.i, dest[tr.i].a);
+        var cv = interp(de.c, va, tramo(t, tr.a, tr.b), de.z, camTramo[tr.i].zCerca); cv.fundir = true; return cv;
       }
-      if (tr.tipo === "tramo") { var ct = camTramo[tr.i]; return { c: ct.c, z: ct.z + EMPUJE * Math.min(1, (t - tr.a) / (tr.b - tr.a)), fundir: true }; }
-      if (tr.tipo === "alejar") { var de2 = fin(dest.length - 1), cl = interp(de2.c, cFit, tramo(t, tr.a, tr.b), de2.z, zFit); cl.fundir = true; return cl; }
+      if (tr.tipo === "tramo") return { c: sigueCerca(tr.i, kmCabeza(t)), z: camTramo[tr.i].zCerca, fundir: true };
+      if (tr.tipo === "ver") { var cw = interp(sigueCerca(tr.i, dest[tr.i].b), camTramo[tr.i].c, tramo(t, tr.a, tr.b), camTramo[tr.i].zCerca, camTramo[tr.i].z); cw.fundir = true; return cw; }
+      if (tr.tipo === "alejar") { var de2 = entero(dest.length - 1), cl = interp(de2.c, cFit, tramo(t, tr.a, tr.b), de2.z, zFit); cl.fundir = true; return cl; }
       return { c: cFit, z: zFit };
     }
     if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
@@ -532,8 +549,9 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // CARTEL-CARRETERA-1: el número de la carretera en su cartel, sobre lo amarillo, ~190 px por detrás del casco
-        if (tr.tipo === "dibujo" || tr.tipo === "tramo") G.dest.forEach(function (d) {
+        if (tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") G.dest.forEach(function (d) {
           if (!d.num || km <= d.a) return;
+          if (G.corto && G.dest.indexOf(d) !== tr.i) return; // ZOOM-CERCA-1: solo el cartel del tramo en el que se está
           var aC = Math.min(1, (km - d.a) / 0.6) * G.cercania(km); if (aC <= 0.02) return;
           var pxKm = d.pxKm * Math.pow(2, cam.z - d.zPx);
           var kS = Math.max(d.a, Math.min(d.b, km - 190 / pxKm)), q = pr(G.enKm(kS));
@@ -573,12 +591,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         });
 
         // casco
-        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura" && (!G.corto || tr.tipo === "tramo" || tr.tipo === "vuelo")) { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
+        if (tr.tipo !== "resumen" && tr.tipo !== "cierre" && tr.tipo !== "foto" && tr.tipo !== "puertos" && tr.tipo !== "captura" && (!G.corto || tr.tipo === "tramo" || tr.tipo === "vuelo" || tr.tipo === "ver")) { var lc = VIDEO_V6 ? 112 : 96; ctx.drawImage(casco, cab.x - lc / 2, cab.y - lc / 2, lc, lc); }
 
         // 🆕 SUPERCARRETERA-1 (15-oct, 109.ª). Mario, con el reel de referencia: «la carretera marcada en amarillo y una flecha
         // moviéndose que decía supercarretera […] con un poco de gracia». En cada tramo destacado, encima del casco, una flecha
         // que rebota apuntándole y el letrero «¡SUPERCARRETERA! 🔥» (entra y sale con la cercanía al tramo, como el zoom).
-        if ((tr.tipo === "dibujo" || tr.tipo === "tramo") && G.dest.length) {
+        if ((tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") && G.dest.length) {
           var aS = G.cercania(km);
           if (aS > 0.05) {
             var rebote = Math.sin(t * 7) * 14, inclina = Math.sin(t * 3) * 0.06;
@@ -605,7 +623,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         }
 
         // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
-        if ((tr.tipo === "dibujo" || tr.tipo === "tramo") && G.dest.length) {
+        if ((tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") && G.dest.length) {
           var dAct = null; G.dest.forEach(function (d) { if (km >= d.a - DESTACAR.BORDE_KM && km <= d.b + DESTACAR.BORDE_KM) dAct = d; });
           var aD = G.cercania(km);
           if (dAct && aD > 0.02) {
