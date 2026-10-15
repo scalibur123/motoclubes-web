@@ -122,6 +122,7 @@
       <p>Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.</p>
       <p>En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.</p>
       <p id="hecho-plat"></p>
+      <p style="margin-top:18px;font-size:14px">¿Algún problema para instalarla? Escríbenos a <a href="mailto:soporte@motoclubes.es" style="color:var(--naranja);font-weight:700">soporte@motoclubes.es</a></p>
     </div>
   </section>
 
@@ -202,7 +203,7 @@
         f.hidden = true;
         document.getElementById('hecho').hidden = false;
         document.getElementById('hecho-plat').textContent = plat() === 'android'
-          ? 'Te llegará un enlace de Google Play: ábrelo en el móvil, en Chrome.'
+          ? 'Te llegará un enlace de Google Play. Ábrelo en tu móvil Android, en Chrome: el que tiene en Play Store el mismo Gmail que has puesto aquí.'
           : 'Te llegará un correo de Apple (TestFlight) con los pasos para instalarla.';
         window.scrollTo(0, 0);
       } else if (r.status === 400) decir('Revisa el correo, parece que no está bien escrito.');
