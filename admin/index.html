@@ -404,7 +404,7 @@ async function cargarTesters() {
     <div class="card cifra"><b>${TESTERS.length}</b><span>Total en la lista</span></div>`
   $('t-enviar').textContent = por.length ? `Enviar invitación a ${por.length}` : 'Nadie por invitar'
   $('t-enviar').disabled = !por.length
-  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
+  const est = (t) => t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
   const base = TESTERS.slice().sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
   marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
@@ -471,6 +471,12 @@ let fichaVuelve = 'test'
 $('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else cargarRiders() }
 const dato = (k, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3"><span class="sub">${k}</span><b style="text-align:right">${v}</b></div>`
 const cifra = (n, t) => `<div class="card cifra" style="padding:16px"><b>${n}</b><span>${t}</span></div>`
+// INVITACION-SEGUIMIENTO-1 (15-oct): en qué quedó el correo de la invitación, según Resend (se pregunta al abrir la ficha).
+// «Entregado» = su servidor de correo lo aceptó; si cayó en la bandeja o en spam no lo dice nadie: por eso el clic.
+const CORREO_TXT = { delivered: '✅ Entregado', sent: 'Enviado, entregándose', delivery_delayed: '⏳ Retrasado, se sigue intentando',
+  bounced: '❌ Rebotado: la dirección no existe o no admite correo', complained: '⚠️ Lo marcó como spam', failed: '❌ No se pudo enviar',
+  suppressed: '❌ No enviado: dirección bloqueada', opened: '✅ Abierto', clicked: '✅ Pulsado' }
+const correoTxt = (c) => !c ? 'Sin datos (enviado antes del seguimiento)' : c.error ? 'No se ha podido consultar' : (CORREO_TXT[c.estado] || esc(c.estado || '—'))
 async function verFicha(email, vuelve) {
   fichaVuelve = vuelve; verPestana('ficha'); window.scrollTo(0, 0)
   $('f-cuerpo').innerHTML = '<div class="sub">Cargando la ficha…</div>'
@@ -479,6 +485,7 @@ async function verFicha(email, vuelve) {
   const w = f.web, p = f.perfil, u = f.uso, c = f.cuenta
   const web = w ? dato('Se apuntó', fechaHora(w.creado_at)) + dato('Confirmó el correo', w.confirmado_at ? fechaHora(w.confirmado_at) : 'Aún no') +
       dato('Quiere probar la app', w.quiere_probar ? 'Sí · ' + movilTxt(w.plataforma) : 'No') + dato('Invitación', w.invitado_at ? 'Enviada el ' + fechaHora(w.invitado_at) : 'Sin enviar') +
+      (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +

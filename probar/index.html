@@ -132,6 +132,20 @@
 (function () {
   var U = 'https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-aviso';
   var q = new URLSearchParams(location.search);
+  // INVITACION-SEGUIMIENTO-1 (109.ª, 15-oct): los botones del correo de invitación traen el token de la persona (&t=…). Se
+  // apunta el clic (web-aviso, t:'clic') para que Mario sepa en la ficha que le llegó y la abrió. «ir=testflight» es el botón de
+  // iPhone: apunta el clic y sigue a la página de Apple de siempre.
+  var tk = (q.get('t') || '').toLowerCase();
+  var clic = /^[0-9a-f]{64}$/.test(tk) ? fetch(U, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
+    body: JSON.stringify({ t: 'clic', token: tk }) }).catch(function () {}) : null;
+  if (q.get('ir') === 'testflight') {
+    var TF = 'https://testflight.apple.com/join/VjFUgfMa';
+    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Abriendo la página de Apple…</p>' +
+      '<p style="margin-top:14px"><a href="' + TF + '" style="color:var(--naranja);font-weight:700">Si no se abre, pulsa aquí</a></p></section>';
+    var ir = function () { location.replace(TF); };
+    if (clic) { Promise.race([clic, new Promise(function (ok) { setTimeout(ok, 1200); })]).then(ir); } else ir();
+    return;
+  }
   // El nickname de la app: letras, números y guion bajo (signup.tsx). Cualquier otra cosa se ignora.
   var de = (q.get('de') || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 30);
   // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
