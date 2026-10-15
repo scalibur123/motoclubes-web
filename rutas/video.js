@@ -110,6 +110,10 @@ var VIDEO = {
   DIBUJO_MIN: 20, DIBUJO_MAX: 58, KM_POR_S: 15,
   ESTILO: "outdoors-v12"
 };
+// 🆕 MAPA-SATELITE-1 (15-oct, 109.ª). Mario, con un reel de referencia (vista de satélite, la curva señalada con una flecha
+// amarilla): «te envío un poco la idea». Con «&mapa=satelite» en el enlace, las teselas son de satélite con carreteras y
+// nombres (satellite-streets-v12). Sin el parámetro, el mapa de siempre.
+if (/[?&]mapa=satelite(&|$)/.test(location.search)) VIDEO.ESTILO = "satellite-streets-v12";
 
 function mercX(lng) { return (lng + 180) / 360; }
 function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
