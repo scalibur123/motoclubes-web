@@ -83,8 +83,7 @@
     <span class="pr-enlace" id="enlace-ver"></span>
     <div class="pr-botones">
       <a class="boton boton-wa" id="b-wa" href="#">💬 Mandar por WhatsApp</a>
-      <button class="boton boton-borde" id="b-copiar" type="button">📋 Copiar enlace</button>
-      <button class="boton boton-borde" id="b-otras" type="button" hidden>↗️ Otras apps</button>
+      <button class="boton boton-borde" id="b-otras" type="button">Compartir de otra forma</button>
     </div>
     <p class="pr-msg" id="msg-compartir" role="status"></p>
     <p class="pr-pie">Cuantos más salgáis juntos, mejor se prueba la radio del grupo.</p>
@@ -144,18 +143,22 @@
     var texto = '¡Vente a probar MOTOCLUBes! Es la app para salir en moto en grupo: todos en el mapa y hablando por el intercom del casco. Apúntate aquí y te llega un correo de MOTOCLUBes para confirmar (si no lo ves, mira en spam): ' + enlace;
     document.getElementById('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
     var msg = document.getElementById('msg-compartir');
-    document.getElementById('b-copiar').addEventListener('click', function () {
-      var ok = function () { msg.className = 'pr-msg'; msg.textContent = '✅ Copiado. Pégalo en tu grupo.'; };
+    // Un solo botón además de WhatsApp (Mario, 15-oct): el menú de compartir del teléfono, que ya trae «Copiar».
+    // Sin ese menú (algunos navegadores de ordenador), el botón copia el enlace.
+    var otras = document.getElementById('b-otras');
+    var copiar = function () {
+      var ok = function () { msg.className = 'pr-msg'; msg.textContent = '✅ Enlace copiado. Pégalo en tu grupo.'; };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(enlace).then(ok, function () { msg.textContent = enlace; });
       } else { msg.textContent = enlace; }
-    });
+    };
     if (navigator.share) {
-      var otras = document.getElementById('b-otras');
-      otras.hidden = false;
       otras.addEventListener('click', function () {
         navigator.share({ title: 'MOTOCLUBes', text: texto.replace(' ' + enlace, ''), url: enlace }).catch(function () {});
       });
+    } else {
+      otras.textContent = 'Copiar el enlace';
+      otras.addEventListener('click', copiar);
     }
     return;
   }
