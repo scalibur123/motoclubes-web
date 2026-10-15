@@ -136,11 +136,14 @@
   // apunta el clic (web-aviso, t:'clic') para que Mario sepa en la ficha que le llegó y la abrió. «ir=testflight» es el botón de
   // iPhone: apunta el clic y sigue a la página de Apple de siempre.
   var tk = (q.get('t') || '').toLowerCase();
+  // ENLACE-PLAY-1: «ir=play» es el botón del correo con el enlace de Play (se apunta aparte: que:'play').
+  var irA = q.get('ir') === 'testflight' ? 'https://testflight.apple.com/join/VjFUgfMa'
+    : q.get('ir') === 'play' ? 'https://play.google.com/apps/internaltest/4701228085350749079' : null;
   var clic = /^[0-9a-f]{64}$/.test(tk) ? fetch(U, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
-    body: JSON.stringify({ t: 'clic', token: tk }) }).catch(function () {}) : null;
-  if (q.get('ir') === 'testflight') {
-    var TF = 'https://testflight.apple.com/join/VjFUgfMa';
-    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Abriendo la página de Apple…</p>' +
+    body: JSON.stringify({ t: 'clic', token: tk, que: q.get('ir') === 'play' ? 'play' : 'invitacion' }) }).catch(function () {}) : null;
+  if (irA) {
+    var TF = irA;
+    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Abriendo la página de ' + (q.get('ir') === 'play' ? 'Google Play' : 'Apple') + '…</p>' +
       '<p style="margin-top:14px"><a href="' + TF + '" style="color:var(--naranja);font-weight:700">Si no se abre, pulsa aquí</a></p></section>';
     var ir = function () { location.replace(TF); };
     if (clic) { Promise.race([clic, new Promise(function (ok) { setTimeout(ok, 1200); })]).then(ir); } else ir();
