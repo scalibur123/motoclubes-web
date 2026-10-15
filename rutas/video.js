@@ -114,6 +114,10 @@ var VIDEO = {
 // amarilla): «te envío un poco la idea». Con «&mapa=satelite» en el enlace, las teselas son de satélite con carreteras y
 // nombres (satellite-streets-v12). Sin el parámetro, el mapa de siempre.
 if (/[?&]mapa=satelite(&|$)/.test(location.search)) VIDEO.ESTILO = "satellite-streets-v12";
+// 🆕 SOLO-LINEA-1 (15-oct, 109.ª). Mario, para el reel del día 1: «quitaría todos los puntos […] solamente con la línea».
+//   &solo=puertos → fuera gasolineras, comidas, hoteles y demás paradas (en el mapa y abajo); quedan los puertos.
+//   &solo=linea   → fuera también los puertos: solo la línea, los tramos amarillos y sus carteles.
+var VIDEO_SOLO = (location.search.match(/[?&]solo=(puertos|linea)(?:&|$)/) || [])[1] || null;
 
 function mercX(lng) { return (lng + 180) / 360; }
 function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
@@ -306,7 +310,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
 
   // Lo que sale abajo al pasar: pueblos (el «Pueblo» de «Carretera · Pueblo»), puertos y paradas con su icono.
   var avisos = [];
-  paradas.forEach(function (p) {
+  if (!VIDEO_SOLO) paradas.forEach(function (p) { // SOLO-LINEA-1
     if (p.w.waypointType === "puerto" || p.inicio || p.fin) return; // los puertos van aparte; salida y llegada, en las tarjetas
     // v5, Mario: «los puntos de pasada no, porque confunden»: solo paradas de verdad (y los puertos, arriba)
     if (["gasolinera", "restaurante", "hotel", "camping", "lugar_interes", "mirador"].indexOf(p.w.waypointType) < 0) return;
@@ -316,7 +320,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
     var txt = partes.length > 1 && (!p.w.waypointType || /^[A-Z]{1,3}-?\d/.test(partes[0])) ? partes[partes.length - 1] : nom;
     avisos.push({ km: kmF(p.km), txt: p.t.e + " " + txt });
   });
-  puertos.forEach(function (pu) { avisos.push({ km: kmF(pu.km), txt: "🏔️ " + pu.name + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "") }); });
+  if (VIDEO_SOLO !== "linea") puertos.forEach(function (pu) { avisos.push({ km: kmF(pu.km), txt: "🏔️ " + pu.name + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "") }); });
   avisos.sort(function (a, b) { return a.km - b.km; });
 
   return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
@@ -492,13 +496,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
         // paradas y puertos ya alcanzados
         var detalle = cam.z > G.zFit + 1;
-        paradasVideo.forEach(function (p) {
+        if (!VIDEO_SOLO) paradasVideo.forEach(function (p) { // SOLO-LINEA-1
           if (G.kmF(p.km) > km + 0.01) return;
           var q = pr({ x: mercX(p.w.lng), y: mercY(p.w.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 26, 0, 2 * Math.PI); ctx.fillStyle = p.t.c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
           ctx.font = "28px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textBaseline = "middle"; escribir(ctx, p.t.e, q.x, q.y + 1, "center");
         });
-        puertos.forEach(function (pu) {
+        if (VIDEO_SOLO !== "linea") puertos.forEach(function (pu) {
           if (G.kmF(pu.km) > km + 0.01) return;
           var q = pr({ x: mercX(pu.lng), y: mercY(pu.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 30, 0, 2 * Math.PI); ctx.fillStyle = "#7C3AED"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
