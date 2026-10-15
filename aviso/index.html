@@ -27,10 +27,9 @@
     <h1 id="titulo">…</h1>
     <p id="texto"></p>
     <button class="boton boton-principal" id="accion" style="display:none;cursor:pointer;font:inherit;font-weight:700;margin:0 auto 14px"></button>
-    <!-- TESTERS-COMPANEROS-1 (109.ª): iPhone que llega por /probar/ → los dos pasos de TestFlight, aquí mismo. -->
+    <!-- TESTERS-COMPANEROS-1 (109.ª): iPhone que llega por /probar/ → un botón a la invitación pública de TestFlight; la página de Apple ya trae el paso 1 (instalar TestFlight) y el 2 (visto por Mario el 15-oct). -->
     <div id="tf" style="display:none;margin:0 0 18px">
-      <a class="boton boton-principal" id="tf-app" href="#" style="width:100%;justify-content:center;margin-bottom:10px">1 · Instalar TestFlight</a>
-      <a class="boton boton-principal" id="tf-inv" href="#" style="width:100%;justify-content:center">2 · Abrir la invitación</a>
+      <a class="boton boton-principal" id="tf-inv" href="#" style="width:100%;justify-content:center">Instalar MOTOCLUBes</a>
     </div>
     <a class="boton boton-suave" href="/" id="volver">motoclubes.es</a>
   </div>
@@ -42,7 +41,7 @@
           ya: 'Ya estaba confirmado', yat: 'No tienes que hacer nada más: te avisaremos cuando salga.',
           oktp: 'En cuanto te demos de alta te llega la invitación para instalar MOTOCLUBes. Si no la ves, mira en Spam o en Promociones. ¡Nos vemos en la carretera!',
           yatp: 'No tienes que hacer nada más: en cuanto te demos de alta te llega la invitación para instalarla.',
-          tf: '¡Ya estás dentro!', tft: 'Son dos pasos, desde el iPhone: pulsa los dos botones en orden. También te lo hemos mandado por correo (si no lo ves, mira en Spam).',
+          tf: '¡Ya estás dentro!', tft: 'Pulsa el botón desde tu iPhone. Te lleva a la página de Apple: si no tienes TestFlight, el paso 1 te lo instala; luego vuelve a esa misma página y pulsa el paso 2. También te lo hemos mandado por correo (si no lo ves, mira en Spam).',
           baja: 'Te hemos dado de baja', bajat: 'No te escribiremos más. Si cambias de idea, vuelve a apuntarte en la web.',
           mal: 'Este enlace no vale', malt: 'Puede que haya caducado. Vuelve a apuntarte en la web y te mandamos otro.',
           err: 'Algo ha fallado', errt: 'Inténtalo de nuevo en un momento.' },
@@ -92,7 +91,6 @@
       if (baja) return poner('baja', 'bajat');
       // TESTERS-COMPANEROS-1 (109.ª): si viene de /probar/, el texto de tester (solo hay versión en castellano: la página es en castellano).
       if (x.j.testflight && t.tf) {
-        document.getElementById('tf-app').href = x.j.testflight_app;
         document.getElementById('tf-inv').href = x.j.testflight;
         document.getElementById('tf').style.display = 'block';
         document.getElementById('volver').style.display = 'none';
