@@ -35,6 +35,8 @@
   var T = {
     es: { esp: 'Un momento…', pre: 'Confirma tu correo', pret: 'Pulsa el botón y listo.', btn: 'Confirmar mi correo', pbaja: '¿Darte de baja?', btnbaja: 'Darme de baja', ok: '¡Correo confirmado!', okt: 'Te avisaremos el día que MOTOCLUBes salga en App Store y Google Play.',
           ya: 'Ya estaba confirmado', yat: 'No tienes que hacer nada más: te avisaremos cuando salga.',
+          oktp: 'En cuanto te demos de alta te llega la invitación para instalar MOTOCLUBes. ¡Nos vemos en la carretera!',
+          yatp: 'No tienes que hacer nada más: en cuanto te demos de alta te llega la invitación para instalarla.',
           baja: 'Te hemos dado de baja', bajat: 'No te escribiremos más. Si cambias de idea, vuelve a apuntarte en la web.',
           mal: 'Este enlace no vale', malt: 'Puede que haya caducado. Vuelve a apuntarte en la web y te mandamos otro.',
           err: 'Algo ha fallado', errt: 'Inténtalo de nuevo en un momento.' },
@@ -82,7 +84,9 @@
       if (x.s === 404) return poner('mal', 'malt');
       if (x.s !== 200) return poner('err', 'errt');
       if (baja) return poner('baja', 'bajat');
-      poner(x.j.estado === 'ya' ? 'ya' : 'ok', x.j.estado === 'ya' ? 'yat' : 'okt');
+      // TESTERS-COMPANEROS-1 (109.ª): si viene de /probar/, el texto de tester (solo hay versión en castellano: la página es en castellano).
+      var p = x.j.probar && t.oktp ? 'p' : '';
+      poner(x.j.estado === 'ya' ? 'ya' : 'ok', (x.j.estado === 'ya' ? 'yat' : 'okt') + p);
     }).catch(function () { poner('err', 'errt'); })
     .then(function () { boton.style.display = 'none'; });
   });

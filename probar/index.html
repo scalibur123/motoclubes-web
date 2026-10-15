@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Prueba MOTOCLUBes</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0E0E0E">
+<meta property="og:title" content="Vente a probar MOTOCLUBes">
+<meta property="og:description" content="La app para salir en moto en grupo: todos en el mapa y hablando por el intercom del casco. Apúntate y te mandamos la invitación.">
+<meta property="og:image" content="https://www.motoclubes.es/img/helmet-256.png">
+<link rel="icon" type="image/png" href="../img/helmet-256.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/mc.css">
+<!-- TESTERS-COMPANEROS-1 (109.ª, 15-oct-2026). Página de alta de los compañeros de un tester.
+     · ?de=<nickname>&compartir=1 → la abre el tester desde la carta de bienvenida: pantalla «Pásaselo a tu grupo»
+       (WhatsApp, copiar, otras apps). El enlace que comparte NO lleva compartir=1.
+     · ?de=<nickname>            → la abre el compañero: «<nickname> te invita…» y el formulario.
+     El alta va a web-aviso (la caja «Avísame») con probar=true, la plataforma, origen «probar-<nickname>» y f:'probar'
+     (correo de confirmar con el texto de tester; al confirmar, aviso a Mario para darle de alta).
+     noindex: no la enlaza la web; solo llega desde la carta. -->
+<style>
+  .pr { max-width: 480px; margin: 28px auto 48px; padding: 0 18px; }
+  .pr-caja { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 24px; padding: 28px 22px; }
+  .pr-casco { width: 72px; height: 72px; border-radius: 18px; background: #fff; padding: 6px; margin: 0 auto 16px; }
+  .pr h1 { font-size: 25px; line-height: 1.25; text-align: center; margin-bottom: 10px; letter-spacing: -.3px; }
+  .pr h1 b { color: var(--naranja); }
+  .pr .sub { color: var(--texto-2); font-size: 15.5px; text-align: center; margin-bottom: 22px; }
+  .pr-puntos { list-style: none; margin: 0 0 22px; display: grid; gap: 10px; }
+  .pr-puntos li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
+  .pr-puntos li span { font-size: 20px; line-height: 1.2; flex: none; }
+  .pr-titulo { font-weight: 800; font-size: 15px; margin: 4px 0 10px; }
+  .pr-movil { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .pr-movil label { cursor: pointer; }
+  .pr-movil input { position: absolute; opacity: 0; pointer-events: none; }
+  .pr-movil .op { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; border-radius: 16px;
+    border: 1.5px solid var(--borde); background: var(--fondo-2); font-weight: 700; font-size: 15px; transition: border-color .15s, background .15s; }
+  .pr-movil .op i { font-style: normal; font-size: 24px; }
+  .pr-movil input:checked + .op { border-color: var(--naranja); background: var(--naranja-suave); }
+  .pr-movil input:focus-visible + .op { outline: 2px solid var(--naranja); outline-offset: 2px; }
+  .pr input[type=email] { width: 100%; min-height: 52px; padding: 13px 15px; border-radius: 14px; border: 1.5px solid var(--borde);
+    background: var(--fondo-2); color: var(--texto); font: inherit; font-size: 16px; }
+  .pr input[type=email]:focus { outline: none; border-color: var(--naranja); }
+  .pr-ayuda { font-size: 13.5px; color: var(--texto-2); margin: 8px 2px 0; line-height: 1.5; }
+  .pr-casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--texto-2); margin: 16px 0 18px; line-height: 1.5; }
+  .pr-casilla input { margin-top: 3px; accent-color: var(--naranja); width: 18px; height: 18px; flex: none; }
+  .pr-casilla a { color: var(--texto); text-decoration: underline; }
+  .pr .boton { width: 100%; justify-content: center; min-height: 54px; font: inherit; font-weight: 800; font-size: 16.5px; cursor: pointer; }
+  .pr .boton[disabled] { opacity: .6; cursor: default; }
+  .pr-msg { min-height: 1em; margin-top: 12px; font-size: 14.5px; text-align: center; }
+  .pr-msg.error { color: #ff8a8a; }
+  .pr-hecho { text-align: center; }
+  .pr-hecho .gran { font-size: 46px; line-height: 1; margin-bottom: 12px; }
+  .pr-hecho p { color: var(--texto-2); font-size: 15.5px; margin-bottom: 10px; }
+  .pr-hecho p b { color: var(--texto); }
+  .pr-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .pr-enlace { display: block; background: var(--fondo-2); border: 1px dashed rgba(255,122,26,.5); border-radius: 14px; padding: 13px 14px;
+    font-size: 15px; text-align: center; color: var(--texto); word-break: break-all; margin: 0 0 16px; }
+  .pr-botones { display: grid; gap: 10px; }
+  .boton-wa { background: #25D366; border-color: #25D366; color: #0b2b15; }
+  .boton-borde { background: transparent; border: 1.5px solid var(--borde); color: var(--texto); }
+  .pr-pie { text-align: center; color: var(--texto-3); font-size: 12.5px; margin-top: 18px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="../">
+      <img src="../img/helmet-256.png" alt="MOTOCLUBes">
+      MOTOCLUB<span>es</span>
+    </a>
+  </div>
+</header>
+
+<main class="pr">
+
+  <!-- PANTALLA 1 · el tester (llega desde su carta) -->
+  <section class="pr-caja" id="vista-compartir" hidden>
+    <img class="pr-casco" src="../img/helmet-256.png" alt="">
+    <h1>Pásaselo a <b>tu grupo</b></h1>
+    <p class="sub">Con este enlace tus compañeros de ruta se apuntan en un minuto y les mandamos la invitación para instalar MOTOCLUBes, en iPhone o en Android.</p>
+    <span class="pr-enlace" id="enlace-ver"></span>
+    <div class="pr-botones">
+      <a class="boton boton-wa" id="b-wa" href="#">💬 Mandar por WhatsApp</a>
+      <button class="boton boton-borde" id="b-copiar" type="button">📋 Copiar enlace</button>
+      <button class="boton boton-borde" id="b-otras" type="button" hidden>↗️ Otras apps</button>
+    </div>
+    <p class="pr-msg" id="msg-compartir" role="status"></p>
+    <p class="pr-pie">Cuantos más salgáis juntos, mejor se prueba la radio del grupo.</p>
+  </section>
+
+  <!-- PANTALLA 2 · el compañero -->
+  <section class="pr-caja" id="vista-alta" hidden>
+    <img class="pr-casco" src="../img/helmet-256.png" alt="">
+    <h1 id="titulo-alta">Vente a probar <b>MOTOCLUBes</b></h1>
+    <p class="sub">La app para moteros, hecha por moteros. Pruébala antes de que salga en las tiendas.</p>
+    <ul class="pr-puntos">
+      <li><span>🗺️</span><div>Planifica tus rutas con curvas, puertos y gasolineras con el precio de hoy.</div></li>
+      <li><span>🏍️</span><div>Sal en grupo y ve a todos en el mapa, cada uno con su casco de color.</div></li>
+      <li><span>🎙️</span><div>Habla con tu grupo por el intercomunicador del casco con la radio del grupo.</div></li>
+    </ul>
+
+    <form id="form-alta" novalidate>
+      <p class="pr-titulo">¿Qué móvil tienes?</p>
+      <div class="pr-movil">
+        <label><input type="radio" name="plat" value="ios" checked><span class="op"><i>🍎</i>iPhone</span></label>
+        <label><input type="radio" name="plat" value="android"><span class="op"><i>🤖</i>Android</span></label>
+      </div>
+      <p class="pr-titulo" id="etiqueta-correo">Tu correo</p>
+      <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="tu@correo.com" aria-labelledby="etiqueta-correo" required>
+      <p class="pr-ayuda" id="ayuda-correo"></p>
+      <label class="pr-casilla"><input type="checkbox" name="acepta"> <span>He leído y acepto la <a href="/legal/privacidad/">política de privacidad</a></span></label>
+      <div class="pr-trampa" aria-hidden="true"><input type="text" name="web" tabindex="-1" autocomplete="off"></div>
+      <button class="boton boton-principal" type="submit">Quiero probarla</button>
+      <p class="pr-msg" id="msg-alta" role="status"></p>
+    </form>
+
+    <div class="pr-hecho" id="hecho" hidden>
+      <div class="gran">📬</div>
+      <h1>¡Ya casi estás dentro!</h1>
+      <p>Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.</p>
+      <p>En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.</p>
+      <p id="hecho-plat"></p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var U = 'https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-aviso';
+  var q = new URLSearchParams(location.search);
+  // El nickname de la app: letras, números y guion bajo (signup.tsx). Cualquier otra cosa se ignora.
+  var de = (q.get('de') || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 30);
+  var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
+
+  if (q.get('compartir') === '1') {
+    // ── El tester: compartir su enlace ──
+    document.getElementById('vista-compartir').hidden = false;
+    document.getElementById('enlace-ver').textContent = enlace.replace('https://', '');
+    var texto = '¡Vente a probar MOTOCLUBes! Es la app para salir en moto en grupo: todos en el mapa y hablando por el intercom del casco. Apúntate aquí y te mandan la invitación: ' + enlace;
+    document.getElementById('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+    var msg = document.getElementById('msg-compartir');
+    document.getElementById('b-copiar').addEventListener('click', function () {
+      var ok = function () { msg.className = 'pr-msg'; msg.textContent = '✅ Copiado. Pégalo en tu grupo.'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(enlace).then(ok, function () { msg.textContent = enlace; });
+      } else { msg.textContent = enlace; }
+    });
+    if (navigator.share) {
+      var otras = document.getElementById('b-otras');
+      otras.hidden = false;
+      otras.addEventListener('click', function () {
+        navigator.share({ title: 'MOTOCLUBes', text: texto.replace(' ' + enlace, ''), url: enlace }).catch(function () {});
+      });
+    }
+    return;
+  }
+
+  // ── El compañero: alta ──
+  document.getElementById('vista-alta').hidden = false;
+  if (de) document.getElementById('titulo-alta').innerHTML = '<b></b> te invita a probar MOTOCLUBes';
+  if (de) document.querySelector('#titulo-alta b').textContent = de;
+
+  var f = document.getElementById('form-alta');
+  var etiqueta = document.getElementById('etiqueta-correo');
+  var ayuda = document.getElementById('ayuda-correo');
+  var msgA = document.getElementById('msg-alta');
+  var plat = function () { return f.querySelector('input[name=plat]:checked').value; };
+  var pintar = function () {
+    if (plat() === 'android') {
+      etiqueta.textContent = 'El Gmail de tu Play Store';
+      ayuda.textContent = 'Google solo deja instalarla con esa cuenta. Lo ves en la app de Play Store, tocando tu foto arriba a la derecha.';
+      f.email.placeholder = 'tu@gmail.com';
+    } else {
+      etiqueta.textContent = 'Tu correo';
+      ayuda.textContent = 'Ahí te llega la invitación de Apple, con el nombre TestFlight: es la app de Apple para probar apps antes de que salgan en la tienda.';
+      f.email.placeholder = 'tu@correo.com';
+    }
+  };
+  f.querySelectorAll('input[name=plat]').forEach(function (r) { r.addEventListener('change', pintar); });
+  pintar();
+
+  var decir = function (t) { msgA.className = 'pr-msg error'; msgA.textContent = t; };
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = f.email.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return decir('Revisa el correo, parece que no está bien escrito.');
+    if (!f.acepta.checked) return decir('Marca la casilla de privacidad para poder apuntarte.');
+    var boton = f.querySelector('button');
+    boton.disabled = true; msgA.textContent = '';
+    fetch(U, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        t: 'alta', f: 'probar', email: email, i: 'es', o: de ? 'probar-' + de.toLowerCase() : 'probar',
+        probar: true, plat: plat(), acepta: true, web: f.web.value
+      })
+    }).then(function (r) {
+      if (r.ok) {
+        f.hidden = true;
+        document.getElementById('hecho').hidden = false;
+        document.getElementById('hecho-plat').textContent = plat() === 'android'
+          ? 'Te llegará un enlace de Google Play: ábrelo en el móvil, en Chrome.'
+          : 'Te llegará un correo de Apple (TestFlight) con los pasos para instalarla.';
+        window.scrollTo(0, 0);
+      } else if (r.status === 400) decir('Revisa el correo, parece que no está bien escrito.');
+      else decir('No se ha podido enviar. Inténtalo de nuevo en un momento.');
+    }).catch(function () { decir('No se ha podido enviar. Inténtalo de nuevo en un momento.'); })
+      .then(function () { boton.disabled = false; });
+  });
+})();
+</script>
+<script src="/assets/visita.js" defer></script>
+</body>
+</html>
