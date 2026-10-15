@@ -57,7 +57,9 @@ var VIDEO_DESTACAR = (function () {
     return { a: ab[0].trim(), b: ab[1].trim(), txt: letrero || (ab[0].trim() + " → " + ab[1].trim()), num: numCarretera(letrero) };
   }).filter(Boolean).slice(0, 6);
 })();
-var DESTACAR = { LENTO: 2.5, ZOOM: 1, BORDE_KM: 3, MAX_KM_LEJOS: 5 };
+// ZOOM: niveles respecto a la cámara de siempre al pasar por un tramo. Era +1 (más cerca); Mario, 15-oct: «el zoom está hecho
+// muy bajo»; y luego: «cuando llegues entre Porta y el Col de Puymorens […] haces un pequeño zoom de la carretera para que se vea con las curvas» → +0,7.
+var DESTACAR = { LENTO: 2.5, ZOOM: 0.7, BORDE_KM: 3, MAX_KM_LEJOS: 5 };
 function sinTildesV(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
 /* Pasa los tramos de VIDEO_DESTACAR a km del trazado completo. Devuelve { tramos: [{a, b, txt}], fallos: [texto] }. */
 function resolverDestacados(pts, puertos, paradas) {
@@ -71,30 +73,41 @@ function resolverDestacados(pts, puertos, paradas) {
     for (var i = 0; i < pts.length; i++) { var d = hav({ lat: lat, lng: lng }, pts[i]); if (d < mejor.d) mejor = { km: acum[i], d: d }; }
     return mejor;
   }
-  function buscar(nombre) {
-    var q = sinTildesV(nombre);
-    var pu = puertos.filter(function (p) { return sinTildesV(p.name).indexOf(q) >= 0; })[0];
-    if (pu && pu.km != null) return Promise.resolve(pu.km);
-    var pa = paradas.filter(function (p) { return sinTildesV(p.nombre).indexOf(q) >= 0; })[0];
-    if (pa && pa.km != null) return Promise.resolve(pa.km);
+  // 🔁 DESTACAR-PAR-1 (15-oct, 109.ª). Mario, con el día 1: «la línea amarilla aparece desde el inicio […] desde el principio
+  // ponen la N20». «Porta» se buscaba solo y el buscador devolvía el barrio de Porta de Barcelona, a 2 km de la salida: el tramo
+  // empezaba en el km 0. Ahora se juntan TODOS los sitios posibles de cada pueblo (puertos y paradas de la ruta y lo que dé el
+  // buscador a menos de 5 km del trazado) y se elige la pareja más corta que va en el sentido de la ruta (A antes que B).
+  function candidatos(nombre) {
+    var q = sinTildesV(nombre), kms = [];
+    puertos.forEach(function (p) { if (p.km != null && sinTildesV(p.name).indexOf(q) >= 0) kms.push(p.km); });
+    paradas.forEach(function (p) { if (p.km != null && sinTildesV(p.nombre).indexOf(q) >= 0) kms.push(p.km); });
     var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(nombre) + ".json?access_token=" + MAPBOX_TOKEN +
-      "&bbox=" + bbox + "&limit=5&language=es";
+      "&bbox=" + bbox + "&limit=10&language=es";
     return fetch(url).then(function (r) { return r.ok ? r.json() : { features: [] }; }).then(function (j) {
-      var mejor = null;
       (j.features || []).forEach(function (f) {
         if (!f.center) return; var c = masCerca(f.center[1], f.center[0]);
-        if (c.d <= DESTACAR.MAX_KM_LEJOS && (!mejor || c.d < mejor.d)) mejor = c;
+        if (c.d <= DESTACAR.MAX_KM_LEJOS) kms.push(c.km);
       });
-      return mejor ? mejor.km : null;
-    }).catch(function () { return null; });
+      return kms;
+    }).catch(function () { return kms; });
+  }
+  function pareja(ka, kb) { // la pareja más corta con A antes que B; si no hay ninguna así, la más corta al revés
+    var mejor = null, alReves = null;
+    ka.forEach(function (a) { kb.forEach(function (b) {
+      var d = b - a;
+      if (d >= 0.5 && (!mejor || d < mejor.b - mejor.a)) mejor = { a: a, b: b };
+      if (d <= -0.5 && (!alReves || -d < alReves.a - alReves.b)) alReves = { a: b, b: a };
+    }); });
+    return mejor || (alReves ? { a: alReves.a, b: alReves.b } : null);
   }
   var fallos = [];
   return Promise.all(VIDEO_DESTACAR.map(function (it) {
     if (it.kmA != null) return Promise.resolve({ a: Math.max(0, Math.min(it.kmA, it.kmB)), b: Math.min(total, Math.max(it.kmA, it.kmB)), txt: it.txt, num: it.num });
-    return Promise.all([buscar(it.a), buscar(it.b)]).then(function (k) {
-      if (k[0] == null || k[1] == null) { fallos.push(k[0] == null ? it.a : it.b); return null; }
-      if (Math.abs(k[1] - k[0]) < 0.5) { fallos.push(it.a + " > " + it.b); return null; }
-      return { a: Math.min(k[0], k[1]), b: Math.max(k[0], k[1]), txt: it.txt, num: it.num };
+    return Promise.all([candidatos(it.a), candidatos(it.b)]).then(function (k) {
+      if (!k[0].length || !k[1].length) { fallos.push(!k[0].length ? it.a : it.b); return null; }
+      var pr = pareja(k[0], k[1]);
+      if (!pr) { fallos.push(it.a + " > " + it.b); return null; }
+      return { a: pr.a, b: pr.b, txt: it.txt, num: it.num };
     });
   })).then(function (rs) {
     var tramos = rs.filter(Boolean).sort(function (x, y) { return x.a - y.a; });
