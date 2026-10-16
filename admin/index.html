@@ -68,7 +68,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Incidencias <span class="n" id="n-inc">·</span></button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Incidencias <span class="n" id="n-inc">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -212,6 +212,34 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="i-aviso"></div>
   <div class="card tabla"><table><thead><tr><th>Aviso</th><th>Rider</th><th>Qué nos contó</th><th>Lo que le contestaste</th><th>Su móvil</th><th>Arreglo</th></tr></thead><tbody id="i-filas"></tbody></table></div>
 </main>
+<!-- CONTENIDO-WEB-1 (16-oct, 110.ª · Mario: «tengo cosas en el teléfono y cosas en el portal admin y al final me voy a liar […]
+     quiero que se pueda hacer desde los dos sitios»): las guías en vídeo y las noticias, también desde aquí. Mismas funciones de
+     la base que el Panel admin de la app (mc_guia_guardar, mc_publicar_noticia, mc_noticia_video) y el mismo bucket privado `videos`
+     (sus reglas ya dejan subir al admin con su sesión). Lo del móvil no cambia. -->
+<main id="v-gui" class="oculto">
+  <div><h1>Guías en vídeo</h1><div class="sub">Salen arriba en la app, en Perfil → Guía, al momento. Un vídeo corto (mejor de un minuto, como mucho 50 MB) y dos o tres frases debajo.</div></div>
+  <div id="g-aviso"></div>
+  <div><button class="btn" id="g-nueva">+ Nueva guía en vídeo</button></div>
+  <div class="card oculto" id="g-form" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;gap:10px"><label style="flex:0 0 80px">ICONO<input type="text" id="g-icono" maxlength="4"></label><label style="flex:1">TÍTULO<input type="text" id="g-titulo" placeholder="Planifica con el dedo"></label></div>
+    <label>TEXTO<textarea id="g-cuerpo" rows="4" placeholder="Dos o tres frases. Para listas, empieza cada línea con «- »."></textarea></label>
+    <label>VÍDEO<input type="file" id="g-video" accept="video/mp4,video/quicktime"><span class="sub" id="g-video-txt" style="font-weight:500;letter-spacing:0"></span></label>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="g-cancelar">Cancelar</button><button class="btn" id="g-guardar">Guardar</button></div>
+  </div>
+  <div id="g-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px"></div>
+</main>
+<main id="v-not" class="oculto">
+  <div><h1>Publicar noticia</h1><div class="sub">Sale en el foro, en «Noticias», firmada por MOTOCLUBes y fijada arriba, y en «MOTOCLUBes hoy» del Inicio. Acaba el texto con una pregunta para que la gente opine.</div></div>
+  <div id="n-aviso"></div>
+  <div class="card" style="display:flex;flex-direction:column;gap:12px">
+    <label>TÍTULO<input type="text" id="n-titulo"></label>
+    <label>TEXTO<textarea id="n-texto" rows="14" placeholder="Texto de la noticia… y, al final, la pregunta"></textarea></label>
+    <label>VÍDEO (OPCIONAL)<input type="file" id="n-video" accept="video/mp4,video/quicktime"><span class="sub" id="n-video-txt" style="font-weight:500;letter-spacing:0"></span></label>
+    <label class="check"><input type="checkbox" id="n-avisar"> Avisar a todos <span class="sub" style="font-weight:500">(aviso en el móvil y en la campanita; como mucho una noticia avisada por semana)</span></label>
+    <div style="display:flex;justify-content:flex-end"><button class="btn" id="n-publicar">Publicar</button></div>
+  </div>
+  <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo</th></tr></thead><tbody id="n-filas"></tbody></table></div>
+</main>
 <!-- TESTERS-SEGUIMIENTO-1: el aviso (push) a un rider -->
 <div id="push-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
   <div class="card" style="max-width:460px;width:100%;display:flex;flex-direction:column;gap:12px">
@@ -324,7 +352,7 @@ function pintarAltas() {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
@@ -413,10 +441,11 @@ const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: '
 const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
 let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
 function verPestana(cual) {
-  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc')
+  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
   $('v-inc').classList.toggle('oculto', cual !== 'inc') // INCIDENCIA-VERSION-1
+  $('v-gui').classList.toggle('oculto', cual !== 'gui'); $('v-not').classList.toggle('oculto', cual !== 'not') // CONTENIDO-WEB-1
 }
 // ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
 function tAviso(txt, bien) { const h = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : ''; $('t-aviso').innerHTML = h; if ($('f-aviso')) $('f-aviso').innerHTML = h }
@@ -619,6 +648,85 @@ $('i-filas').addEventListener('click', async (ev) => {
 })
 $('i-version').addEventListener('change', versionArreglo)
 $('p-inc').onclick = () => { verPestana('inc'); iAviso(''); cargarIncidencias() }
+// ── CONTENIDO-WEB-1 (16-oct-2026, 110.ª) · guías en vídeo y noticias, como en el Panel admin de la app (src/lib/videos.ts) ──
+const mb = (b) => (b / 1048576).toFixed(1).replace('.', ',') + ' MB'
+function gAviso(t, ok) { $('g-aviso').innerHTML = t ? `<div class="aviso ${ok ? 'ok' : 'mal'}">${t}</div>` : '' }
+function nAviso(t, ok) { $('n-aviso').innerHTML = t ? `<div class="aviso ${ok ? 'ok' : 'mal'}">${t}</div>` : '' }
+// Igual que subirVideo() de la app: bucket privado `videos`, guardado como video/mp4 (el .mov H.264 del iPhone se ve así en Android)
+async function subirVideoWeb(archivo, carpeta) {
+  if (archivo.size > 50 * 1024 * 1024) throw new Error('El vídeo pasa de 50 MB. Prueba con uno más corto (un minuto).')
+  const ext = ((archivo.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '')) || 'mp4'
+  const ruta = `${carpeta}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const { error } = await sb.storage.from('videos').upload(ruta, archivo, { contentType: 'video/mp4', upsert: false })
+  if (error) throw new Error(error.message || 'No se ha podido subir el vídeo')
+  return ruta
+}
+async function urlVideoWeb(ruta) { try { const { data } = await sb.storage.from('videos').createSignedUrl(ruta, 3600); return data?.signedUrl || null } catch (e) { return null } }
+let GUIAS = [], gEditando = null
+async function cargarGuias() {
+  const { data, error } = await sb.from('guia_secciones').select('id, titulo, cuerpo, icono, video_url').not('video_url', 'is', null).order('orden')
+  if (error) return gAviso('No se han podido cargar: ' + esc(error.message))
+  GUIAS = data || []
+  const urls = await Promise.all(GUIAS.map(g => urlVideoWeb(g.video_url)))
+  $('g-lista').innerHTML = GUIAS.map((g, i) => `<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(g.icono || '')} ${esc(g.titulo)}</b><button class="btn3 g-cambiar" data-id="${esc(g.id)}">Cambiar</button></div>
+    ${urls[i] ? `<video src="${esc(urls[i])}" controls preload="metadata" playsinline style="width:100%;max-height:420px;border-radius:12px;background:#000"></video>` : '<div class="sub">No se puede ver el vídeo ahora.</div>'}
+    ${g.cuerpo ? `<div class="sub" style="white-space:pre-wrap">${esc(g.cuerpo)}</div>` : ''}</div>`).join('') || '<div class="sub">Aún no hay guías en vídeo.</div>'
+}
+function abrirGuia(g) {
+  gEditando = g || { id: '', titulo: '', cuerpo: '', icono: '🎬', video_url: null }
+  $('g-icono').value = gEditando.icono || ''; $('g-titulo').value = gEditando.titulo || ''; $('g-cuerpo').value = gEditando.cuerpo || ''
+  $('g-video').value = ''; $('g-video-txt').textContent = gEditando.video_url ? 'Si no eliges otro, se queda el vídeo que tiene.' : ''
+  $('g-form').classList.remove('oculto'); gAviso(''); window.scrollTo(0, 0)
+}
+$('g-nueva').onclick = () => abrirGuia(null)
+$('g-cancelar').onclick = () => { gEditando = null; $('g-form').classList.add('oculto') }
+$('g-lista').addEventListener('click', (ev) => { const b = ev.target.closest('.g-cambiar'); if (b) abrirGuia(GUIAS.find(x => x.id === b.dataset.id)) })
+$('g-video').onchange = () => { const f = $('g-video').files[0]; $('g-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
+$('g-guardar').onclick = async () => {
+  if (!gEditando) return
+  const titulo = $('g-titulo').value.trim(), cuerpo = $('g-cuerpo').value.trim(), icono = $('g-icono').value.trim() || null, f = $('g-video').files[0]
+  if (titulo.length < 3) return gAviso('Ponle un título.')
+  if (!gEditando.video_url && !f) return gAviso('Elige el vídeo.')
+  $('g-guardar').disabled = true
+  try {
+    let ruta = gEditando.video_url
+    if (f) { $('g-guardar').textContent = 'Subiendo el vídeo…'; ruta = await subirVideoWeb(f, 'guias') }
+    $('g-guardar').textContent = 'Guardando…'
+    const { error } = await sb.rpc('mc_guia_guardar', { p_id: gEditando.id || null, p_titulo: titulo, p_cuerpo: cuerpo, p_icono: icono, p_video: ruta })
+    if (error) throw new Error(error.message)
+    gEditando = null; $('g-form').classList.add('oculto'); gAviso('✅ Guía guardada: ya se ve en la app, en Perfil → Guía.', true)
+    await cargarGuias()
+  } catch (e) { gAviso('No se ha podido guardar: ' + esc(e.message)) }
+  $('g-guardar').disabled = false; $('g-guardar').textContent = 'Guardar'
+}
+$('p-gui').onclick = () => { verPestana('gui'); gAviso(''); cargarGuias() }
+async function cargarNoticias() {
+  const { data, error } = await sb.from('threads').select('id, title, created_at, reply_count, video_url').eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
+  if (error) return nAviso('No se han podido cargar las noticias: ' + esc(error.message))
+  $('n-filas').innerHTML = (data || []).map(t => `<tr><td><b>${esc(t.title)}</b></td><td class="sub">${fecha(t.created_at)}</td><td>${t.reply_count || 0}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
+}
+$('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
+$('n-publicar').onclick = async () => {
+  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0]
+  if (titulo.length < 5 || texto.length < 20) return nAviso('Falta el título o el texto.')
+  if (!confirm(avisar ? '¿Publicarla ya y avisar a todos?' : '¿Publicarla ya? La verá todo el mundo.')) return
+  $('n-publicar').disabled = true
+  try {
+    let ruta = null
+    if (f) { $('n-publicar').textContent = 'Subiendo el vídeo…'; ruta = await subirVideoWeb(f, 'noticias') } // si falla, no se publica nada
+    $('n-publicar').textContent = 'Publicando…'
+    const { data: id, error } = await sb.rpc('mc_publicar_noticia', { p_titulo: titulo, p_texto: texto, p_avisar: avisar })
+    if (error || !id) throw new Error(error?.message || 'No se ha podido publicar')
+    let extra = ''
+    if (ruta) { const { error: ev } = await sb.rpc('mc_noticia_video', { p_thread: id, p_video: ruta }); if (ev) extra = ' Pero sin el vídeo: ' + esc(ev.message) }
+    $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; $('n-avisar').checked = false
+    nAviso((avisar ? '✅ Noticia publicada y avisada a todos.' : '✅ Noticia publicada.') + extra, !extra)
+    await cargarNoticias()
+  } catch (e) { nAviso('No se ha podido publicar: ' + esc(e.message)) }
+  $('n-publicar').disabled = false; $('n-publicar').textContent = 'Publicar'
+}
+$('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
 clicCab('t-cab', ordenT, () => cargarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-filas').onclick = (ev) => {
   const a = ev.target.closest('.r-avisar')
