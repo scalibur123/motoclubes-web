@@ -764,7 +764,7 @@ async function verFicha(email, vuelve) {
       (vieja(p?.app_platform, p?.app_version) ? dato('Al día', '<span class="chip amar">Versión vieja</span>') : '') +
       dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
     : '<div class="sub">Todavía no tiene cuenta en la app.</div>'
-  const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}
+  const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}${u.en_recientes ? cifra(u.en_recientes, 'En Recientes (arranques y recados, 15 días)') : ''}
       ${cifra(u.salidas_grupo, `Salidas en grupo · ${u.km_grupo} km`)}${cifra(u.grupos, 'Grupos')}${cifra(u.radio_veces, `Veces con la radio · ${u.radio_min} min`)}
       ${cifra(u.dias_app, 'Días con la app abierta (90 días)')}${cifra(u.sesiones, 'Sesiones (90 días)')}</div>
       <div style="margin-top:12px">${dato('Última ruta planificada', u.ultima_planificada ? esc(u.ultima_planificada.titulo) + ' · ' + fecha(u.ultima_planificada.fecha) : '—')}
