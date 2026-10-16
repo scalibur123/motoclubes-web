@@ -77,18 +77,25 @@ function resolverDestacados(pts, puertos, paradas) {
   // ponen la N20». «Porta» se buscaba solo y el buscador devolvía el barrio de Porta de Barcelona, a 2 km de la salida: el tramo
   // empezaba en el km 0. Ahora se juntan TODOS los sitios posibles de cada pueblo (puertos y paradas de la ruta y lo que dé el
   // buscador a menos de 5 km del trazado) y se elige la pareja más corta que va en el sentido de la ruta (A antes que B).
+  // 🔁 ENVALIRA-PUERTO-1 (16-oct, 110.ª). Mario, con «Porta>Envalira»: «desde Porta hasta Envalira es bastante más de lo que
+  // has dibujado». Si el nombre es un puerto o una parada de la ruta, vale SOLO ese punto (el buscador no entra: daba otros
+  // «Envalira» antes del puerto). Si no lo es, del buscador valen primero los sitios que se llaman exactamente así (que «Porta»
+  // no coja Porté-Puymorens) y, solo si no hay ninguno, los parecidos, como antes.
   function candidatos(nombre) {
     var q = sinTildesV(nombre), kms = [];
     puertos.forEach(function (p) { if (p.km != null && sinTildesV(p.name).indexOf(q) >= 0) kms.push(p.km); });
     paradas.forEach(function (p) { if (p.km != null && sinTildesV(p.nombre).indexOf(q) >= 0) kms.push(p.km); });
+    if (kms.length) return Promise.resolve(kms);
     var url = "https://api.mapbox.com/geocoding/v5/mapbox.places/" + encodeURIComponent(nombre) + ".json?access_token=" + MAPBOX_TOKEN +
       "&bbox=" + bbox + "&limit=10&language=es";
     return fetch(url).then(function (r) { return r.ok ? r.json() : { features: [] }; }).then(function (j) {
+      var exactos = [], parecidos = [];
       (j.features || []).forEach(function (f) {
         if (!f.center) return; var c = masCerca(f.center[1], f.center[0]);
-        if (c.d <= DESTACAR.MAX_KM_LEJOS) kms.push(c.km);
+        if (c.d > DESTACAR.MAX_KM_LEJOS) return;
+        (sinTildesV(f.text) === q ? exactos : parecidos).push(c.km);
       });
-      return kms;
+      return exactos.length ? exactos : parecidos;
     }).catch(function () { return kms; });
   }
   function pareja(ka, kb) { // la pareja más corta con A antes que B; si no hay ninguna así, la más corta al revés
@@ -135,6 +142,9 @@ if (/[?&]mapa=satelite(&|$)/.test(location.search)) VIDEO.ESTILO = "satellite-st
 //   amarilla se dibuja con su cartel y la flecha), se aleja, las fotos y el cierre. Sin recorrer el resto del día.
 var VIDEO_CORTO = /[?&]corto=1(&|$)/.test(location.search);
 var VIDEO_SOLO = (location.search.match(/[?&]solo=(puertos|linea)(?:&|$)/) || [])[1] || null;
+// 🆕 SIN-FOTOS-1 (16-oct, 110.ª). Mario, para el reel del día 1: con «&fotos=0» el vídeo sale sin las fotos de la salida
+// (mapa, tramos y cierre); las fotos y sus vídeos se meten después en el montaje. Sin el parámetro, como siempre.
+var VIDEO_SIN_FOTOS = /[?&]fotos=0(&|$)/.test(location.search);
 
 function mercX(lng) { return (lng + 180) / 360; }
 function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
@@ -437,7 +447,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
   // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
   // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
-  var fotosR = (function () {
+  var fotosR = VIDEO_SIN_FOTOS ? [] : (function () {
     // TRANSPI-PORTADA-1 (15-oct): la madre puede llevar de portada fotos que también están en su etapa: sin repetir (por URL).
     var vistas = {}, todas = (Array.isArray(r.fotos) ? r.fotos : []).filter(function (f) { if (!f || vistas[f.url]) return false; vistas[f.url] = 1; return true; }), porDia = {};
     todas.forEach(function (f) { (porDia[f.dia] = porDia[f.dia] || []).push(f); });
