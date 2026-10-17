@@ -322,9 +322,23 @@ function cartasParaGuardar() {
   if (sinNombre.length) throw new Error('ponle nombre a cada carta o menú')
   return cartas.filter(c => c.url).map(c => ({ nombre: String(c.nombre).trim(), url: c.url, precio: c.precio }))
 }
+// MC-RF-COMEDOR-HORARIO-17OCT-2026 (113.ª, RF-COMEDOR-HORARIO-1, Ben de Casa Lascorz): en un alojamiento el horario
+// es el del COMEDOR («Horario del comedor»), y la tarjeta ponía «Hoy: 19:30–21:00» como si la casa solo abriera a esas
+// horas. Ahora dice de qué es: «Cena hoy» si solo da cenas, «Comida hoy» si solo comidas y si no «Comedor hoy».
+// Sin comedor, no sale. ⚠️ La app hará lo mismo en la versión siguiente (src/lib/rider-friendly.ts, horarioHoy).
+function horarioPrevia() {
+  const t = mcHorarioHoy(horario)
+  if (!t || selectedType !== 'hotel') return t
+  const c = (leerAlojamiento() || {}).comedor
+  if (!c) return ''
+  const da = (x) => x && x.modo && x.modo !== 'no'
+  const que = da(c.cena) && !da(c.comida) ? ['Cena hoy: ', 'Hoy no hay cena']
+    : da(c.comida) && !da(c.cena) ? ['Comida hoy: ', 'Hoy no hay comidas'] : ['Comedor hoy: ', 'Comedor cerrado hoy']
+  return t.replace(/^Hoy: /, que[0]).replace(/^Hoy cerrado/, que[1])
+}
 function pintarPrevia() {
   const hoy = document.getElementById('preview-hoy'); const ca = document.getElementById('preview-carta')
-  if (hoy) hoy.textContent = horario ? mcHorarioHoy(horario) : ''
+  if (hoy) hoy.textContent = horario ? horarioPrevia() : ''
   const c = cartas.find(x => x.url && String(x.nombre || '').trim())
   if (ca) ca.textContent = c ? c.nombre + (c.precio != null && c.precio !== '' ? ' · ' + String(c.precio).replace('.', ',') + ' €' : '') : ''
 }
@@ -510,7 +524,7 @@ document.getElementById('hab-input').addEventListener('change', async e => {
 function pintarPreviaHotel() {
   const ph = document.getElementById('preview-hab'), pc = document.getElementById('preview-comedor')
   if (!ph || !pc) return
-  if (selectedType !== 'hotel') { ph.textContent = ''; pc.textContent = ''; return }
+  if (selectedType !== 'hotel') { ph.textContent = ''; pc.textContent = ''; pintarPrevia(); return }
   const precios = habitaciones.map(h => Number(h.precio_desde)).filter(n => n > 0)
   const banos = [...new Set(habitaciones.map(h => h.bano).filter(Boolean))]
   ph.textContent = precios.length
@@ -519,6 +533,7 @@ function pintarPreviaHotel() {
   const a = leerAlojamiento()
   const t = (n, x) => !x || x.modo === 'no' ? '' : x.modo === 'incluido' ? `${n} incluido` : (x.precio != null ? `${n} ${x.precio} €` : '')
   pc.textContent = a && a.comedor ? [t('Desayuno', a.comedor.desayuno), t('Comida', a.comedor.comida), t('Cena', a.comedor.cena)].filter(Boolean).join(' · ') : ''
+  pintarPrevia()   // RF-COMEDOR-HORARIO-1: «Cena hoy» / «Comedor hoy» depende del comedor
 }
 
 async function loadPerfil() {
