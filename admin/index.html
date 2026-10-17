@@ -1008,7 +1008,16 @@ async function verFicha(email, vuelve) {
   const inv = f.invitados.length ? `<table class="ordenable"><thead><tr><th data-o>Correo</th><th data-o>Móvil</th><th data-o>Se apuntó</th><th data-o>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
       `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
       <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
-    : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie con «Invita a tu grupo».' : '—'}</div>`
+    : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie desde su perfil.' : '—'}</div>`
+  // FICHA-INVITACIONES-1 (17-oct, Mario: «hay dos sitios para invitar. Quiero ver los dos»): también lo que invita desde sus
+  // grupos: por WhatsApp (la base no guarda quién entró con ella) y a riders de la app.
+  const IG = (u && u.invitaciones_grupo) || null
+  const estIG = (x) => x.como === 'whatsapp' ? (x.estado === 'accepted' ? '<span class="chip verde">Alguien entró con ella</span>' : '<span class="chip gris">Sin usar todavía</span>')
+    : x.estado === 'accepted' ? '<span class="chip verde">Aceptada</span>' : x.estado === 'pending' ? '<span class="chip gris">Pendiente</span>' : `<span class="chip rojo">${x.estado === 'declined' ? 'Rechazada' : esc(x.estado)}</span>`
+  const invG = !IG ? '<div class="sub" style="padding:16px">Falta el SQL nuevo (db/ficha_invitaciones.sql) para verlo.</div>'
+    : IG.length ? `<table class="ordenable"><thead><tr><th data-o>Cuándo</th><th data-o>Grupo</th><th data-o>Cómo</th><th data-o>A quién</th><th data-o>Estado</th></tr></thead><tbody>${IG.map(x =>
+      `<tr><td class="sub" data-v="${esc(x.creado)}">${fechaHora(x.creado)}</td><td><b>${esc(x.grupo || '—')}</b></td><td>${x.como === 'whatsapp' ? 'Enlace por WhatsApp' : 'A un rider de la app'}</td><td>${esc(x.a_quien || '—')}</td><td>${estIG(x)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="sub" style="padding:16px">Todavía no ha invitado a nadie desde sus grupos.</div>'
   // ENVIOS-FICHA-1 (17-oct, Mario: «entro en la ficha de Derek y no veo ningún aviso, ni si ha sido por correo, ni por WhatsApp
   // o por push»): todo lo que le hemos mandado, con la notificación, el correo y quién lo mandó. La carta de bienvenida sale de
   // su perfil. Lo de antes del 17-oct solo trae el correo: las notificaciones no se guardaban.
@@ -1030,7 +1039,8 @@ async function verFicha(email, vuelve) {
     <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Lo que le hemos mandado</div>${env}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
-      <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a</div>${inv}</div></div>
+      <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a · desde su perfil («Invita a tu grupo»)</div>${inv}</div>
+      <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a · desde sus grupos</div>${c ? invG : '<div class="sub" style="padding:16px">—</div>'}</div></div>
     <div class="col"><div class="card"><div style="font-weight:800;margin-bottom:6px">En la web</div>${web}</div>
       <div class="card"><div style="font-weight:800;margin-bottom:6px">En la app</div>${app}</div></div></div>`
 }
