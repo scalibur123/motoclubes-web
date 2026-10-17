@@ -208,8 +208,9 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
   <div id="r-aviso"></div>
-  <div class="opc" id="r-periodo"></div><!-- PERIODO-1 -->
-  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="envio">Último envío</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div></div><!-- PERIODO-1 · QUIEN-INVITA-1 -->
+  <div class="card tabla oculto" id="r-inv"></div>
+  <div class="card tabla" id="r-tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="envio">Último envío</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
 <!-- INCIDENCIA-VERSION-1 (16-oct, 110.ª · Mario: «marcar en qué versión se arregló cada incidencia y un botón para avisar a los
      que la reportaron»): las incidencias de «Te escuchamos» y, por cada una, «Avisar que está arreglado» (push + correo). -->
@@ -763,7 +764,7 @@ function enPeriodo(iso, k) {
 }
 function pintarPeriodo(id, lista, fechaDe, verbo, actual, elegir) {
   $(id).innerHTML = PERIODOS.map(([k, t]) => `<button type="button" data-p="${k}" class="${k === actual ? 'sel' : ''}">${t} · ${lista.filter(x => enPeriodo(fechaDe(x), k)).length}</button>`).join('') +
-    `<span class="sub" style="align-self:center;margin-left:4px">${actual === 'todos' ? '' : 'Solo los que ' + verbo + ' en ese periodo'}</span>`
+    `<span class="sub" style="align-self:center;margin-left:4px">${!actual || actual === 'todos' ? '' : 'Solo los que ' + verbo + ' en ese periodo'}</span>`
   $(id).onclick = (ev) => { const b = ev.target.closest('button[data-p]'); if (b) elegir(b.dataset.p) }
 }
 let RIDERS = []
@@ -820,13 +821,36 @@ async function verSesion(email, sesion) {
     <table><tbody>${L.map(l => `<tr><td class="sub" style="white-space:nowrap;vertical-align:top;padding:5px 12px 5px 0">${hora(l.t)}</td><td style="padding:5px 0">${lineaTxt(l)}</td></tr>`).join('') || '<tr><td class="sub">Nada apuntado.</td></tr>'}</tbody></table>`
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.f-sesion'); if (b && FICHA) verSesion(FICHA.email, b.dataset.sesion) })
+// QUIEN-INVITA-1 (17-oct, Mario: «ver en riders quién ha invitado a través de WhatsApp a otros miembros, ya sea grupo o
+// individualmente»; maqueta aprobada): por cada rider, los enlaces de WhatsApp de sus grupos (si alguien entró; la base no guarda
+// quién) y los que se apuntaron con el enlace de su perfil. Lo último arriba. mc_admin_invitadores (db/invitadores.sql).
+let verInvitan = false, INVITAN = null
+try { verInvitan = sessionStorage.getItem('mc_rid_invitan') === '1' } catch (e) {}
+$('r-invitan').onclick = () => { verInvitan = !verInvitan; try { sessionStorage.setItem('mc_rid_invitan', verInvitan ? '1' : '') } catch (e) {} ; cargarRiders() }
+async function pintarInvitan() {
+  const { data, error } = await sb.rpc('mc_admin_invitadores')
+  if (error) { $('r-inv').innerHTML = `<div class="sub" style="padding:16px">${/mc_admin_invitadores/.test(error.message) ? 'Falta el SQL nuevo (db/invitadores.sql) para verlo.' : 'No se ha podido cargar: ' + esc(error.message)}</div>`; return }
+  INVITAN = data || []
+  $('r-invitan').textContent = `💬 Quién invita · ${INVITAN.length}`
+  const grupos = (g) => !g ? '<span class="sub">—</span>' : `${g.enlaces} enlace${g.enlaces > 1 ? 's' : ''} · ${g.usados ? `<span class="chip verde">${g.usados} usado${g.usados > 1 ? 's' : ''}</span>` : ''}${g.enlaces - g.usados ? `<span class="chip gris">${g.enlaces - g.usados} sin usar</span>` : ''}<div class="sub" style="font-size:12px">${g.lista.map(x => `«${esc(x.etiqueta || x.grupo || '')}» · ${fecha(x.creado)}`).join('<br>')}</div>`
+  const perfil = (w) => !w ? '<span class="sub">—</span>' : `${w.apuntados} ${w.apuntados === 1 ? 'se apuntó' : 'se apuntaron'}<div class="sub" style="font-size:12px">${w.lista.map(x => `${esc(x.apodo || x.email.split('@')[0])}${x.en_app ? ' ✅' : ''}`).join(' · ')}</div>`
+  const entraron = (r) => { const n = (r.perfil?.en_app || 0) + (r.grupos?.usados || 0), de = (r.perfil?.apuntados || 0) + (r.grupos?.enlaces || 0); return `<span class="chip ${n ? 'verde' : 'amar'}">${n} de ${de}</span>` }
+  $('r-inv').innerHTML = INVITAN.length ? `<table><thead><tr><th>Rider</th><th>Última invitación</th><th>Desde sus grupos (WhatsApp)</th><th>Desde su perfil (su enlace)</th><th>Han entrado</th><th></th></tr></thead><tbody>${INVITAN.map(r => `<tr>
+      <td>${r.rider ? `<b>${esc(r.rider)}</b>` : `<b>Enlace «${esc(r.marca)}»</b><div class="sub" style="font-size:12px">Ningún rider tiene ese apodo</div>`}</td>
+      <td class="sub">${fechaHora(r.ultimo)}</td><td>${grupos(r.grupos)}</td><td>${perfil(r.perfil)}</td><td>${entraron(r)}</td>
+      <td style="text-align:right">${r.email ? `<button class="btn3 r-ficha" data-email="${esc(r.email)}">Ver ficha</button>` : ''}</td></tr>`).join('')}</tbody></table>
+    <div class="sub" style="padding:12px 18px;font-size:12px">✅ = ya tiene la app. De un enlace de WhatsApp de grupo la base sabe si alguien entró, no quién. Del enlace del perfil sabemos quién se apuntó, no por dónde lo compartió.</div>`
+    : '<div class="sub" style="padding:16px">Nadie ha invitado todavía.</div>'
+}
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
   // RIDERS-FILTRO-HOY-1 (17-oct, Mario: «hoy sigue sin aparecer Rapazdoorgal»): el periodo mira cuándo abrió la app, no el alta
-  pintarPeriodo('r-periodo', RIDERS, (r) => r.abrio, 'abrieron la app', perR, (k) => { perR = k; cargarRiders() }) // PERIODO-1
+  pintarPeriodo('r-periodo', RIDERS, (r) => r.abrio, 'abrieron la app', verInvitan ? null : perR, (k) => { perR = k; verInvitan = false; cargarRiders() }) // PERIODO-1
+  $('r-invitan').classList.toggle('sel', verInvitan); $('r-inv').classList.toggle('oculto', !verInvitan); $('r-tabla').classList.toggle('oculto', verInvitan)
+  if (verInvitan) pintarInvitan()
   // Sin columna elegida: el último que abrió la app arriba (Mario, 11:06: «mira el orden de apertura de la app»). «Último envío»
   // se ordena pulsando su cabecera.
   const base = RIDERS.filter(r => enPeriodo(r.abrio, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || ''))
@@ -958,6 +982,7 @@ $('n-publicar').onclick = async () => {
 }
 $('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
 clicCab('t-cab', ordenT, () => pintarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
+$('r-inv').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') } // QUIEN-INVITA-1
 $('r-filas').onclick = (ev) => {
   const a = ev.target.closest('.r-avisar')
   if (a) { const r = RIDERS.find(x => x.email === a.dataset.email); return abrirAviso(r.email, r.rider || r.email, r.abrio, r.movil, r.version) }
