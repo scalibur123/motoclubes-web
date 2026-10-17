@@ -798,6 +798,28 @@ const QUE_TXT_E = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: '
 $('ver-cerrar').onclick = () => $('ver-capa').classList.add('oculto')
 $('ver-capa').onclick = (ev) => { if (ev.target === $('ver-capa')) $('ver-capa').classList.add('oculto') }
 document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.f-ver'); if (b) verEnvio(b.dataset.id) })
+// SESIONES-REALES-1 (17-oct, Mario: «quiero saber lo que hacen: cuando entran, qué están tocando, dónde van y qué miran»):
+// todo lo que apuntó la app en esa sesión, en orden y con la hora.
+const EV_TXT = { app_abierta: 'Abre la app', app_se_va: 'Deja la app (se va a segundo plano o bloquea el móvil)', app_vuelve: 'Vuelve a la app' }
+function lineaTxt(l) {
+  if (EV_TXT[l.event]) return `<b>${EV_TXT[l.event]}</b>`
+  if (l.event === 'pantalla') return `Pantalla <b>${esc(l.ruta || '')}</b>`
+  if (l.event === 'toque') return `Toca <b>«${esc(l.que || '—')}»</b> <span class="sub">en ${esc(l.ruta || '')}</span>`
+  if (l.event === 'aviso_tester') return `<b style="color:var(--red)">Avisa de un problema:</b> ${esc(l.texto || '')}`
+  const resto = Object.entries(l).filter(([k]) => k !== 't' && k !== 'event').map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(' · ')
+  return `<span class="sub">${esc(l.event)}</span>${resto ? ` <span class="sub" style="font-size:12px">${esc(resto.slice(0, 300))}</span>` : ''}`
+}
+async function verSesion(email, sesion) {
+  $('ver-cuerpo').innerHTML = '<div class="sub">Cargando…</div>'; $('ver-capa').classList.remove('oculto')
+  let r
+  try { r = await invitar({ modo: 'sesion', email, sesion }) } catch (e) { $('ver-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido abrir: ${esc(e.message)}</div>`; return }
+  const L = r.lineas || [], hora = (t) => new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const min = L.length > 1 ? Math.max(1, Math.round((new Date(L[L.length - 1].t) - new Date(L[0].t)) / 60000)) : 0
+  $('ver-cuerpo').innerHTML = `<div style="font-weight:800;font-size:18px">Sesión del ${fechaHora(r.desde)}</div>
+    <div class="sub" style="margin:4px 0 12px">${L.length} cosas apuntadas · ${min} min${r.antes ? ` · ${r.antes} líneas de antes de abrir la app no se enseñan (otras sesiones)` : ''}</div>
+    <table><tbody>${L.map(l => `<tr><td class="sub" style="white-space:nowrap;vertical-align:top;padding:5px 12px 5px 0">${hora(l.t)}</td><td style="padding:5px 0">${lineaTxt(l)}</td></tr>`).join('') || '<tr><td class="sub">Nada apuntado.</td></tr>'}</tbody></table>`
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.f-sesion'); if (b && FICHA) verSesion(FICHA.email, b.dataset.sesion) })
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
@@ -981,7 +1003,7 @@ async function verFicha(email, vuelve) {
       ${dato('Última salida rodada', u.ultima_rodada ? esc(u.ultima_rodada.titulo) + ' · ' + (u.ultima_rodada.km ?? 0) + ' km · ' + fecha(u.ultima_rodada.fecha) : '—')}
       ${dato('Última vez con la radio', u.radio_ultima ? fechaHora(u.radio_ultima) : '—')}</div>` : ''
   const ses = u && u.ultimas_sesiones.length ? `<table class="ordenable"><thead><tr><th data-o>Empezó</th><th data-o>Duró</th><th data-o>Móvil</th><th data-o>Versión</th><th data-o>Acciones</th></tr></thead><tbody>${u.ultimas_sesiones.map(s =>
-      `<tr><td data-v="${esc(s.desde)}">${fechaHora(s.desde)}</td><td data-v="${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))}">${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))} min</td><td class="sub">${esc(s.dispositivo || '—')}</td><td class="sub">${esc(s.version || '—')}</td><td>${s.acciones}</td></tr>`).join('')}</tbody></table>`
+      `<tr><td data-v="${esc(s.desde)}">${fechaHora(s.desde)}${s.sesion ? `<div><button class="btn3 f-sesion" data-sesion="${esc(s.sesion)}" style="margin-top:6px;padding:4px 12px">Ver lo que hizo</button></div>` : ''}</td><td data-v="${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))}">${Math.max(1, Math.round((new Date(s.hasta) - new Date(s.desde)) / 60000))} min</td><td class="sub">${esc(s.dispositivo || '—')}</td><td class="sub">${esc(s.version || '—')}</td><td>${s.acciones}</td></tr>`).join('')}</tbody></table>`
     : '<div class="sub" style="padding:16px">Sin sesiones registradas en los últimos 90 días.</div>'
   const inv = f.invitados.length ? `<table class="ordenable"><thead><tr><th data-o>Correo</th><th data-o>Móvil</th><th data-o>Se apuntó</th><th data-o>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
       `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
