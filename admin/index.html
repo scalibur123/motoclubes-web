@@ -713,6 +713,17 @@ const chipsUso = (abrio, rodadas) => ' ' + (dormido(abrio) ? `<span class="chip 
 let ULTIMA = null // la última versión publicada de cada móvil (status.json de la web)
 async function cargarUltima() { if (ULTIMA) return; try { ULTIMA = (await (await fetch('/status.json?x=' + Date.now())).json()).version || null } catch (e) { ULTIMA = null } }
 const cmpVer = (a, b) => { const x = String(a || '').split('.').map(Number), y = String(b || '').split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d } return 0 }
+// VERSION-IGUAL-1 (17-oct, 113.ª · Mario: «Android tiene una versión y iOS otra […] deberíamos igualarlo»): se enseña el número de
+// COMPILACIÓN en los dos, igual: iPhone lo guarda en app_build («1.26.10153») y Android en el versionCode («102610153») o el
+// versionName («1.26.10153»). Si no se entiende (builds viejos), lo de antes.
+function verApp(version, build) {
+  const b = String(build || ''), v = String(version || '')
+  if (/^1\.\d{2}\.\d{5}$/.test(b)) return b
+  const m = b.match(/^1(\d{3})(\d{5})$/); if (m) return '1.' + Number(m[1]) + '.' + m[2]
+  if (/^1\.\d{2}\.\d{5}$/.test(v)) return v
+  return v || b || '—'
+}
+const claveVer = (version, build) => { const m = verApp(version, build).match(/^1\.(\d+)\.(\d{5})$/); return m ? Number(m[1]) * 100000 + Number(m[2]) : -1 }
 const vieja = (movil, version) => !!(ULTIMA && version && ULTIMA[movil] && cmpVer(version, ULTIMA[movil]) < 0)
 let pushPara = null
 function abrirAviso(email, quien, abrio, movil, version) {
@@ -891,9 +902,9 @@ async function cargarRiders() {
   // se ordena pulsando su cabecera.
   const base = RIDERS.filter(r => enPeriodo(r.abrio, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || ''))
   marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
-  $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : k === 'envio' ? (r.ultimo_envio?.creado || '') : r[k] ?? '').map(r => `<tr>
+  $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? claveVer(r.version, r.build) : k === 'rider' ? (r.rider || '') : k === 'envio' ? (r.ultimo_envio?.creado || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
-    <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
+    <td>${movilTxt(r.movil)}</td><td class="sub">${esc(verApp(r.version, r.build))}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
     <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td>
     <td>${r.ultimo_envio ? `${esc(ENVIO_TXT[r.ultimo_envio.que] || r.ultimo_envio.que)}<div class="sub" style="font-size:12px">${hace(r.ultimo_envio.creado)}</div>` : '<span class="sub">—</span>'}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
     <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="9" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie abrió la app en ese periodo.'}</td></tr>`
@@ -912,7 +923,7 @@ async function cargarIncidencias() {
   const teToca = INCIDENCIAS.filter(f => (!f.respuesta && f.status !== 'resolved') || (f.type === 'incidencia' && !f.arreglo_avisado_at)).length
   $('n-inc').textContent = teToca
   $('i-filas').innerHTML = INCIDENCIAS.map(f => {
-    const movil = (f.plataforma === 'ios' ? 'iPhone' : f.plataforma === 'android' ? 'Android' : '—') + (f.build ? `<div class="sub">${esc(f.build)}</div>` : '')
+    const movil = (f.plataforma === 'ios' ? 'iPhone' : f.plataforma === 'android' ? 'Android' : '—') + (f.build || f.version ? `<div class="sub">${esc(verApp(f.version, f.build))}</div>` : '') // VERSION-IGUAL-1
     // INCIDENCIA-CONTESTAR-1: «Avisar que está arreglado» solo en las incidencias (en una sugerencia diría «ya está arreglado»)
     const arreglo = f.type !== 'incidencia' ? '<span class="sub">—</span>'
       : f.arreglo_avisado_at
@@ -1093,7 +1104,7 @@ async function verFicha(email, vuelve) {
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
-      dato('Versión', esc(p?.app_version || '—') + (p?.app_build ? ' (' + esc(p.app_build) + ')' : '')) +
+      dato('Versión', esc(verApp(p?.app_version, p?.app_build))) +
       dato('Abrió la app por última vez', (p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') + (dormido(p?.app_version_at) ? ' <span class="chip rojo">Dormido</span>' : '')) +
       (vieja(p?.app_platform, p?.app_version) ? dato('Al día', '<span class="chip amar">Versión vieja</span>') : '') +
       dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
