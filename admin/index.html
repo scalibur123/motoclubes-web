@@ -74,7 +74,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Incidencias <span class="n" id="n-inc">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -216,7 +216,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
      que la reportaron»): las incidencias de «Te escuchamos» y, por cada una, «Avisar que está arreglado» (push + correo). -->
 <main id="v-inc" class="oculto">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-    <div style="flex-grow:1"><h1>Incidencias</h1><div class="sub">Lo que mandan los riders desde «Te escuchamos». Cuando la versión con el arreglo ya esté en TestFlight y en Play, pulsa «Avisar que está arreglado»: le llega un push y un correo con la versión y cómo actualizar (o «ya la tienes», si ya la ha instalado). Se avisa una vez por incidencia.</div></div>
+    <div style="flex-grow:1"><h1>Te escuchamos</h1><div class="sub">Lo que mandan los riders desde «Te escuchamos» en Perfil: incidencias, mejoras y sugerencias (el tipo lo elige el rider). El número de la pestaña es lo que te queda: sin contestar o incidencias sin avisar. Cuando la versión con el arreglo ya esté en TestFlight y en Play, pulsa «Avisar que está arreglado»: le llega un push y un correo con la versión y cómo actualizar (o «ya la tienes», si ya la ha instalado). Se avisa una vez por incidencia. Para escribirle tú (una sugerencia, una duda, en el idioma que quieras), «Contestar».</div></div>
     <label style="flex:0 0 200px">VERSIÓN CON LOS ARREGLOS<input type="text" id="i-version" placeholder="1.26.10154"></label>
   </div>
   <div id="i-aviso"></div>
@@ -267,6 +267,18 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label class="check"><input type="checkbox" id="push-correo" checked> Mandarlo también por correo</label><!-- AVISO-CORREO-1 -->
     <div id="push-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
+  </div>
+</div>
+<!-- INCIDENCIA-CONTESTAR-1 (17-oct, 113.ª · Mario: «desde aquí no le puedo contestar, ¿no?»): lo que escribes le llega tal cual,
+     por notificación y por correo, y queda en «Lo que le contestaste» y en su ficha. -->
+<div id="res-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
+  <div class="card" style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:12px">
+    <div style="font-weight:800;font-size:18px">Contestar a <span id="res-quien"></span> · <span id="res-ref"></span></div>
+    <div class="sub" style="white-space:pre-wrap;max-height:120px;overflow:auto;border-left:3px solid #EBE0D2;padding-left:10px" id="res-msg"></div>
+    <label>TU RESPUESTA<textarea id="res-texto" rows="8" maxlength="3000"></textarea></label>
+    <div class="sub">Le llega tal cual, con tu despedida: notificación al móvil y correo con el asunto «<span id="res-asunto"></span>».</div>
+    <div id="res-aviso"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="res-cancelar">Cancelar</button><button class="btn" id="res-enviar">Enviar respuesta</button></div>
   </div>
 </div>
 <main id="v-ficha" class="oculto">
@@ -893,22 +905,27 @@ const TIPO_INC = { incidencia: 'Incidencia', mejora: 'Mejora', sugerencia: 'Suge
 let INCIDENCIAS = []
 async function cargarIncidencias() {
   try { INCIDENCIAS = (await invitar({ modo: 'incidencias' })).incidencias || [] } catch (e) { return iAviso('No se han podido cargar: ' + esc(e.message)) }
-  const porAvisar = INCIDENCIAS.filter(f => !f.arreglo_avisado_at && f.type === 'incidencia').length
-  $('n-inc').textContent = porAvisar
+  // INCIDENCIA-CONTESTAR-1: lo que te queda por hacer: sin contestar, o incidencias sin «Avisar que está arreglado»
+  const teToca = INCIDENCIAS.filter(f => (!f.respuesta && f.status !== 'resolved') || (f.type === 'incidencia' && !f.arreglo_avisado_at)).length
+  $('n-inc').textContent = teToca
   $('i-filas').innerHTML = INCIDENCIAS.map(f => {
     const movil = (f.plataforma === 'ios' ? 'iPhone' : f.plataforma === 'android' ? 'Android' : '—') + (f.build ? `<div class="sub">${esc(f.build)}</div>` : '')
-    const arreglo = f.arreglo_avisado_at
+    // INCIDENCIA-CONTESTAR-1: «Avisar que está arreglado» solo en las incidencias (en una sugerencia diría «ya está arreglado»)
+    const arreglo = f.type !== 'incidencia' ? '<span class="sub">—</span>'
+      : f.arreglo_avisado_at
       ? `<span class="chip verde">✅ Avisado el ${fecha(f.arreglo_avisado_at)}</span><div class="sub">${esc(f.version_arreglo || '')}</div>`
       : `<button class="btn3 o i-avisar" data-id="${esc(f.id)}">Avisar que está arreglado</button>`
-    return `<tr><td><b>${esc(f.ref_code)}</b><div class="sub">${esc(TIPO_INC[f.type] || f.type)} · ${fecha(f.created_at)}</div></td>
+    const contestar = f.email ? `<div style="margin-top:6px"><button class="btn3 i-contestar" data-id="${esc(f.id)}">${f.respuesta ? 'Contestar otra vez' : 'Contestar'}</button></div>` : ''
+    return `<tr><td><b>${esc(f.ref_code)}</b><div style="margin:4px 0"><span class="chip ${f.type === 'incidencia' ? 'rojo' : f.type === 'otro' ? 'gris' : 'azul'}">${esc(TIPO_INC[f.type] || f.type)}</span></div><div class="sub">${fecha(f.created_at)}</div></td>
       <td>${f.email ? `<button class="nombre-c t-ficha" data-email="${esc(f.email)}">${esc(f.nickname || f.email)}</button>` : esc(f.nickname || '—')}</td>
       <td style="max-width:300px;white-space:pre-wrap">${esc(f.message)}</td>
-      <td style="max-width:300px;white-space:pre-wrap" class="sub">${f.respuesta ? esc(f.respuesta) : f.status === 'resolved' ? '— (contestada antes de guardarse)' : '<span class="chip gris">Sin contestar</span>'}</td>
+      <td style="max-width:300px;white-space:pre-wrap" class="sub">${f.respuesta ? esc(f.respuesta) : f.status === 'resolved' ? '— (contestada antes de guardarse)' : '<span class="chip gris">Sin contestar</span>'}${contestar}</td>
       <td>${movil}</td><td>${arreglo}</td></tr>`
-  }).join('') || '<tr><td colspan="6" class="sub">No hay incidencias.</td></tr>'
+  }).join('') || '<tr><td colspan="6" class="sub">Nadie ha escrito todavía.</td></tr>'
 }
 $('i-filas').addEventListener('click', async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'inc')
+  const rc = ev.target.closest('.i-contestar'); if (rc) return abrirRespuesta(INCIDENCIAS.find(x => x.id === rc.dataset.id))
   const b = ev.target.closest('.i-avisar'); if (!b) return
   const f = INCIDENCIAS.find(x => x.id === b.dataset.id); if (!f) return
   const v = versionArreglo()
@@ -922,6 +939,42 @@ $('i-filas').addEventListener('click', async (ev) => {
   await cargarIncidencias()
 })
 $('i-version').addEventListener('change', versionArreglo)
+// ── INCIDENCIA-CONTESTAR-1 (17-oct, 113.ª) · contestar con tu texto (web-invitar-testers {modo:'contestar'}) ──
+const QUE_INC = { incidencia: 'tu incidencia', mejora: 'tu propuesta de mejora', sugerencia: 'tu sugerencia' }
+let resPara = null
+function resListo(listo) { // mandada, solo «Salir» (como AVISO-SALIR-1)
+  $('res-enviar').classList.toggle('oculto', listo)
+  $('res-cancelar').textContent = listo ? 'Salir' : 'Cancelar'
+  $('res-cancelar').className = listo ? 'btn' : 'btn2'
+  $('res-texto').disabled = listo
+}
+function abrirRespuesta(f) {
+  if (!f) return
+  resPara = f; resListo(false); $('res-aviso').innerHTML = ''
+  $('res-quien').textContent = f.nickname || f.email; $('res-ref').textContent = f.ref_code; $('res-msg').textContent = f.message
+  $('res-asunto').textContent = `Respuesta a ${QUE_INC[f.type] || 'tu mensaje'} ${f.ref_code}`
+  $('res-texto').value = `Hola${f.nickname ? ' ' + f.nickname : ''},\n\n\n\nUn saludo,\nMario`
+  delete $('res-texto').dataset.tecleado
+  $('res-capa').classList.remove('oculto')
+  $('res-texto').focus(); $('res-texto').setSelectionRange($('res-texto').value.indexOf('\n\n') + 2, $('res-texto').value.indexOf('\n\n') + 2)
+}
+$('res-cancelar').onclick = () => { const salir = $('res-cancelar').textContent === 'Salir'; $('res-capa').classList.add('oculto'); delete $('res-texto').dataset.tecleado; if (salir) cargarIncidencias() }
+$('res-enviar').onclick = async () => {
+  const texto = $('res-texto').value.trim(), f = resPara
+  if (!f) return
+  if (texto.replace(/^Hola[^\n]*|Un saludo,\s*Mario$/g, '').trim().length < 3) return ($('res-aviso').innerHTML = '<div class="aviso mal">Escribe la respuesta.</div>')
+  if (!confirm(`¿Mandar la respuesta a ${f.nickname || f.email} (${f.ref_code})? Le llega una notificación y un correo.`)) return
+  $('res-enviar').disabled = true
+  try {
+    const r = await invitar({ modo: 'contestar', id: f.id, texto })
+    if (!r || !('enviados' in r)) throw new Error('la función del servidor aún no tiene «Contestar» (falta publicarla)')
+    const partes = [r.enviados ? `✅ Notificación en ${r.enviados} ${r.enviados === 1 ? 'móvil' : 'móviles'}` : '❌ Sin notificación (no tiene la app o las notificaciones)',
+      r.correo === 'enviado' ? '✅ Correo enviado' : r.correo === 'baja' ? '❌ Sin correo: se dio de baja de los correos' : '❌ El correo no ha salido']
+    $('res-aviso').innerHTML = `<div class="aviso ok">${partes.join(' · ')}</div>`
+    resListo(true)
+  } catch (e) { $('res-aviso').innerHTML = `<div class="aviso mal">No se ha podido mandar: ${esc(e.message)}</div>` }
+  $('res-enviar').disabled = false
+}
 $('p-inc').onclick = () => { verPestana('inc'); iAviso(''); cargarIncidencias() }
 // ── CONTENIDO-WEB-1 (16-oct-2026, 110.ª) · guías en vídeo y noticias, como en el Panel admin de la app (src/lib/videos.ts) ──
 const mb = (b) => (b / 1048576).toFixed(1).replace('.', ',') + ' MB'
@@ -1348,7 +1401,7 @@ const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
   if (enCamino > 0 || escrito()) return true
-  return !$('push-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
