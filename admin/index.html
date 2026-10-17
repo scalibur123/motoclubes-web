@@ -250,6 +250,13 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo</th></tr></thead><tbody id="n-filas"></tbody></table></div>
 </main>
 <!-- TESTERS-SEGUIMIENTO-1: el aviso (push) a un rider -->
+<!-- ENVIOS-FICHA-1: lo que le llegó, tal cual (notificación y correo) -->
+<div id="ver-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:55;padding:16px">
+  <div class="card" style="max-width:620px;width:100%;max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:14px">
+    <div id="ver-cuerpo"></div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn" id="ver-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="push-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
   <div class="card" style="max-width:460px;width:100%;display:flex;flex-direction:column;gap:12px">
     <div style="font-weight:800;font-size:18px">Mandar un aviso a <span id="push-quien"></span></div>
@@ -538,6 +545,8 @@ function chipEnvio(at, mano, programado, que) { // que: 'Recordatorio' | 'Ayuda'
   return programado < new Date() ? `<span class="chip gris">${que} automátic${que === 'Ayuda' ? 'a' : 'o'} en la próxima tanda</span>`
     : `<span class="chip gris">${que} automátic${que === 'Ayuda' ? 'a' : 'o'} el ${fechaD(programado)} · programad${que === 'Ayuda' ? 'a' : 'o'}</span>`
 }
+// ENVIOS-FICHA-1 (17-oct, Mario: «lo último que se toca es lo primero que aparece»): lo más reciente de esa persona
+const toqueT = (t) => [t.apuntado, t.invitado_at, t.clic_at, t.recordatorio_at, t.ayuda_at, t.play_enviado_at, t.play_clic_at, t.desde].map(x => x || '').sort().pop()
 function estadoFila(t) {
   const btn = (cls, txt) => ` <button class="btn3 ${cls}" data-email="${esc(t.email)}" style="margin-left:4px;padding:5px 12px">${txt}</button>`
   if (t.fase === 'dentro') return '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
@@ -607,7 +616,7 @@ function pintarTesters() {
   $('t-enviar').disabled = !por.length
   pintarPeriodo('t-periodo', T, (t) => t.apuntado, 'se apuntaron', perT, (k) => { perT = k; pintarTesters() }) // PERIODO-1
   const vis = T.filter(t => enPeriodo(t.apuntado, perT) && (!filtroFase || t.fase === filtroFase) && (!filtroOrigen || grupoOrigen(t.origen)[0] === filtroOrigen))
-    .sort((a, b) => ORDEN_FASE[a.fase] - ORDEN_FASE[b.fase] || String(b.desde || b.apuntado).localeCompare(String(a.desde || a.apuntado)))
+    .sort((a, b) => ORDEN_FASE[a.fase] - ORDEN_FASE[b.fase] || toqueT(b).localeCompare(toqueT(a))) // dentro de cada fase, lo último tocado arriba
   // Lo que se está viendo, y quitar el filtro
   const viendo = [filtroFase && FASES.find(x => x[0] === filtroFase)[1], filtroOrigen && grupoOrigen(T.find(t => grupoOrigen(t.origen)[0] === filtroOrigen)?.origen)[1]].filter(Boolean)
   $('t-filtro').innerHTML = viendo.length ? `<span class="sub">Viendo: <b>${esc(viendo.join(' · '))}</b> (${vis.length})</span> <button type="button" class="btn3" id="t-quitar" style="margin-left:8px;padding:4px 12px">Ver todos</button>` : ''
@@ -774,6 +783,21 @@ document.addEventListener('click', (ev) => {
   th.parentNode.querySelectorAll('th[data-o]').forEach(h => { h.textContent = h.textContent.replace(/ [▲▼]$/, '') + (h === th ? (asc ? ' ▲' : ' ▼') : '') })
 })
 const ENVIO_TXT = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
+// ENVIOS-FICHA-1 (17-oct, Mario: «¿y cómo sé qué le he mandado?»): la notificación y el correo tal cual le llegaron
+async function verEnvio(id) {
+  $('ver-cuerpo').innerHTML = '<div class="sub">Cargando…</div>'; $('ver-capa').classList.remove('oculto')
+  let r
+  try { r = await invitar({ modo: 'envio', id: Number(id) }) } catch (e) { $('ver-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido abrir: ${esc(e.message)}</div>`; return }
+  const caja = (t) => `<div style="white-space:pre-wrap;background:var(--bg,#f6f4f1);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.5">${esc(t)}</div>`
+  const not = r.notificacion ? `<div style="font-weight:800">📱 Notificación en el móvil</div>${caja((r.notificacion.titulo ? r.notificacion.titulo + '\n' : '') + (r.notificacion.texto || ''))}` : ''
+  const cor = r.correo ? `<div style="font-weight:800">✉️ Correo</div><div class="sub">Asunto: <b>${esc(r.correo.asunto || '—')}</b></div>${r.correo.texto ? caja(r.correo.texto) : `<div class="sub">${esc(r.correo.nota || 'Sin texto guardado.')}</div>`}` : ''
+  $('ver-cuerpo').innerHTML = `<div style="font-weight:800;font-size:18px;margin-bottom:6px">${esc(QUE_TXT_E[r.que] || r.que)} · ${fechaHora(r.creado)}</div>
+    <div style="display:flex;flex-direction:column;gap:10px">${not}${cor || (not ? '' : '<div class="sub">No se guardó lo que se mandó.</div>')}</div>`
+}
+const QUE_TXT_E = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
+$('ver-cerrar').onclick = () => $('ver-capa').classList.add('oculto')
+$('ver-capa').onclick = (ev) => { if (ev.target === $('ver-capa')) $('ver-capa').classList.add('oculto') }
+document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.f-ver'); if (b) verEnvio(b.dataset.id) })
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
@@ -975,7 +999,7 @@ async function verFicha(email, vuelve) {
   const env = !('envios' in f) ? '<div class="sub" style="padding:16px">Falta desplegar la función nueva para verlo.</div>'
     : f.envios === null ? '<div class="sub" style="padding:16px">Falta crear la tabla en Supabase (db/envios_rider.sql) para verlo.</div>'
     : envios.length ? `<table class="ordenable"><thead><tr><th data-o>Cuándo</th><th data-o>Qué</th><th data-o>Notificación</th><th data-o>Correo</th><th data-o>Quién</th></tr></thead><tbody>${envios.map(x =>
-      `<tr><td class="sub" data-v="${esc(x.creado)}">${fechaHora(x.creado)}</td><td><b>${esc(QUE_TXT[x.que] || x.que)}</b>${x.titulo ? `<div class="sub" style="font-size:12px">${esc(x.titulo)}</div>` : ''}</td>
+      `<tr><td class="sub" data-v="${esc(x.creado)}">${fechaHora(x.creado)}</td><td><b>${esc(QUE_TXT[x.que] || x.que)}</b>${x.titulo ? `<div class="sub" style="font-size:12px">${esc(x.titulo)}</div>` : ''}${x.id ? `<div><button class="btn3 f-ver" data-id="${esc(x.id)}" style="margin-top:6px;padding:4px 12px">Ver lo que le llegó</button></div>` : ''}</td>
        <td>${pushTxt(x.push)}</td><td>${correoTxt2(x.correo)}</td><td class="sub">${x.por === 'auto' ? 'Automático' : 'Tú'}</td></tr>`).join('')}</tbody></table>`
     : '<div class="sub" style="padding:16px">Todavía no le hemos mandado nada.</div>'
   await cargarUltima()
@@ -1246,7 +1270,7 @@ const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
   if (enCamino > 0 || escrito()) return true
-  return !$('push-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+  return !$('push-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
