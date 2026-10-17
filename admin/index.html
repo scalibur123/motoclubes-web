@@ -412,11 +412,12 @@ function pintarAltas() {
     <td>${estado(a)}${a.envio_error ? `<div class="sub" style="font-size:12px">${esc(a.envio_error).slice(0, 120)}</div>` : ''}</td>
     <td class="sub">${esc(a.correo || '')}</td>
     <td style="text-align:center">${[(a.cambios_pendientes ? a.cambios_pendientes + ' cambio' + (a.cambios_pendientes > 1 ? 's' : '') : ''), (a.correos_sin_contestar ? a.correos_sin_contestar + ' correo' + (a.correos_sin_contestar > 1 ? 's' : '') : '')].filter(Boolean).join(' · ') || '—'}</td>
-    <td style="text-align:right">${a.clase === 'invitacion' ? `<button class="btnx" title="Borrar esta invitación" data-borra-inv="${a.id}" data-nombre="${esc(a.nombre)}">🗑️</button>` : ''}</td>
+    <td style="text-align:right;white-space:nowrap">${a.correo ? `<button class="btn3" data-escribir="${esc(a.id)}" style="padding:4px 12px">✉️ Escribir</button> ` : ''}${a.clase === 'invitacion' ? `<button class="btnx" title="Borrar esta invitación" data-borra-inv="${a.id}" data-nombre="${esc(a.nombre)}">🗑️</button>` : ''}</td>
   </tr>`).join('') || '<tr><td colspan="6" class="sub">Aún no hay altas.</td></tr>'
   $('filas').querySelectorAll('[data-borra-inv]').forEach(b => b.onclick = () => borrar('invitacion', b.dataset.borraInv, b.dataset.nombre))
   $('filas').querySelectorAll('[data-reinvitar]').forEach(b => b.onclick = () => reinvitar(b.dataset.reinvitar)) // RF-CADUCA-1
   $('filas').querySelectorAll('[data-alta]').forEach(b => b.onclick = () => irAFichaNegocio(ALTAS.find(x => String(x.id) === b.dataset.alta))) // PULSAR-TODO-1
+  $('filas').querySelectorAll('[data-escribir]').forEach(b => b.onclick = () => { const a = ALTAS.find(x => String(x.id) === b.dataset.escribir); if (a) abrirCorreo(a.nombre, a.correo, null) }) // CORREO-NEGOCIO-1
 }
 // PULSAR-TODO-1: de una fila de Altas a la ficha de ese negocio en «Negocios» (por nombre, y si no por correo). Si no tiene, se dice.
 function irAFichaNegocio(a) {
@@ -1421,10 +1422,12 @@ function mailListo(listo) {
   $('mail-cancelar').className = listo ? 'btn' : 'btn2'
   ;['mail-asunto', 'mail-texto', 'mail-fuera'].forEach(k => { $(k).disabled = listo })
 }
-$('f2-escribir').onclick = () => {
-  const c = cands.find(x => x.id === fichaId); if (!c || !c.correo) return
+let correoDesdeFicha = null // CORREO-NEGOCIO-1: si se abrió desde una ficha de Negocios, al salir se repinta su lista
+$('f2-escribir').onclick = () => { const c = cands.find(x => x.id === fichaId); if (c && c.correo) abrirCorreo(c.nombre, c.correo, c.id) }
+function abrirCorreo(nombre, correo, desdeFicha) {
+  correoDesdeFicha = desdeFicha
   mailListo(false); $('mail-aviso').innerHTML = ''
-  $('mail-quien').textContent = c.nombre || c.correo; $('mail-para').value = c.correo
+  $('mail-quien').textContent = nombre || correo; $('mail-para').value = correo
   $('mail-asunto').value = ''; $('mail-texto').value = ''; $('mail-fuera').checked = false
   ;['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
   $('mail-enviar').textContent = 'Enviar'
@@ -1434,7 +1437,7 @@ $('mail-fuera').onchange = () => { $('mail-enviar').textContent = $('mail-fuera'
 $('mail-cancelar').onclick = () => {
   const salir = $('mail-cancelar').textContent === 'Salir'
   $('mail-capa').classList.add('oculto'); ['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
-  if (salir) { const c = cands.find(x => x.id === fichaId); if (c) pintarCorreosNeg(c) }
+  if (salir && correoDesdeFicha) { const c = cands.find(x => x.id === correoDesdeFicha); if (c) pintarCorreosNeg(c) }
 }
 $('mail-enviar').onclick = async () => {
   const asunto = $('mail-asunto').value.trim(), texto = $('mail-texto').value.trim(), fuera = $('mail-fuera').checked, para = $('mail-para').value
@@ -1444,7 +1447,7 @@ $('mail-enviar').onclick = async () => {
   $('mail-enviar').disabled = true
   try {
     await invitar({ modo: 'correo', email: para, asunto, texto, fuera })
-    $('mail-aviso').innerHTML = `<div class="aviso ok">${fuera ? '✅ Apuntado en su ficha.' : '✅ Correo enviado y guardado en su ficha.'}</div>`
+    $('mail-aviso').innerHTML = `<div class="aviso ok">${fuera ? '✅ Apuntado.' : '✅ Correo enviado y guardado.'}</div>`
     mailListo(true)
   } catch (e) { $('mail-aviso').innerHTML = `<div class="aviso mal">${fuera ? 'No se ha podido apuntar' : 'No ha salido'}: ${esc(e.message)}</div>` }
   $('mail-enviar').disabled = false
