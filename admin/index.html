@@ -830,7 +830,16 @@ $('r-invitan').onclick = () => { verInvitan = !verInvitan; try { sessionStorage.
 async function pintarInvitan() {
   const { data, error } = await sb.rpc('mc_admin_invitadores')
   if (error) { $('r-inv').innerHTML = `<div class="sub" style="padding:16px">${/mc_admin_invitadores/.test(error.message) ? 'Falta el SQL nuevo (db/invitadores.sql) para verlo.' : 'No se ha podido cargar: ' + esc(error.message)}</div>`; return }
-  INVITAN = data || []
+  // Mario (11:36): fuera sus propias pruebas (Cantabron_motero, su cuenta) y los enlaces de grupo de antes del 17-sep: hasta
+  // entonces el enlace de WhatsApp no funcionaba en grupos privados ni se marcaba al usarse (db/invitacion_externa.sql), y no
+  // dicen nada (el de Pach del 18-may).
+  const yo = String($('quien').textContent || '').toLowerCase()
+  INVITAN = (data || []).filter(r => String(r.email || '').toLowerCase() !== yo).map(r => {
+    if (!r.grupos) return r
+    const lista = r.grupos.lista.filter(x => String(x.creado) >= '2026-09-17')
+    const g = lista.length ? { ...r.grupos, lista, enlaces: lista.length, usados: lista.filter(x => x.estado === 'accepted').length } : null
+    return { ...r, grupos: g }
+  }).filter(r => r.grupos || r.perfil)
   $('r-invitan').textContent = `💬 Quién invita · ${INVITAN.length}`
   const grupos = (g) => !g ? '<span class="sub">—</span>' : `${g.enlaces} enlace${g.enlaces > 1 ? 's' : ''} · ${g.usados ? `<span class="chip verde">${g.usados} usado${g.usados > 1 ? 's' : ''}</span>` : ''}${g.enlaces - g.usados ? `<span class="chip gris">${g.enlaces - g.usados} sin usar</span>` : ''}<div class="sub" style="font-size:12px">${g.lista.map(x => `«${esc(x.etiqueta || x.grupo || '')}» · ${fecha(x.creado)}`).join('<br>')}</div>`
   const perfil = (w) => !w ? '<span class="sub">—</span>' : `${w.apuntados} ${w.apuntados === 1 ? 'invitación' : 'invitaciones'}<div class="sub" style="font-size:12px">${w.lista.map(x => `${esc(x.apodo || x.email.split('@')[0])}${x.en_app ? ' ✅' : ''}`).join(' · ')}</div>`
