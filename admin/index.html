@@ -392,6 +392,9 @@ async function entrar() {
   if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
+  // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
+  const donde = decodeURIComponent(location.hash.slice(1))
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'gui', 'not']
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -401,6 +404,10 @@ async function entrar() {
   // SOLICITUDES-1 (15-oct, Mario: «cuando entro en el portal no me lo refresca […] son solicitudes más que testers»): la
   // pestaña se llama «Solicitudes» y su cifra (los que faltan por invitar) se carga al entrar, como Riders.
   await Promise.all([cargar(), cargarCand(), cargarRiders(), cargarTesters()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
+  if (!fichaUrl) { // SIGUE-DONDE-ESTABAS-1
+    if (donde.startsWith('ficha=')) { const [em, vu] = donde.slice(6).split('|'); if (em) verFicha(em, PESTANAS.includes(vu) ? vu : 'rid') }
+    else if (PESTANAS.includes(donde) && donde !== 'altas') $('p-' + donde).click()
+  }
 }
 $('l-entrar').onclick = async () => {
   $('l-error').classList.add('oculto'); $('l-entrar').disabled = true
@@ -476,6 +483,9 @@ const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: '
 const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
 let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
 function verPestana(cual) {
+  // SIGUE-DONDE-ESTABAS-1 (17-oct, Mario: «cada vez que recargo me lleva a Altas; donde esté se debe actualizar sin sacarme»):
+  // la pestaña va en la dirección (#test, #rid…); la ficha de un rider la pone verFicha (#ficha=…).
+  if (cual !== 'ficha') { try { history.replaceState(history.state, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
   $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
@@ -498,6 +508,7 @@ let TESTERS = []
 const FASES = [['te_toca', 'Te toca a ti'], ['dentro', 'Dentro'], ['a_medias', 'A medias'], ['sin_pulsar', 'Sin pulsar']]
 const ORDEN_FASE = { te_toca: 0, a_medias: 1, sin_pulsar: 2, dentro: 3 }
 let filtroFase = null, filtroOrigen = null
+try { const g = JSON.parse(sessionStorage.getItem('mc_filtro_sol') || '{}'); filtroFase = g.f || null; filtroOrigen = g.o || null } catch (e) {} // SIGUE-DONDE-ESTABAS-1
 async function cargarTesters() {
   try { TESTERS = (await invitar({ modo: 'lista' })).filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
   if (TESTERS.length && !('fase' in TESTERS[0])) tAviso('Falta desplegar la función nueva (web-invitar-testers): los números no se pueden calcular.')
@@ -570,6 +581,7 @@ function pintarOrigen(L) {
     <div class="sub" style="font-size:12px;margin-top:8px">Pulsa una fila para ver solo esos. La web apunta el origen desde el 15 oct; Instagram solo es seguro si el enlace lleva <b>?o=instagram</b>.</div>`
 }
 function pintarTesters() {
+  try { sessionStorage.setItem('mc_filtro_sol', JSON.stringify({ f: filtroFase, o: filtroOrigen })) } catch (e) {} // SIGUE-DONDE-ESTABAS-1
   const T = TESTERS, de = (f) => T.filter(t => t.fase === f)
   const toca = de('te_toca'), dentro = de('dentro'), medias = de('a_medias'), sinP = de('sin_pulsar')
   const nPlay = toca.filter(t => t.plataforma === 'android').length // ANDROID-PLAY-DIRECTO-1
@@ -682,7 +694,7 @@ function abrirAviso(email, quien, abrio, movil, version) {
     : 'Planifica tu próxima ruta con curvas y puertos y sal con tu grupo, todos en el mapa y hablando por la radio del casco.'
   $('push-capa').classList.remove('oculto')
 }
-$('push-cancelar').onclick = () => $('push-capa').classList.add('oculto')
+$('push-cancelar').onclick = () => { $('push-capa').classList.add('oculto'); if ($('push-cancelar').textContent === 'Salir') { if (!$('v-rid').classList.contains('oculto')) cargarRiders(); if (!$('v-ficha').classList.contains('oculto') && FICHA) verFicha(FICHA.email, fichaVuelve) } } // AVISO-SALIR-1: al salir, se ve al día
 // AVISO-SALIR-1 (17-oct, Mario: «debería quedarse mandado y abajo salir; no cancelar ni enviar»): mandado el aviso, el cuadro
 // enseña cómo ha llegado y solo queda «Salir». Si no llegó por ningún lado, siguen los dos botones para volver a probar.
 function avisoListo(listo) {
@@ -903,7 +915,9 @@ const CORREO_TXT = { delivered: '✅ Entregado', sent: 'Enviado, entregándose',
   suppressed: '❌ No enviado: dirección bloqueada', opened: '✅ Abierto', clicked: '✅ Pulsado' }
 const correoTxt = (c) => !c ? 'Sin datos (enviado antes del seguimiento)' : c.error ? 'No se ha podido consultar' : (CORREO_TXT[c.estado] || esc(c.estado || '—'))
 async function verFicha(email, vuelve) {
-  fichaVuelve = vuelve; verPestana('ficha'); window.scrollTo(0, 0); $('f-aviso').innerHTML = ''
+  fichaVuelve = vuelve; verPestana('ficha')
+  try { history.replaceState(history.state, '', location.pathname + location.search + '#ficha=' + encodeURIComponent(email) + '|' + vuelve) } catch (e) {} // SIGUE-DONDE-ESTABAS-1
+  window.scrollTo(0, 0); $('f-aviso').innerHTML = ''
   $('f-cuerpo').innerHTML = '<div class="sub">Cargando la ficha…</div>'
   let f
   try { f = await invitar({ modo: 'ficha', email }) } catch (e) { $('f-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido cargar la ficha: ${esc(e.message)}</div>`; return }
@@ -1178,6 +1192,38 @@ function invitarCand(id) {
   previo = 'telefono'; opciones($('f-previo'), PREVIO, previo, v => previo = v)
   $('form').classList.remove('oculto'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
+// PANEL-SE-ACTUALIZA-1 (17-oct, Mario: «yo no debería recargar el panel; cuando salga, debe recargarlo solo»). Cada minuto y
+// al volver a la pestaña se mira si en la web hay otra versión de esta página (su ETag o su fecha en GitHub Pages, sin
+// caché). Si la hay: se recarga sola si no estás escribiendo ni con un cuadro abierto; si lo estás, sale un aviso arriba
+// para que la recargues tú cuando acabes, y no pierdes lo que escribías.
+let firmaPanel = null
+async function firmaDelPanel() {
+  try {
+    const r = await fetch(location.pathname + '?v=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+    return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null
+  } catch (e) { return null }
+}
+const ocupado = () => {
+  const a = document.activeElement
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
+  return !$('push-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+}
+async function mirarVersionPanel() {
+  const f = await firmaDelPanel()
+  if (!f) return
+  if (!firmaPanel) { firmaPanel = f; return }
+  if (f === firmaPanel) return
+  if (!ocupado()) return location.reload()
+  if (!$('panel-nuevo')) {
+    const d = document.createElement('div'); d.id = 'panel-nuevo'
+    d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:60;background:#161412;color:#fff;border-radius:50px;padding:10px 16px;font:600 14px Manrope,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.25)'
+    d.innerHTML = 'Hay una versión nueva del panel <button class="btn" style="padding:6px 14px">Actualizar</button>'
+    d.querySelector('button').onclick = () => location.reload()
+    document.body.appendChild(d)
+  }
+}
+mirarVersionPanel(); setInterval(mirarVersionPanel, 60000)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) mirarVersionPanel() })
 entrar()
 </script>
 </body>
