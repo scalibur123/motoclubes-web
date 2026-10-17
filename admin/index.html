@@ -577,8 +577,12 @@ function pintarTesters() {
     <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${estadoFila(t)}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">${viendo.length || perT !== 'todos' ? 'Nadie con ese filtro.' : 'Nadie en la lista.'}</td></tr>`
 }
 // Mandar el recordatorio o la ayuda (uno o varios) y decir qué ha pasado
+let enviandoAviso = false // revisión: mientras sale un envío, ningún otro botón manda (la función mira lo enviado al empezar)
 async function mandarAviso(modo, emails) {
   const que = modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'
+  if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
+  enviandoAviso = true
+  document.querySelectorAll('.t-recordar, .t-ayuda, #t-grupo-enviar').forEach(b => { b.disabled = true })
   tAviso('Enviando…', true)
   try {
     const r = await invitar({ modo, emails })
@@ -586,6 +590,7 @@ async function mandarAviso(modo, emails) {
     const txt = [r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')
     tAviso(`${que[0].toUpperCase() + que.slice(1)}: ${txt}.`, !!r.enviados && !(r.fallos || []).length)
   } catch (e) { tAviso(`No se ha podido mandar ${que}: ${esc(e.message)}`) }
+  enviandoAviso = false
   await cargarTesters()
 }
 $('t-cifras').onclick = (ev) => { const b = ev.target.closest('[data-fase]'); if (!b) return; filtroFase = filtroFase === b.dataset.fase ? null : b.dataset.fase; pintarTesters(); if (filtroFase) $('t-periodo').scrollIntoView({ behavior: 'smooth', block: 'start' }) }
@@ -929,6 +934,7 @@ $('t-filas').onclick = async (ev) => {
   // TESTERS-AVISOS-1: «Recordar» y «Mandar ayuda» de una fila
   const av = ev.target.closest('.t-recordar, .t-ayuda')
   if (av) {
+    if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
     const modo = av.classList.contains('t-ayuda') ? 'ayuda' : 'recordar'
     if (!confirm(`¿Mandar ${modo === 'ayuda' ? 'la ayuda («Te falta un paso»)' : 'el recordatorio'} a ${av.dataset.email}?`)) return
     av.disabled = true; av.textContent = 'Enviando…'
