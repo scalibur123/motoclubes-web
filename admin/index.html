@@ -842,6 +842,18 @@ async function pintarInvitan() {
     <div class="sub" style="padding:12px 18px;font-size:12px">✅ = ya tiene la app. De un enlace de WhatsApp de grupo la base sabe si alguien entró, no quién. Del enlace del perfil sabemos quién se apuntó, no por dónde lo compartió.</div>`
     : '<div class="sub" style="padding:16px">Nadie ha invitado todavía.</div>'
 }
+// INVITADOS-FASE-1 (17-oct, Mario: «Por invitar […] parece que tengo que hacer yo algo. Está invitado por Joca, pero no ha
+// descargado la app»): el estado de cada invitado con la misma regla que Solicitudes; «Te toca» solo cuando de verdad te toca.
+function estadoInvitado(i) {
+  if (i.tiene_app) return '<span class="chip verde">Ya tiene la app</span>'
+  if (i.baja_at) return '<span class="chip rojo">Se dio de baja</span>'
+  if (!i.confirmado_at) return '<span class="chip amar">Sin la app · no confirmó su correo</span>'
+  if (i.fase === 'te_toca' && i.motivo === 'play') return '<span class="chip amar" style="white-space:normal">Sin la app · te toca: alta en Play</span>'
+  if (i.fase === 'te_toca') return '<span class="chip amar">Sin la app · te toca: invitarle</span>'
+  if (i.fase === 'a_medias') return `<span class="chip gris">Sin la app · ${i.plataforma === 'android' ? 'tiene el enlace de Play' : 'tiene TestFlight'}</span>`
+  if (i.fase === 'sin_pulsar') return '<span class="chip gris">Sin la app · no ha pulsado la invitación</span>'
+  return i.invitado_at ? '<span class="chip gris">Sin la app</span>' : '<span class="chip gris">Sin la app</span>'
+}
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
@@ -1032,7 +1044,7 @@ async function verFicha(email, vuelve) {
     : '<div class="sub" style="padding:16px">Sin sesiones registradas en los últimos 90 días.</div>'
   const inv = f.invitados.length ? `<table class="ordenable"><thead><tr><th data-o>Correo</th><th data-o>Móvil</th><th data-o>Se apuntó</th><th data-o>Estado</th></tr></thead><tbody>${f.invitados.map(i =>
       `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
-      <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
+      <td>${estadoInvitado(i)}</td></tr>`).join('')}</tbody></table>`
     : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie desde su perfil.' : '—'}</div>`
   // FICHA-INVITACIONES-1 (17-oct, Mario: «hay dos sitios para invitar. Quiero ver los dos»): también lo que invita desde sus
   // grupos: por WhatsApp (la base no guarda quién entró con ella) y a riders de la app.
