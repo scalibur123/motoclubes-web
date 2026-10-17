@@ -269,6 +269,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// PANEL-SE-ACTUALIZA-1 (revisión): cuántas llamadas están en camino (guardar, enviar…). Mientras haya alguna, el panel no se recarga solo.
+const fetchOriginal = window.fetch.bind(window)
+let enCamino = 0
+window.fetch = async (...a) => { enCamino++; try { return await fetchOriginal(...a) } finally { enCamino-- } }
 const sb = supabase.createClient('https://yxmirhpwmdmaxynlshdx.supabase.co', 'sb_publishable_qfrmrp5BiNcg1U0gFtA78w_oRAMGzDi')
 const $ = (id) => document.getElementById(id)
 const esc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -314,6 +318,10 @@ function estado(a) {
   return `${envio} ${quedan <= 3 ? `<span class="chip amar">${cuando} · ${dia(a.caduca_en)}</span>` : `<span class="chip gris">Caduca el ${dia(a.caduca_en)}</span>`}`
 }
 const TIPO_TXT = Object.fromEntries(TIPOS)
+// RF-CADUCA-1 (revisión): una invitación caducada ya no cuenta ni se enseña si al MISMO negocio (mismo nombre y correo) le
+// salió otra después. La misma regla para el número de arriba y para la tabla.
+const mismoNeg = (a, b) => String(a.correo || '').toLowerCase() === String(b.correo || '').toLowerCase() && String(a.nombre || '').trim().toLowerCase() === String(b.nombre || '').trim().toLowerCase()
+const sustituida = (a, lista) => lista.some(b => b !== a && b.clase === 'invitacion' && mismoNeg(a, b) && String(b.enviada_en || '9') > String(a.enviada_en || ''))
 async function cargar() {
   const { data, error } = await sb.rpc('mc_rf_admin_altas')
   if (error) return aviso('No se han podido cargar las altas: ' + esc(error.message))
@@ -321,7 +329,7 @@ async function cargar() {
   const altas = data.altas || []
   $('n-altas').textContent = altas.length
   const mapa = altas.filter(a => a.activo).length, curso = altas.filter(a => a.clase === 'invitacion' && !a.caducada).length // RF-CADUCA-1: sin las caducadas
-  const caducadas = altas.filter(a => a.clase === 'invitacion' && a.caducada && !altas.some(b => b !== a && b.clase === 'invitacion' && b.correo === a.correo && !b.caducada)).length
+  const caducadas = altas.filter(a => a.clase === 'invitacion' && a.caducada && !sustituida(a, altas)).length
   const cambios = altas.reduce((n, a) => n + (a.cambios_pendientes || 0), 0), correos = altas.reduce((n, a) => n + (a.correos_sin_contestar || 0), 0)
   $('resumen').innerHTML = `${mapa} en el mapa · ${curso} invitaciones en curso${caducadas ? ` · <b style="color:var(--red)">${caducadas} caducada${caducadas > 1 ? 's' : ''}</b>` : ''} · ${cambios} cambios por revisar · ${correos} correos sin contestar · <b>Socios fundadores: ${fundadores} de 10</b>`
   $('f-quedan').textContent = `(quedan ${Math.max(0, 10 - fundadores)} de 10)`
@@ -357,8 +365,7 @@ async function borrar(clase, id, nombre) {
 function pintarAltas() {
   const pend = (a) => (a.cambios_pendientes || 0) + (a.correos_sin_contestar || 0)
   // RF-CADUCA-1: una invitación caducada a la que ya le siguió otra al mismo correo no se enseña (la nueva es la que cuenta)
-  const nueva = (a) => a.clase === 'invitacion' && a.caducada && ALTAS.some(b => b !== a && b.clase === 'invitacion' && b.correo === a.correo && String(b.enviada_en || '9') > String(a.enviada_en || ''))
-  const altas = ordenar(ALTAS.filter(a => !nueva(a)), ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
+  const altas = ordenar(ALTAS.filter(a => !(a.clase === 'invitacion' && a.caducada && sustituida(a, ALTAS))), ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
   marcarCab('a-cab', ordenA)
   $('filas').innerHTML = altas.map(a => `<tr>
     <td><b>${esc(a.nombre)}</b> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
@@ -485,7 +492,8 @@ let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante
 function verPestana(cual) {
   // SIGUE-DONDE-ESTABAS-1 (17-oct, Mario: «cada vez que recargo me lleva a Altas; donde esté se debe actualizar sin sacarme»):
   // la pestaña va en la dirección (#test, #rid…); la ficha de un rider la pone verFicha (#ficha=…).
-  if (cual !== 'ficha') { try { history.replaceState(history.state, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
+  // Revisión: sin el estado de la ficha de Negocios (si no, tras recargar «Volver» sacaba de la página)
+  if (cual !== 'ficha') { try { history.replaceState(null, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
   $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
@@ -960,6 +968,7 @@ async function verFicha(email, vuelve) {
   const pushTxt = (n) => n == null ? '<span class="sub">—</span>' : n > 0 ? `<span class="chip verde">✅ ${n} ${n === 1 ? 'móvil' : 'móviles'}</span>` : '<span class="chip rojo">No le llegó</span>'
   const correoTxt2 = (c) => c === 'enviado' ? '<span class="chip verde">✅ Enviado</span>' : c === 'fallo' ? '<span class="chip rojo">No salió</span>' : c === 'baja' ? '<span class="chip rojo">Se dio de baja</span>' : '<span class="sub">—</span>'
   const env = !('envios' in f) ? '<div class="sub" style="padding:16px">Falta desplegar la función nueva para verlo.</div>'
+    : f.envios === null ? '<div class="sub" style="padding:16px">Falta crear la tabla en Supabase (db/envios_rider.sql) para verlo.</div>'
     : envios.length ? `<table class="ordenable"><thead><tr><th data-o>Cuándo</th><th data-o>Qué</th><th data-o>Notificación</th><th data-o>Correo</th><th data-o>Quién</th></tr></thead><tbody>${envios.map(x =>
       `<tr><td class="sub" data-v="${esc(x.creado)}">${fechaHora(x.creado)}</td><td><b>${esc(QUE_TXT[x.que] || x.que)}</b>${x.titulo ? `<div class="sub" style="font-size:12px">${esc(x.titulo)}</div>` : ''}</td>
        <td>${pushTxt(x.push)}</td><td>${correoTxt2(x.correo)}</td><td class="sub">${x.por === 'auto' ? 'Automático' : 'Tú'}</td></tr>`).join('')}</tbody></table>`
@@ -1029,10 +1038,11 @@ $('t-enviar').onclick = async () => {
   $('t-enviar').disabled = true; tAviso('Enviando…', true)
   // PLAY-SIN-INVITAR-1: uno a uno, solo a los de la lista de arriba (el envío «a todos» de la función no sabe lo del enlace de Play)
   let enviados = 0; const fallos = []
-  for (const t of por) {
+  enCamino++ // PANEL-SE-ACTUALIZA-1: no se recarga a mitad de la tanda
+  try { for (const t of por) {
     try { const r = await invitar({ modo: 'enviar', email: t.email }); if (r.enviados) enviados += r.enviados; else fallos.push(t.email) }
     catch (e) { fallos.push(t.email) }
-  }
+  } } finally { enCamino-- }
   tAviso(fallos.length ? `Enviadas ${enviados} de ${por.length}. No salieron: ${esc(fallos.join(', '))}` : `✅ Enviadas ${enviados} invitaciones.`, !fallos.length)
   await cargarTesters()
 }
@@ -1211,16 +1221,26 @@ function invitarCand(id) {
 // al volver a la pestaña se mira si en la web hay otra versión de esta página (su ETag o su fecha en GitHub Pages, sin
 // caché). Si la hay: se recarga sola si no estás escribiendo ni con un cuadro abierto; si lo estás, sale un aviso arriba
 // para que la recargues tú cuando acabes, y no pierdes lo que escribías.
+// Revisión (17-oct): se compara el contenido de la página, no su ETag (GitHub Pages lo cambia aunque solo se publique otra
+// página de la web), y cuenta como ocupado tener algo escrito aunque ya no estés en el campo, o algo enviándose.
 let firmaPanel = null
 async function firmaDelPanel() {
   try {
-    const r = await fetch(location.pathname + '?v=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
-    return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null
+    const r = await fetchOriginal(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })
+    if (!r.ok) return null
+    const t = await r.text()
+    let h = 2166136261
+    for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) }
+    return t.length + ':' + (h >>> 0)
   } catch (e) { return null }
 }
+// Lo que TÚ has escrito (no lo que rellena el panel): se marca al teclear y cuenta mientras el campo no esté vacío.
+document.addEventListener('input', (ev) => { if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) ev.target.dataset.tecleado = '1' }, true)
+const escrito = () => [...document.querySelectorAll('[data-tecleado]')].some(e => !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
 const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
+  if (enCamino > 0 || escrito()) return true
   return !$('push-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 async function mirarVersionPanel() {
