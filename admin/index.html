@@ -802,8 +802,11 @@ async function verEnvio(id) {
   let r
   try { r = await invitar({ modo: 'envio', id: Number(id) }) } catch (e) { $('ver-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido abrir: ${esc(e.message)}</div>`; return }
   const caja = (t) => `<div style="white-space:pre-wrap;background:var(--bg,#f6f4f1);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.5">${esc(t)}</div>`
-  const not = r.notificacion ? `<div style="font-weight:800">📱 Notificación en el móvil</div>${caja((r.notificacion.titulo ? r.notificacion.titulo + '\n' : '') + (r.notificacion.texto || ''))}` : ''
-  const cor = r.correo ? `<div style="font-weight:800">✉️ Correo</div><div class="sub">Asunto: <b>${esc(r.correo.asunto || '—')}</b></div>${r.correo.texto ? caja(r.correo.texto) : `<div class="sub">${esc(r.correo.nota || 'Sin texto guardado.')}</div>`}` : ''
+  // 113.ª (revisión de la 112.ª): si no llegó a ningún móvil o el correo no salió, se dice arriba en rojo (antes parecía recibido)
+  const noLlego = (t) => `<div class="aviso mal" style="margin:0">${t}</div>`
+  const not = r.notificacion ? `<div style="font-weight:800">📱 Notificación${r.push > 0 ? ` · le llegó a ${r.push} ${r.push === 1 ? 'móvil' : 'móviles'}` : ''}</div>${r.push === 0 ? noLlego('No le llegó a ningún móvil (no tiene la app o tiene las notificaciones quitadas). Esto es lo que se intentó mandar:') : ''}${caja((r.notificacion.titulo ? r.notificacion.titulo + '\n' : '') + (r.notificacion.texto || ''))}` : ''
+  const malCorreo = r.estado_correo === 'fallo' ? 'Este correo NO salió (falló el envío). Esto es lo que se intentó mandar:' : r.estado_correo === 'baja' ? 'Este correo NO se le mandó: se dio de baja de los correos.' : ''
+  const cor = r.correo ? `<div style="font-weight:800">✉️ Correo${r.estado_correo === 'enviado' ? ' · enviado' : ''}</div>${malCorreo ? noLlego(malCorreo) : ''}<div class="sub">Asunto: <b>${esc(r.correo.asunto || '—')}</b></div>${r.correo.texto ? caja(r.correo.texto) : `<div class="sub">${esc(r.correo.nota || 'Sin texto guardado.')}</div>`}` : ''
   $('ver-cuerpo').innerHTML = `<div style="font-weight:800;font-size:18px;margin-bottom:6px">${esc(QUE_TXT_E[r.que] || r.que)} · ${fechaHora(r.creado)}</div>
     <div style="display:flex;flex-direction:column;gap:10px">${not}${cor || (not ? '' : '<div class="sub">No se guardó lo que se mandó.</div>')}</div>`
 }
@@ -1383,17 +1386,23 @@ function invitarCand(id) {
 // para que la recargues tú cuando acabes, y no pierdes lo que escribías.
 // Revisión (17-oct): se compara el contenido de la página, no su ETag (GitHub Pages lo cambia aunque solo se publique otra
 // página de la web), y cuenta como ocupado tener algo escrito aunque ya no estés en el campo, o algo enviándose.
-let firmaPanel = null
+// 113.ª (revisión de la 112.ª): la referencia era la PRIMERA descarga, no la página que tienes abierta. Si el navegador te
+// abría el panel viejo de su memoria (GitHub Pages deja guardarla unos 10 minutos) y la web ya tenía el nuevo, la referencia
+// era ya el nuevo y nunca se recargaba (lo que vio Mario a las 11:36). Ahora se compara el código de la página ABIERTA (sus
+// <script> y <style>, que no cambian al usarla) con el de la que está publicada. Y la recarga pide la página nueva sin caché.
+const huella = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) } return t.length + ':' + (h >>> 0) }
+const codigoDe = (doc) => [...doc.querySelectorAll('script, style')].map(e => (e.getAttribute('src') || '') + '\n' + (e.src ? '' : e.textContent)).join('\n')
+const firmaPanel = huella(codigoDe(document))
 async function firmaDelPanel() {
   try {
     const r = await fetchOriginal(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })
     if (!r.ok) return null
-    const t = await r.text()
-    let h = 2166136261
-    for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) }
-    return t.length + ':' + (h >>> 0)
+    return huella(codigoDe(new DOMParser().parseFromString(await r.text(), 'text/html')))
   } catch (e) { return null }
 }
+// La página nueva, sin caché: con ?v=… GitHub Pages la sirve fresca. Al entrar se quita el ?v= de la dirección.
+function recargarPanel() { const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.replace(u.toString()) }
+try { const u = new URL(location.href); if (u.searchParams.has('v')) { u.searchParams.delete('v'); history.replaceState(null, '', u.pathname + u.search + u.hash) } } catch (e) {}
 // Lo que TÚ has escrito (no lo que rellena el panel): se marca al teclear y cuenta mientras el campo no esté vacío.
 document.addEventListener('input', (ev) => { if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) ev.target.dataset.tecleado = '1' }, true)
 const escrito = () => [...document.querySelectorAll('[data-tecleado]')].some(e => !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
@@ -1406,14 +1415,13 @@ const ocupado = () => {
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
   if (!f) return
-  if (!firmaPanel) { firmaPanel = f; return }
   if (f === firmaPanel) return
-  if (!ocupado()) return location.reload()
+  if (!ocupado()) return recargarPanel()
   if (!$('panel-nuevo')) {
     const d = document.createElement('div'); d.id = 'panel-nuevo'
     d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:60;background:#161412;color:#fff;border-radius:50px;padding:10px 16px;font:600 14px Manrope,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.25)'
     d.innerHTML = 'Hay una versión nueva del panel <button class="btn" style="padding:6px 14px">Actualizar</button>'
-    d.querySelector('button').onclick = () => location.reload()
+    d.querySelector('button').onclick = () => recargarPanel()
     document.body.appendChild(d)
   }
 }
