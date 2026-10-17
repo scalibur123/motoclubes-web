@@ -405,8 +405,9 @@ function pintarAltas() {
   // RF-CADUCA-1: una invitación caducada a la que ya le siguió otra al mismo correo no se enseña (la nueva es la que cuenta)
   const altas = ordenar(ALTAS.filter(a => !(a.clase === 'invitacion' && a.caducada && sustituida(a, ALTAS))), ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
   marcarCab('a-cab', ordenA)
+  // PULSAR-TODO-1 (17-oct, 113.ª · Mario: «todo debe poder pulsarse y te debe llevar a algo»): el nombre abre su ficha de Negocios
   $('filas').innerHTML = altas.map(a => `<tr>
-    <td><b>${esc(a.nombre)}</b> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
+    <td><button class="nombre-c" data-alta="${esc(a.id)}">${esc(a.nombre)}</button> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
     <td>${esc(tipoTxt(a.tipo, a.categoria))}</td>
     <td>${estado(a)}${a.envio_error ? `<div class="sub" style="font-size:12px">${esc(a.envio_error).slice(0, 120)}</div>` : ''}</td>
     <td class="sub">${esc(a.correo || '')}</td>
@@ -415,6 +416,14 @@ function pintarAltas() {
   </tr>`).join('') || '<tr><td colspan="6" class="sub">Aún no hay altas.</td></tr>'
   $('filas').querySelectorAll('[data-borra-inv]').forEach(b => b.onclick = () => borrar('invitacion', b.dataset.borraInv, b.dataset.nombre))
   $('filas').querySelectorAll('[data-reinvitar]').forEach(b => b.onclick = () => reinvitar(b.dataset.reinvitar)) // RF-CADUCA-1
+  $('filas').querySelectorAll('[data-alta]').forEach(b => b.onclick = () => irAFichaNegocio(ALTAS.find(x => String(x.id) === b.dataset.alta))) // PULSAR-TODO-1
+}
+// PULSAR-TODO-1: de una fila de Altas a la ficha de ese negocio en «Negocios» (por nombre, y si no por correo). Si no tiene, se dice.
+function irAFichaNegocio(a) {
+  if (!a) return
+  const c = fichaPorNombre(a.nombre) || cands.find(x => x.correo && x.correo.toLowerCase() === String(a.correo || '').toLowerCase())
+  if (!c) return aviso(`«${esc(a.nombre)}» no tiene ficha en Negocios. Créala allí («+ Añadir negocio») con su correo y la verás enlazada aquí.`)
+  verPestana('cand'); abrirFicha(c.id)
 }
 // RF-CADUCA-1: «Invitar de nuevo» a una invitación caducada. Si el negocio tiene ficha en «Negocios», el formulario se rellena
 // con ella (como «Invitar →» de la ficha); si no, con los datos de la invitación caducada. La nueva sale con su enlace de 15 días.
@@ -889,7 +898,7 @@ async function pintarInvitan() {
   const perfil = (w) => !w ? '<span class="sub">—</span>' : `${w.apuntados} ${w.apuntados === 1 ? 'invitación' : 'invitaciones'}<div class="sub" style="font-size:12px">${w.lista.map(x => `${esc(x.apodo || x.email.split('@')[0])}${x.en_app ? ' ✅' : ''}`).join(' · ')}</div>`
   const entraron = (r) => { const n = (r.perfil?.en_app || 0) + (r.grupos?.usados || 0), de = (r.perfil?.apuntados || 0) + (r.grupos?.enlaces || 0); return `<span class="chip ${n ? 'verde' : 'amar'}">${n} de ${de}</span>${de - n ? `<div class="sub" style="font-size:12px;margin-top:4px">${de - n} pendiente${de - n > 1 ? 's' : ''}</div>` : ''}` } // Mario (11:34): «ocho invitaciones y han entrado cuatro de ocho. Quedan cuatro pendientes»
   $('r-inv').innerHTML = INVITAN.length ? `<table><thead><tr><th>Rider</th><th>Última invitación</th><th>Desde sus grupos (WhatsApp)</th><th>Desde su perfil (WhatsApp u otro)</th><th>Han entrado</th><th></th></tr></thead><tbody>${INVITAN.map(r => `<tr>
-      <td>${r.rider ? `<b>${esc(r.rider)}</b>` : `<b>Enlace «${esc(r.marca)}»</b><div class="sub" style="font-size:12px">Ningún rider tiene ese apodo</div>`}</td>
+      <td>${r.rider ? (r.email ? `<button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider)}</button>` : `<b>${esc(r.rider)}</b>`) : `<b>Enlace «${esc(r.marca)}»</b><div class="sub" style="font-size:12px">Ningún rider tiene ese apodo</div>`}</td>
       <td class="sub">${fechaHora(r.ultimo)}</td><td>${grupos(r.grupos)}</td><td>${perfil(r.perfil)}</td><td>${entraron(r)}</td>
       <td style="text-align:right">${r.email ? `<button class="btn3 r-ficha" data-email="${esc(r.email)}">Ver ficha</button>` : ''}</td></tr>`).join('')}</tbody></table>
     <div class="sub" style="padding:12px 18px;font-size:12px">✅ = ya tiene la app. De un enlace de WhatsApp de grupo la base sabe si alguien entró, no quién. Del enlace del perfil sabemos a quién invitó y si ya entró, no por dónde lo compartió.</div>`
