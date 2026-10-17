@@ -675,6 +675,7 @@ const vieja = (movil, version) => !!(ULTIMA && version && ULTIMA[movil] && cmpVe
 let pushPara = null
 function abrirAviso(email, quien, abrio, movil, version) {
   pushPara = email; $('push-quien').textContent = quien; $('push-aviso').innerHTML = ''
+  avisoListo(false) // AVISO-SALIR-1: cada aviso nuevo empieza con «Cancelar» y «Mandar aviso»
   const v = vieja(movil, version)
   $('push-titulo').value = v ? '🏍️ Nueva versión de MOTOCLUBes' : '¿Salimos a rodar? 🏍️'
   $('push-texto').value = v ? (movil === 'ios' ? 'Ya tienes la versión nueva con lo último. Ábrela en TestFlight y pulsa Actualizar.' : 'Ya tienes la versión nueva con lo último. Actualízala en Play Store.')
@@ -682,6 +683,14 @@ function abrirAviso(email, quien, abrio, movil, version) {
   $('push-capa').classList.remove('oculto')
 }
 $('push-cancelar').onclick = () => $('push-capa').classList.add('oculto')
+// AVISO-SALIR-1 (17-oct, Mario: «debería quedarse mandado y abajo salir; no cancelar ni enviar»): mandado el aviso, el cuadro
+// enseña cómo ha llegado y solo queda «Salir». Si no llegó por ningún lado, siguen los dos botones para volver a probar.
+function avisoListo(listo) {
+  $('push-enviar').classList.toggle('oculto', listo)
+  $('push-cancelar').textContent = listo ? 'Salir' : 'Cancelar'
+  $('push-cancelar').className = listo ? 'btn' : 'btn2'
+  $('push-titulo').disabled = listo; $('push-texto').disabled = listo; $('push-correo').disabled = listo
+}
 $('push-enviar').onclick = async () => {
   const titulo = $('push-titulo').value.trim(), texto = $('push-texto').value.trim()
   if (!titulo) return ($('push-aviso').innerHTML = '<div class="aviso mal">Pon un título.</div>')
@@ -693,6 +702,7 @@ $('push-enviar').onclick = async () => {
       r.correo === 'enviado' ? '✅ Correo enviado' : r.correo === 'baja' ? '❌ Sin correo: se dio de baja de los correos' : r.correo === 'fallo' ? '❌ El correo no ha salido' : '']
     const llego = r.enviados || r.correo === 'enviado'
     $('push-aviso').innerHTML = `<div class="aviso ${llego ? 'ok' : 'mal'}">${partes.filter(Boolean).join(' · ')}</div>`
+    if (llego) avisoListo(true) // AVISO-SALIR-1
   } catch (e) { $('push-aviso').innerHTML = `<div class="aviso mal">No se ha podido mandar: ${esc(e.message)}</div>` }
   $('push-enviar').disabled = false
 }
