@@ -206,10 +206,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
 </main>
 <main id="v-rid" class="oculto">
-  <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
+  <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app. Arriba, lo último que ha pasado: al que le acabas de mandar algo o el que acaba de abrir la app. Pulsa un rider para ver su ficha.</div></div>
   <div id="r-aviso"></div>
   <div class="opc" id="r-periodo"></div><!-- PERIODO-1 -->
-  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="envio">Último envío</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
 <!-- INCIDENCIA-VERSION-1 (16-oct, 110.ª · Mario: «marcar en qué versión se arregló cada incidencia y un botón para avisar a los
      que la reportaron»): las incidencias de «Te escuchamos» y, por cada una, «Avisar que está arreglado» (push + correo). -->
@@ -773,19 +773,24 @@ document.addEventListener('click', (ev) => {
   filas.forEach(tr => tb.appendChild(tr))
   th.parentNode.querySelectorAll('th[data-o]').forEach(h => { h.textContent = h.textContent.replace(/ [▲▼]$/, '') + (h === th ? (asc ? ' ▲' : ' ▼') : '') })
 })
+const ENVIO_TXT = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
 async function cargarRiders() {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
   pintarPeriodo('r-periodo', RIDERS, (r) => r.alta, 'se dieron de alta', perR, (k) => { perR = k; cargarRiders() }) // PERIODO-1
-  const base = RIDERS.filter(r => enPeriodo(r.alta, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')) // sin columna elegida: el último que abrió arriba
+  // ENVIOS-FICHA-1 (17-oct, Mario: «lo último que se toca es lo primero que aparece»): sin columna elegida, arriba el que tenga
+  // lo más reciente, sea que abrió la app o que le mandamos algo (aviso, Play, invitación…).
+  const toque = (r) => [r.abrio || '', r.ultimo_envio?.creado || ''].sort().pop()
+  const base = RIDERS.filter(r => enPeriodo(r.alta, perR)).sort((a, b) => toque(b).localeCompare(toque(a)))
   marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
-  $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : r[k] ?? '').map(r => `<tr>
+  $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? (r.build ? Number(r.build) : -1) : k === 'rider' ? (r.rider || '') : k === 'envio' ? (r.ultimo_envio?.creado || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
     <td>${movilTxt(r.movil)}</td><td class="sub">${esc(r.version || '—')}${r.build ? ' (' + esc(r.build) + ')' : ''}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
-    <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
-    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="8" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie se dio de alta en ese periodo.'}</td></tr>`
+    <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td>
+    <td>${r.ultimo_envio ? `${esc(ENVIO_TXT[r.ultimo_envio.que] || r.ultimo_envio.que)}<div class="sub" style="font-size:12px">${hace(r.ultimo_envio.creado)}</div>` : '<span class="sub">—</span>'}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
+    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="9" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie se dio de alta en ese periodo.'}</td></tr>`
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
 // ── INCIDENCIA-VERSION-1 (16-oct-2026, 110.ª) · en qué versión se arregló y avisar al que lo reportó (web-invitar-testers) ──
