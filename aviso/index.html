@@ -37,7 +37,7 @@
 <script>
 (function () {
   var T = {
-    es: { esp: 'Un momento…', pre: 'Confirma tu correo', pret: 'Pulsa el botón y listo.', btn: 'Confirmar mi correo', pbaja: '¿Darte de baja?', btnbaja: 'Darme de baja', ok: '¡Correo confirmado!', okt: 'Te avisaremos el día que MOTOCLUBes salga en App Store y Google Play.',
+    es: { inv: '¡Ya tienes tu invitación!', invt: 'Te la acabamos de mandar a tu correo: ábrela desde tu iPhone y sigue los pasos. Si no la ves, mira en Spam o en Promociones.', esp: 'Un momento…', pre: 'Confirma tu correo', pret: 'Pulsa el botón y listo.', btn: 'Confirmar mi correo', pbaja: '¿Darte de baja?', btnbaja: 'Darme de baja', ok: '¡Correo confirmado!', okt: 'Te avisaremos el día que MOTOCLUBes salga en App Store y Google Play.',
           ya: 'Ya estaba confirmado', yat: 'No tienes que hacer nada más: te avisaremos cuando salga.',
           oktp: 'En cuanto te demos de alta te llega la invitación para instalar MOTOCLUBes. Si no la ves, mira en Spam o en Promociones. ¡Nos vemos en la carretera!',
           yatp: 'No tienes que hacer nada más: en cuanto te demos de alta te llega la invitación para instalarla.',
@@ -45,22 +45,22 @@
           baja: 'Te hemos dado de baja', bajat: 'No te escribiremos más. Si cambias de idea, vuelve a apuntarte en la web.',
           mal: 'Este enlace no vale', malt: 'Puede que haya caducado. Vuelve a apuntarte en la web y te mandamos otro.',
           err: 'Algo ha fallado', errt: 'Inténtalo de nuevo en un momento.' },
-    en: { esp: 'One moment…', pre: 'Confirm your email', pret: 'Tap the button and you’re done.', btn: 'Confirm my email', pbaja: 'Unsubscribe?', btnbaja: 'Unsubscribe me', ok: 'Email confirmed!', okt: 'We’ll let you know the day MOTOCLUBes is out on the App Store and Google Play.',
+    en: { inv: 'Your invitation is on its way!', invt: 'We\'ve just sent it to your email: open it on your iPhone and follow the steps. If you can\'t see it, check Spam or Promotions.', esp: 'One moment…', pre: 'Confirm your email', pret: 'Tap the button and you’re done.', btn: 'Confirm my email', pbaja: 'Unsubscribe?', btnbaja: 'Unsubscribe me', ok: 'Email confirmed!', okt: 'We’ll let you know the day MOTOCLUBes is out on the App Store and Google Play.',
           ya: 'Already confirmed', yat: 'Nothing else to do: we’ll let you know when it’s out.',
           baja: 'You’ve been unsubscribed', bajat: 'We won’t write to you again. If you change your mind, sign up again on the website.',
           mal: 'This link isn’t valid', malt: 'It may have expired. Sign up again on the website and we’ll send you a new one.',
           err: 'Something went wrong', errt: 'Please try again in a moment.' },
-    ca: { esp: 'Un moment…', pre: 'Confirma el teu correu', pret: 'Prem el botó i ja està.', btn: 'Confirmar el meu correu', pbaja: 'Donar-te de baixa?', btnbaja: 'Donar-me de baixa', ok: 'Correu confirmat!', okt: 'T’avisarem el dia que MOTOCLUBes surti a l’App Store i a Google Play.',
+    ca: { inv: 'Ja tens la teva invitació!', invt: 'Te l\'acabem d\'enviar al correu: obre-la des de l\'iPhone i segueix els passos. Si no la veus, mira a Correu brossa o a Promocions.', esp: 'Un moment…', pre: 'Confirma el teu correu', pret: 'Prem el botó i ja està.', btn: 'Confirmar el meu correu', pbaja: 'Donar-te de baixa?', btnbaja: 'Donar-me de baixa', ok: 'Correu confirmat!', okt: 'T’avisarem el dia que MOTOCLUBes surti a l’App Store i a Google Play.',
           ya: 'Ja estava confirmat', yat: 'No has de fer res més: t’avisarem quan surti.',
           baja: 'T’hem donat de baixa', bajat: 'No t’escriurem més. Si canvies d’idea, torna-t’hi a apuntar a la web.',
           mal: 'Aquest enllaç no és vàlid', malt: 'Potser ha caducat. Torna-t’hi a apuntar a la web i te n’enviarem un altre.',
           err: 'Alguna cosa ha fallat', errt: 'Torna-ho a provar d’aquí a un moment.' },
-    fr: { esp: 'Un instant…', pre: 'Confirmez votre e-mail', pret: 'Appuyez sur le bouton, c’est tout.', btn: 'Confirmer mon e-mail', pbaja: 'Vous désinscrire ?', btnbaja: 'Me désinscrire', ok: 'E-mail confirmé !', okt: 'Nous vous préviendrons le jour où MOTOCLUBes sortira sur l’App Store et Google Play.',
+    fr: { inv: 'Votre invitation est partie !', invt: 'Nous venons de vous l\'envoyer par e-mail : ouvrez-la sur votre iPhone et suivez les étapes. Si vous ne la voyez pas, regardez dans les spams ou les promotions.', esp: 'Un instant…', pre: 'Confirmez votre e-mail', pret: 'Appuyez sur le bouton, c’est tout.', btn: 'Confirmer mon e-mail', pbaja: 'Vous désinscrire ?', btnbaja: 'Me désinscrire', ok: 'E-mail confirmé !', okt: 'Nous vous préviendrons le jour où MOTOCLUBes sortira sur l’App Store et Google Play.',
           ya: 'Déjà confirmé', yat: 'Rien d’autre à faire : nous vous préviendrons à la sortie.',
           baja: 'Vous êtes désinscrit', bajat: 'Nous ne vous écrirons plus. Si vous changez d’avis, réinscrivez-vous sur le site.',
           mal: 'Ce lien n’est pas valide', malt: 'Il a peut-être expiré. Réinscrivez-vous sur le site et nous vous en enverrons un autre.',
           err: 'Une erreur est survenue', errt: 'Réessayez dans un instant.' },
-    pt: { esp: 'Um momento…', pre: 'Confirma o teu e-mail', pret: 'Carrega no botão e está feito.', btn: 'Confirmar o meu e-mail', pbaja: 'Cancelar a inscrição?', btnbaja: 'Cancelar a inscrição', ok: 'E-mail confirmado!', okt: 'Avisamos-te no dia em que a MOTOCLUBes sair na App Store e no Google Play.',
+    pt: { inv: 'Já tens o teu convite!', invt: 'Acabámos de to enviar por e-mail: abre-o no iPhone e segue os passos. Se não o vires, vê no Spam ou em Promoções.', esp: 'Um momento…', pre: 'Confirma o teu e-mail', pret: 'Carrega no botão e está feito.', btn: 'Confirmar o meu e-mail', pbaja: 'Cancelar a inscrição?', btnbaja: 'Cancelar a inscrição', ok: 'E-mail confirmado!', okt: 'Avisamos-te no dia em que a MOTOCLUBes sair na App Store e no Google Play.',
           ya: 'Já estava confirmado', yat: 'Não tens de fazer mais nada: avisamos-te quando sair.',
           baja: 'Cancelámos a tua inscrição', bajat: 'Não te voltamos a escrever. Se mudares de ideias, inscreve-te de novo no site.',
           mal: 'Este link não é válido', malt: 'Pode ter expirado. Inscreve-te de novo no site e enviamos-te outro.',
@@ -96,6 +96,8 @@
         document.getElementById('volver').style.display = 'none';
         return poner('tf', 'tft');
       }
+      // INVITAR-IPHONE-AUTO-1 (17-oct, 113.ª): iPhone de «Avísame» al que ya le ha salido la invitación sola
+      if (x.j.invitado) return poner('inv', 'invt');
       var p = x.j.probar && t.oktp ? 'p' : '';
       poner(x.j.estado === 'ya' ? 'ya' : 'ok', (x.j.estado === 'ya' ? 'yat' : 'okt') + p);
     }).catch(function () { poner('err', 'errt'); })
