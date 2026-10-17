@@ -950,9 +950,24 @@ async function verFicha(email, vuelve) {
       `<tr><td><button class="nombre-c f-ficha" data-email="${esc(i.email)}">${esc(i.email)}</button></td><td>${movilTxt(i.plataforma)}</td><td class="sub" data-v="${esc(i.creado_at)}">${fecha(i.creado_at)}</td>
       <td>${i.tiene_app ? '<span class="chip verde">Ya tiene la app</span>' : i.baja_at ? '<span class="chip rojo">Se dio de baja</span>' : !i.confirmado_at ? '<span class="chip amar">Sin confirmar el correo</span>' : i.invitado_at ? '<span class="chip azul">Invitado</span>' : '<span class="chip gris">Por invitar</span>'}</td></tr>`).join('')}</tbody></table>`
     : `<div class="sub" style="padding:16px">${c ? 'Todavía no ha invitado a nadie con «Invita a tu grupo».' : '—'}</div>`
+  // ENVIOS-FICHA-1 (17-oct, Mario: «entro en la ficha de Derek y no veo ningún aviso, ni si ha sido por correo, ni por WhatsApp
+  // o por push»): todo lo que le hemos mandado, con la notificación, el correo y quién lo mandó. La carta de bienvenida sale de
+  // su perfil. Lo de antes del 17-oct solo trae el correo: las notificaciones no se guardaban.
+  const QUE_TXT = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight', bienvenida: 'Carta de bienvenida' }
+  const envios = (f.envios || []).slice()
+  if (p?.tester_welcome_sent_at) envios.push({ que: 'bienvenida', titulo: null, push: null, correo: 'enviado', por: 'auto', creado: p.tester_welcome_sent_at })
+  envios.sort((a, b) => String(b.creado).localeCompare(String(a.creado)))
+  const pushTxt = (n) => n == null ? '<span class="sub">—</span>' : n > 0 ? `<span class="chip verde">✅ ${n} ${n === 1 ? 'móvil' : 'móviles'}</span>` : '<span class="chip rojo">No le llegó</span>'
+  const correoTxt2 = (c) => c === 'enviado' ? '<span class="chip verde">✅ Enviado</span>' : c === 'fallo' ? '<span class="chip rojo">No salió</span>' : c === 'baja' ? '<span class="chip rojo">Se dio de baja</span>' : '<span class="sub">—</span>'
+  const env = !('envios' in f) ? '<div class="sub" style="padding:16px">Falta desplegar la función nueva para verlo.</div>'
+    : envios.length ? `<table class="ordenable"><thead><tr><th data-o>Cuándo</th><th data-o>Qué</th><th data-o>Notificación</th><th data-o>Correo</th><th data-o>Quién</th></tr></thead><tbody>${envios.map(x =>
+      `<tr><td class="sub" data-v="${esc(x.creado)}">${fechaHora(x.creado)}</td><td><b>${esc(QUE_TXT[x.que] || x.que)}</b>${x.titulo ? `<div class="sub" style="font-size:12px">${esc(x.titulo)}</div>` : ''}</td>
+       <td>${pushTxt(x.push)}</td><td>${correoTxt2(x.correo)}</td><td class="sub">${x.por === 'auto' ? 'Automático' : 'Tú'}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="sub" style="padding:16px">Todavía no le hemos mandado nada.</div>'
   await cargarUltima()
   $('f-cuerpo').innerHTML = `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><div style="flex-grow:1"><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
     ${c ? '<button class="btn2" id="f-avisar">Mandarle un aviso</button>' : ''}</div>
+    <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Lo que le hemos mandado</div>${env}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a</div>${inv}</div></div>
