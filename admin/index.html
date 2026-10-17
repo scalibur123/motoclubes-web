@@ -1497,7 +1497,7 @@ const ocupado = () => {
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
   if (!f) return
-  if (f === firmaPanel) return
+  if (f === firmaPanel) { recienRecargado = false; return } // ya está al día: la próxima versión nueva vuelve a recargar sola
   if (!ocupado() && !recienRecargado) return recargarPanel()
   if (!$('panel-nuevo')) {
     const d = document.createElement('div'); d.id = 'panel-nuevo'
