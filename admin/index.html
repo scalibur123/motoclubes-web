@@ -45,6 +45,12 @@ nav.pest button.sel .n{background:#FFE7D4;color:#8F3E06}
 select,textarea{padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font:500 14px Manrope,sans-serif;background:var(--bg);color:var(--tx)}
 textarea{resize:vertical}
 .cifras5{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* TESTERS-AVISOS-1 (112.ª): los cuatro números de Solicitudes se pulsan y filtran la tabla */
+.cifra.pulsable{cursor:pointer;text-align:left;font:inherit;color:inherit}.cifra.pulsable:hover{border-color:#D8CFC3}.cifra.sel{border:2px solid var(--o);padding:21px}
+.cifra.c-dentro{background:#DFF3E4;border-color:#C6E8CF}.cifra.c-dentro b,.cifra.c-dentro span{color:#1E6B34}
+.cifra.c-medias{background:#FFF1C2;border-color:#F3DE97}.cifra.c-medias b,.cifra.c-medias span{color:#6B5100}
+.org-fila{cursor:pointer}.org-fila:hover td{background:#FBF8F4}.org-fila.sel td{background:#FFF1E6}
+.org-sub td{border-top:0;padding-top:0;font-size:12px;color:var(--g)}
 .tel{color:var(--od);font-weight:600;text-decoration:none;white-space:nowrap}
 .btn3{background:#fff;color:var(--tx);border:1.5px solid var(--line);border-radius:50px;padding:8px 14px;font:700 13px Manrope,sans-serif;cursor:pointer;white-space:nowrap}
 .btn3.o{background:var(--o);border-color:var(--o);color:#fff}
@@ -177,7 +183,8 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   </div>
   <div id="t-aviso"></div>
   <div class="cifras" id="t-cifras"></div>
-  <div class="card" id="t-embudo" style="padding:18px 22px"></div>
+  <div class="sub" id="t-resumen"></div><!-- TESTERS-AVISOS-1: lo hecho por tu parte (antes, el embudo «De la lista a rodar») -->
+  <div class="card" id="t-origen" style="padding:18px 22px"></div><!-- TESTERS-AVISOS-1: de dónde vienen -->
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
     <button class="btn2" id="t-ver-ios">Ver el correo de iPhone</button>
     <button class="btn2" id="t-ver-and">Ver el correo de Android</button>
@@ -194,6 +201,8 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="sub" style="width:100%">Entra como «Por invitar», con «En persona» como origen. Después pulsas su botón Invitar y le llega el correo.</div>
   </div>
   <div class="opc" id="t-periodo"></div><!-- PERIODO-1 -->
+  <div id="t-filtro"></div><!-- TESTERS-AVISOS-1: qué se está viendo y quitar el filtro -->
+  <div class="card" id="t-grupo" style="padding:16px 22px;display:none"></div><!-- TESTERS-AVISOS-1: «Recordar a los N» / «Mandar ayuda a los N», encima de esas filas -->
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
 </main>
 <main id="v-rid" class="oculto">
@@ -456,32 +465,144 @@ async function invitar(cuerpo) {
   return data
 }
 let TESTERS = []
+// ── TESTERS-AVISOS-1 (17-oct-2026, 112.ª) · Mario: «me cuesta bastante seguirlo […] cuántas solicitudes hay sin haber hecho nada,
+// cuántas ya están tramitadas […] y de esos cuántos han entrado». Cuatro números que se pulsan (Te toca a ti · Dentro · A medias ·
+// Sin pulsar), la fase la da la función (faseTester, la misma regla que el envío automático), «Recordar» y «Mandar ayuda» a uno o
+// al grupo con la fecha de cada envío (automático o tuyo, o cuándo saldrá el automático) y «De dónde vienen». Maqueta aprobada.
+const FASES = [['te_toca', 'Te toca a ti'], ['dentro', 'Dentro'], ['a_medias', 'A medias'], ['sin_pulsar', 'Sin pulsar']]
+const ORDEN_FASE = { te_toca: 0, a_medias: 1, sin_pulsar: 2, dentro: 3 }
+let filtroFase = null, filtroOrigen = null
 async function cargarTesters() {
   try { TESTERS = (await invitar({ modo: 'lista' })).filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
-  const por = TESTERS.filter(porInvitar), inv = TESTERS.filter(t => t.estado === 'invitado'), app = TESTERS.filter(t => t.estado === 'tiene_app')
-  const n = (l, p) => l.filter(t => t.plataforma === p).length
-  $('n-test').textContent = por.length
-  $('t-cifras').innerHTML = `<div class="card cifra"><b>${por.length}</b><span>Por invitar · ${n(por, 'ios')} iPhone · ${n(por, 'android')} Android</span></div>
-    <div class="card cifra"><b>${inv.length}</b><span>Invitados</span></div>
-    <div class="card cifra"><b>${app.length}</b><span>Ya tienen la app</span></div>
-    <div class="card cifra"><b>${TESTERS.length}</b><span>Total en la lista</span></div>`
-  pintarEmbudo() // TESTERS-SEGUIMIENTO-1
+  if (TESTERS.length && !('fase' in TESTERS[0])) tAviso('Falta desplegar la función nueva (web-invitar-testers): los números no se pueden calcular.')
+  pintarTesters()
+}
+// El automático (testers-diario, cron 08:20 UTC) sale en la primera tanda después de «desde + N días».
+function tandaAuto(iso, dias) {
+  if (!iso) return null
+  const t = new Date(iso).getTime() + dias * 864e5, d = new Date(t)
+  let run = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 8, 20)
+  if (run <= t) run += 864e5
+  return new Date(run)
+}
+const fechaD = (d) => d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : ''
+function chipEnvio(at, mano, programado, que) { // que: 'Recordatorio' | 'Ayuda'
+  if (at) return mano ? `<span class="chip verde">${que === 'Ayuda' ? 'Ayuda' : 'Recordado'} por ti · ${fecha(at)}</span>`
+    : `<span class="chip azul">${que} automátic${que === 'Ayuda' ? 'a' : 'o'} · ${fecha(at)}</span>`
+  if (!programado) return ''
+  return programado < new Date() ? `<span class="chip gris">${que} automátic${que === 'Ayuda' ? 'a' : 'o'} en la próxima tanda</span>`
+    : `<span class="chip gris">${que} automátic${que === 'Ayuda' ? 'a' : 'o'} el ${fechaD(programado)} · programad${que === 'Ayuda' ? 'a' : 'o'}</span>`
+}
+function estadoFila(t) {
+  const btn = (cls, txt) => ` <button class="btn3 ${cls}" data-email="${esc(t.email)}" style="margin-left:4px;padding:5px 12px">${txt}</button>`
+  if (t.fase === 'dentro') return '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
+  if (t.fase === 'te_toca') return t.motivo === 'play' ? playChip(t) || '<span class="chip amar">Darle de alta en Play</span>'
+    : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
+  if (t.fase === 'a_medias') {
+    const donde = t.plataforma === 'android'
+      ? `<span class="chip amar">Enlace de Play el ${fecha(t.play_enviado_at)}</span> <span class="chip ${t.play_clic_at ? 'verde' : 'gris'}">${t.play_clic_at ? 'Lo pulsó el ' + fecha(t.play_clic_at) : 'No lo ha pulsado'}</span>`
+      : t.clic_at ? `<span class="chip amar">Pulsó el ${fecha(t.clic_at)}</span>` : `<span class="chip amar">TestFlight por «Probar» el ${fecha(t.desde)}</span>`
+    return `${donde} ${chipEnvio(t.ayuda_at, t.ayuda_mano, tandaAuto(t.desde, 2), 'Ayuda')}${btn('t-ayuda', 'Mandar ayuda')}`
+  }
+  // sin_pulsar
+  const malo = t.correo_malo ? ' <span class="chip rojo">El correo no llegó</span>' : ''
+  const rec = chipEnvio(t.recordatorio_at, t.recordatorio_mano, t.correo_malo ? null : tandaAuto(t.invitado_at, 3), 'Recordatorio')
+  return `<span class="chip gris">Invitado el ${fecha(t.invitado_at)}</span>${malo} ${rec}${sinRespuesta(t) ? ' <span class="chip rojo">Sin respuesta</span>' : ''}${btn('t-recordar', 'Recordar')}`
+}
+// De dónde vienen: el origen que guarda la web (WEB-ORIGEN-1, desde el 15-oct), agrupado.
+const REDES = ['facebook', 'linkedin', 'tiktok', 'youtube', 'x']
+function grupoOrigen(o) {
+  o = String(o || '')
+  if (o === 'instagram') return ['instagram', 'Instagram']
+  if (o.startsWith('probar-') && o !== 'probar-lista') return ['riders', 'Invitados por otros riders']
+  if (o.startsWith('personal')) return ['persona', 'En persona (tú)']
+  if (['google', 'bing', 'duckduckgo'].includes(o)) return ['buscadores', 'Buscadores (Google…)']
+  if (REDES.includes(o)) return ['redes', 'Otras redes (Facebook, LinkedIn, TikTok…)']
+  if (o === 'whatsapp') return ['whatsapp', 'WhatsApp']
+  if (o === 'web' || o === 'probar' || o === 'probar-lista') return ['web', 'La web de MOTOCLUBes']
+  if (!o || o === 'directo') return ['sin', 'Sin saber (enlace escrito, apps que no lo dicen, o antes del 15 oct)']
+  return ['webs', 'Foros y otras webs (BMWMOTOS…)']
+}
+function pintarOrigen(L) {
+  const g = new Map()
+  for (const t of L) {
+    const [k, txt] = grupoOrigen(t.origen); const x = g.get(k) || { k, txt, n: 0, dentro: 0, quien: new Map() }
+    x.n++; if (t.fase === 'dentro') x.dentro++
+    if (k === 'riders') { const q = t.origen.slice(7); x.quien.set(q, (x.quien.get(q) || 0) + 1) }
+    g.set(k, x)
+  }
+  const filas = [...g.values()].sort((a, b) => (a.k === 'sin') - (b.k === 'sin') || b.n - a.n)
+  $('t-origen').innerHTML = `<div style="font-weight:800;margin-bottom:6px">De dónde vienen</div>
+    <div style="overflow-x:auto"><table><thead><tr><th style="text-align:left">Origen</th><th style="text-align:right">Apuntados</th><th style="text-align:right">Dentro</th><th style="text-align:right">Entran</th></tr></thead><tbody>${filas.map(x =>
+      `<tr class="org-fila${filtroOrigen === x.k ? ' sel' : ''}" data-org="${x.k}"><td>${esc(x.txt)}</td><td style="text-align:right">${x.n}</td><td style="text-align:right">${x.dentro}</td><td style="text-align:right">${Math.round(100 * x.dentro / x.n)} %</td></tr>` +
+      (x.quien.size ? `<tr class="org-sub"><td colspan="4">${[...x.quien].sort((a, b) => b[1] - a[1]).map(([q, n]) => esc(q) + ' ' + n).join(' · ')}</td></tr>` : '')).join('')}</tbody></table></div>
+    <div class="sub" style="font-size:12px;margin-top:8px">Pulsa una fila para ver solo esos. La web apunta el origen desde el 15 oct; Instagram solo es seguro si el enlace lleva <b>?o=instagram</b>.</div>`
+}
+function pintarTesters() {
+  const T = TESTERS, de = (f) => T.filter(t => t.fase === f)
+  const toca = de('te_toca'), dentro = de('dentro'), medias = de('a_medias'), sinP = de('sin_pulsar')
+  const nPlay = toca.filter(t => t.motivo === 'play').length
+  $('n-test').textContent = toca.length
+  const caja = (f, cls, n, linea) => `<button type="button" class="card cifra pulsable ${cls}${filtroFase === f ? ' sel' : ''}" data-fase="${f}"><b>${n}</b><span>${FASES.find(x => x[0] === f)[1]} · ${linea}</span></button>`
+  $('t-cifras').innerHTML = caja('te_toca', '', toca.length, `${toca.length - nPlay} por invitar · ${nPlay} por dar de alta en Play`) +
+    caja('dentro', 'c-dentro', dentro.length, `${dentro.filter(t => !dormido(t.abrio)).length} activos esta semana · ${dentro.filter(t => t.rodadas > 0).length} han rodado`) +
+    caja('a_medias', 'c-medias', medias.length, 'pulsaron y no tienen cuenta') +
+    caja('sin_pulsar', '', sinP.length, 'invitados, sin pulsar nada')
+  const hecho = dentro.length + medias.length + sinP.length
+  $('t-resumen').innerHTML = `Hecho por tu parte: <b>${hecho}</b> · dentro ${dentro.length} · faltan ${medias.length + sinP.length} (${medias.length} a medias + ${sinP.length} sin pulsar) · ${T.length} en la lista. Pulsa un número para ver solo esos.`
+  pintarOrigen(T)
+  const por = T.filter(porInvitar)
   $('t-enviar').textContent = por.length ? `Enviar invitación a ${por.length}` : 'Nadie por invitar'
   $('t-enviar').disabled = !por.length
-  const est = (t) => playChip(t) + (t.estado === 'tiene_app' ? '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
-    : t.estado === 'invitado' && sinRespuesta(t) ? `<span class="chip rojo">Sin respuesta</span> <span class="sub">invitado el ${fecha(t.invitado_at)} · recordatorio el ${fecha(t.recordatorio_at)}</span>`
-    : t.estado === 'invitado' && t.recordatorio_at && !t.clic_at ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span> <span class="chip amar">Recordatorio el ${fecha(t.recordatorio_at)}</span>` : t.estado === 'invitado' ? `<span class="chip azul">Invitado el ${fecha(t.invitado_at)}</span>${t.clic_at ? ' <span class="chip verde">Pulsó el correo</span>' : ''}` : t.play_enviado_at ? '' : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`)
-  const orden = { por_invitar: 0, invitado: 1, tiene_app: 2 }
-  pintarPeriodo('t-periodo', TESTERS, (t) => t.apuntado, 'se apuntaron', perT, (k) => { perT = k; cargarTesters() }) // PERIODO-1
-  const base = TESTERS.filter(t => enPeriodo(t.apuntado, perT)).sort((a, b) => orden[a.estado] - orden[b.estado]) // sin columna elegida: por invitar arriba
+  pintarPeriodo('t-periodo', T, (t) => t.apuntado, 'se apuntaron', perT, (k) => { perT = k; pintarTesters() }) // PERIODO-1
+  const vis = T.filter(t => enPeriodo(t.apuntado, perT) && (!filtroFase || t.fase === filtroFase) && (!filtroOrigen || grupoOrigen(t.origen)[0] === filtroOrigen))
+    .sort((a, b) => ORDEN_FASE[a.fase] - ORDEN_FASE[b.fase] || String(b.desde || b.apuntado).localeCompare(String(a.desde || a.apuntado)))
+  // Lo que se está viendo, y quitar el filtro
+  const viendo = [filtroFase && FASES.find(x => x[0] === filtroFase)[1], filtroOrigen && grupoOrigen(T.find(t => grupoOrigen(t.origen)[0] === filtroOrigen)?.origen)[1]].filter(Boolean)
+  $('t-filtro').innerHTML = viendo.length ? `<span class="sub">Viendo: <b>${esc(viendo.join(' · '))}</b> (${vis.length})</span> <button type="button" class="btn3" id="t-quitar" style="margin-left:8px;padding:4px 12px">Ver todos</button>` : ''
+  // «Recordar a los N» / «Mandar ayuda a los N»: a los que se ven de ese grupo
+  const g = $('t-grupo')
+  if (filtroFase === 'a_medias' || filtroFase === 'sin_pulsar') {
+    const ayuda = filtroFase === 'a_medias'
+    g.style.display = ''
+    g.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="flex-grow:1"><b>${ayuda ? 'A medias' : 'Sin pulsar'} · ${vis.length}</b>
+      <div class="sub" style="font-size:13px">${ayuda ? 'Les llega «Te falta un paso», con los pasos de su móvil. El automático sale solo a los 2 días de quedarse a medias, una vez.' : 'Les llega el recordatorio con su enlace. El automático sale solo a los 3 días de la invitación, una vez.'} Desde «Mario de MOTOCLUBes»; si contestan, va a mario@motoclubes.es.</div></div>
+      <button class="btn2" data-ver="${ayuda ? 'ayuda' : 'recordatorio'}" data-plat="ios" style="padding:8px 14px">Ver el correo · iPhone</button>
+      <button class="btn2" data-ver="${ayuda ? 'ayuda' : 'recordatorio'}" data-plat="android" style="padding:8px 14px">Ver el correo · Android</button>
+      <button class="btn" id="t-grupo-enviar" ${vis.length ? '' : 'disabled'}>${ayuda ? 'Mandar ayuda' : 'Recordar'} a ${vis.length === 1 ? '1' : 'los ' + vis.length}</button></div>`
+  } else { g.style.display = 'none'; g.innerHTML = '' }
   marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
-  $('t-filas').innerHTML = ordenar(base, ordenT, (t, k) => k === 'estado' ? orden[t.estado] : k === 'origen' ? deDonde(t.origen) : k === 'plataforma' ? movilTxt(t.plataforma) : t[k]).map(t => `<tr>
+  $('t-filas').innerHTML = ordenar(vis, ordenT, (t, k) => k === 'estado' ? ORDEN_FASE[t.fase] : k === 'origen' ? deDonde(t.origen) : k === 'plataforma' ? movilTxt(t.plataforma) : t[k]).map(t => `<tr>
     <td><button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
-    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${est(t)}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">${perT === 'todos' ? 'Nadie en la lista.' : 'Nadie se apuntó en ese periodo.'}</td></tr>`
+    <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${estadoFila(t)}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">${viendo.length || perT !== 'todos' ? 'Nadie con ese filtro.' : 'Nadie en la lista.'}</td></tr>`
 }
-async function verCorreo(plataforma) {
+// Mandar el recordatorio o la ayuda (uno o varios) y decir qué ha pasado
+async function mandarAviso(modo, emails) {
+  const que = modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'
+  tAviso('Enviando…', true)
+  try {
+    const r = await invitar({ modo, emails })
+    const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
+    const txt = [r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')
+    tAviso(`${que[0].toUpperCase() + que.slice(1)}: ${txt}.`, !!r.enviados && !(r.fallos || []).length)
+  } catch (e) { tAviso(`No se ha podido mandar ${que}: ${esc(e.message)}`) }
+  await cargarTesters()
+}
+$('t-cifras').onclick = (ev) => { const b = ev.target.closest('[data-fase]'); if (!b) return; filtroFase = filtroFase === b.dataset.fase ? null : b.dataset.fase; pintarTesters(); if (filtroFase) $('t-periodo').scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+$('t-origen').onclick = (ev) => { const r = ev.target.closest('[data-org]'); if (!r) return; filtroOrigen = filtroOrigen === r.dataset.org ? null : r.dataset.org; pintarTesters(); if (filtroOrigen) $('t-periodo').scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+$('t-filtro').onclick = (ev) => { if (ev.target.closest('#t-quitar')) { filtroFase = null; filtroOrigen = null; pintarTesters() } }
+$('t-grupo').onclick = async (ev) => {
+  const v = ev.target.closest('[data-ver]'); if (v) return verCorreo(v.dataset.plat, v.dataset.ver)
+  const b = ev.target.closest('#t-grupo-enviar'); if (!b) return
+  const modo = filtroFase === 'a_medias' ? 'ayuda' : 'recordar'
+  const vis = [...$('t-filas').querySelectorAll('.t-ficha')].map(x => x.dataset.email)
+  if (!vis.length || !confirm(`¿Mandar ${modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'} a ${vis.length} ${vis.length === 1 ? 'persona' : 'personas'}?`)) return
+  b.disabled = true
+  await mandarAviso(modo, vis)
+}
+async function verCorreo(plataforma, correo) { // TESTERS-AVISOS-1: correo = 'recordatorio' | 'ayuda' (sin él, la invitación)
   const w = window.open('', '_blank'); if (!w) return tAviso('El navegador ha bloqueado la ventana: permite las ventanas emergentes de motoclubes.es.')
-  try { const d = await invitar({ modo: 'muestra', plataforma }); w.document.write(d.html); w.document.title = d.asunto; w.document.close() }
+  try { const d = await invitar({ modo: 'muestra', plataforma, correo }); w.document.write(d.html); w.document.title = d.asunto; w.document.close() }
   catch (e) { w.close(); tAviso('No se ha podido preparar la muestra: ' + esc(e.message)) }
 }
 $('p-test').onclick = () => { verPestana('test'); tAviso(''); cargarTesters() }
@@ -510,15 +631,7 @@ const sinRespuesta = (t) => t.recordatorio_at && !t.clic_at && dias(t.recordator
 const dormido = (abrio) => dias(abrio) > 7
 const chipsUso = (abrio, rodadas) => ' ' + (dormido(abrio) ? `<span class="chip rojo">${abrio ? 'Sin abrir la app ' + Math.floor(dias(abrio)) + ' días' : 'No ha abierto la app'}</span>` : '<span class="chip verde">Activo esta semana</span>') +
   (rodadas ? ` <span class="chip verde">${rodadas} ${rodadas === 1 ? 'salida' : 'salidas'}</span>` : '')
-function pintarEmbudo() {
-  const T = TESTERS, app = (t) => t.estado === 'tiene_app'
-  const pasos = [['Apuntados', T.length], ['Invitados', T.filter(t => t.invitado_at || app(t)).length], ['Pulsaron el correo', T.filter(t => t.clic_at || app(t)).length],
-    ['Tienen la app', T.filter(app).length], ['Activos esta semana', T.filter(t => app(t) && !dormido(t.abrio)).length], ['Han rodado', T.filter(t => app(t) && t.rodadas > 0).length]]
-  $('t-embudo').innerHTML = `<div style="font-weight:800;margin-bottom:10px">De la lista a rodar</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">${pasos.map((p, i) =>
-    `${i ? '<div style="align-self:center;color:var(--gl)">→</div>' : ''}<div style="flex:1 1 120px;background:var(--bg);border-radius:12px;padding:12px 14px"><b style="font-size:22px">${p[1]}</b>` +
-    `<div class="sub" style="font-size:12px">${p[0]}${i && pasos[i - 1][1] ? ' · ' + Math.round(100 * p[1] / pasos[i - 1][1]) + ' %' : ''}</div></div>`).join('')}</div>
-    <div class="sub" style="font-size:12px;margin-top:8px">Quien ya tiene la app cuenta como invitado y como que pulsó. «Activos» = han abierto la app en los últimos 7 días.</div>`
-}
+// TESTERS-AVISOS-1: el embudo «De la lista a rodar» lo sustituyen los cuatro números y «Hecho por tu parte» (pintarTesters).
 let ULTIMA = null // la última versión publicada de cada móvil (status.json de la web)
 async function cargarUltima() { if (ULTIMA) return; try { ULTIMA = (await (await fetch('/status.json?x=' + Date.now())).json()).version || null } catch (e) { ULTIMA = null } }
 const cmpVer = (a, b) => { const x = String(a || '').split('.').map(Number), y = String(b || '').split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d } return 0 }
@@ -552,7 +665,7 @@ $('push-enviar').onclick = async () => {
 const pasoFormulario = (t) => t.plataforma === 'android' && t.estado !== 'tiene_app' && (t.clic_at || (t.origen || '').startsWith('probar'))
 // PLAY-SIN-INVITAR-1 (15-oct, Mario: «¿cómo puede ser?»): a quien ya le mandaste el enlace de Play no le hace falta la invitación
 // de la lista: ni «Por invitar», ni su botón, ni entra en «Enviar invitación a N».
-function porInvitar(t) { return t.estado === 'por_invitar' && !t.play_enviado_at }
+function porInvitar(t) { return t.fase ? t.fase === 'te_toca' && t.motivo === 'invitar' : t.estado === 'por_invitar' && !t.play_enviado_at } // TESTERS-AVISOS-1
 const playChip = (t) => t.play_enviado_at ? `<span class="chip verde">Enlace de Play el ${fecha(t.play_enviado_at)}</span>${t.play_clic_at ? ' <span class="chip verde">Lo pulsó</span>' : ''} `
   : pasoFormulario(t) ? `<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button> ` : ''
 async function mandarPlay(email) {
@@ -727,7 +840,7 @@ $('n-publicar').onclick = async () => {
   $('n-publicar').disabled = false; $('n-publicar').textContent = 'Publicar'
 }
 $('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
-clicCab('t-cab', ordenT, () => cargarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
+clicCab('t-cab', ordenT, () => pintarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-filas').onclick = (ev) => {
   const a = ev.target.closest('.r-avisar')
   if (a) { const r = RIDERS.find(x => x.email === a.dataset.email); return abrirAviso(r.email, r.rider || r.email, r.abrio, r.movil, r.version) }
@@ -813,6 +926,14 @@ $('a-anadir').onclick = async () => {
 $('t-filas').onclick = async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'test')
   const pl = ev.target.closest('.t-play'); if (pl) { pl.disabled = true; await mandarPlay(pl.dataset.email); return cargarTesters() }
+  // TESTERS-AVISOS-1: «Recordar» y «Mandar ayuda» de una fila
+  const av = ev.target.closest('.t-recordar, .t-ayuda')
+  if (av) {
+    const modo = av.classList.contains('t-ayuda') ? 'ayuda' : 'recordar'
+    if (!confirm(`¿Mandar ${modo === 'ayuda' ? 'la ayuda («Te falta un paso»)' : 'el recordatorio'} a ${av.dataset.email}?`)) return
+    av.disabled = true; av.textContent = 'Enviando…'
+    return mandarAviso(modo, [av.dataset.email])
+  }
   const b = ev.target.closest('.t-uno'); if (!b) return
   const email = b.dataset.email
   if (!confirm(`¿Mandar la invitación a ${email}?`)) return
