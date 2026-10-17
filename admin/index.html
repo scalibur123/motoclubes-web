@@ -170,6 +170,11 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
       <div style="display:flex;justify-content:flex-end"><button class="btn" id="f2-ll-apuntar">Apuntar</button></div>
       <div class="hist" id="f2-llamadas"></div>
     </section>
+    <!-- CORREO-NEGOCIO-1 (17-oct, 113.ª): escribirle desde aquí y que quede guardado lo que se le mandó -->
+    <section class="card" id="f2-correos" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px"><h2 style="font-size:18px;flex-grow:1">Correos</h2><button class="btn" id="f2-escribir">Enviar correo</button></div>
+      <div class="hist" id="f2-envios"></div>
+    </section>
     <section class="card oculto" id="f2-app" style="display:flex;flex-direction:column;gap:10px"></section>
    </div>
   </div>
@@ -279,6 +284,19 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="sub">Le llega tal cual, con tu despedida: notificación al móvil y correo con el asunto «<span id="res-asunto"></span>».</div>
     <div id="res-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="res-cancelar">Cancelar</button><button class="btn" id="res-enviar">Enviar respuesta</button></div>
+  </div>
+</div>
+<!-- CORREO-NEGOCIO-1 (17-oct, 113.ª · Mario: «abro el correo, copio el texto, lo pego y lo envío. Y luego se queda guardado») -->
+<div id="mail-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
+  <div class="card" style="max-width:600px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:92vh;overflow:auto">
+    <div style="font-weight:800;font-size:18px">Correo a <span id="mail-quien"></span></div>
+    <label>PARA<input type="email" id="mail-para" maxlength="200" readonly></label>
+    <label>ASUNTO<input type="text" id="mail-asunto" maxlength="150"></label>
+    <label>TEXTO<textarea id="mail-texto" rows="12" maxlength="8000" placeholder="Pega aquí el texto, con tu saludo y tu firma"></textarea></label>
+    <label class="check"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
+    <div class="sub" id="mail-nota">Sale de «Mario de MOTOCLUBes», tal cual lo escribes. Si contesta, la respuesta llega a negocios@motoclubes.es.</div>
+    <div id="mail-aviso"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="mail-cancelar">Cancelar</button><button class="btn" id="mail-enviar">Enviar</button></div>
   </div>
 </div>
 <main id="v-ficha" class="oculto">
@@ -806,7 +824,7 @@ document.addEventListener('click', (ev) => {
   filas.forEach(tr => tb.appendChild(tr))
   th.parentNode.querySelectorAll('th[data-o]').forEach(h => { h.textContent = h.textContent.replace(/ [▲▼]$/, '') + (h === th ? (asc ? ' ▲' : ' ▼') : '') })
 })
-const ENVIO_TXT = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
+const ENVIO_TXT = { correo: 'Correo', aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
 // ENVIOS-FICHA-1 (17-oct, Mario: «¿y cómo sé qué le he mandado?»): la notificación y el correo tal cual le llegaron
 async function verEnvio(id) {
   $('ver-cuerpo').innerHTML = '<div class="sub">Cargando…</div>'; $('ver-capa').classList.remove('oculto')
@@ -821,7 +839,7 @@ async function verEnvio(id) {
   $('ver-cuerpo').innerHTML = `<div style="font-weight:800;font-size:18px;margin-bottom:6px">${esc(QUE_TXT_E[r.que] || r.que)} · ${fechaHora(r.creado)}</div>
     <div style="display:flex;flex-direction:column;gap:10px">${not}${cor || (not ? '' : '<div class="sub">No se guardó lo que se mandó.</div>')}</div>`
 }
-const QUE_TXT_E = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
+const QUE_TXT_E = { correo: 'Correo', aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight' }
 $('ver-cerrar').onclick = () => $('ver-capa').classList.add('oculto')
 $('ver-capa').onclick = (ev) => { if (ev.target === $('ver-capa')) $('ver-capa').classList.add('oculto') }
 document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.f-ver'); if (b) verEnvio(b.dataset.id) })
@@ -1134,7 +1152,7 @@ async function verFicha(email, vuelve) {
   // ENVIOS-FICHA-1 (17-oct, Mario: «entro en la ficha de Derek y no veo ningún aviso, ni si ha sido por correo, ni por WhatsApp
   // o por push»): todo lo que le hemos mandado, con la notificación, el correo y quién lo mandó. La carta de bienvenida sale de
   // su perfil. Lo de antes del 17-oct solo trae el correo: las notificaciones no se guardaban.
-  const QUE_TXT = { aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight', bienvenida: 'Carta de bienvenida' }
+  const QUE_TXT = { correo: 'Correo', aviso: 'Aviso', arreglo: 'Aviso de arreglo', recordatorio: 'Recordatorio', ayuda: 'Ayuda («te falta un paso»)', invitacion: 'Invitación', play: 'Enlace de Play', testflight: 'Enlace de TestFlight', bienvenida: 'Carta de bienvenida' }
   const envios = (f.envios || []).slice()
   if (p?.tester_welcome_sent_at) envios.push({ que: 'bienvenida', titulo: null, push: null, correo: 'enviado', por: 'auto', creado: p.tester_welcome_sent_at })
   envios.sort((a, b) => String(b.creado).localeCompare(String(a.creado)))
@@ -1327,6 +1345,7 @@ function pintarFicha(c) {
   $('f2-ll-apuntar').disabled = !c.id
   const h = (c.historial || []).slice().reverse()
   $('f2-llamadas').innerHTML = h.length ? h.map(x => `<div><b style="color:var(--tx)">${esc(fmtFecha(x.en))}</b> · ${esc(EST_TXT[x.estado] || x.estado)}${x.notas ? ' · «' + esc(x.notas) + '»' : ''}</div>`).join('') : (c.id ? '<div>Aún no hay llamadas apuntadas.</div>' : '<div>Guarda primero el negocio.</div>')
+  pintarCorreosNeg(c) // CORREO-NEGOCIO-1
   const a = c.app
   $('f2-app').classList.toggle('oculto', !a)
   if (a) $('f2-app').innerHTML = `<h2 style="font-size:18px">En la app</h2>
@@ -1372,6 +1391,55 @@ $('f2-ll-apuntar').onclick = async () => {
   $('f2-ll-apuntar').disabled = false
   if (ok) fAviso('✅ Llamada apuntada.' + (llEstado === 'si' && !$('f2-correo').value.trim() ? ' Falta su correo para poder invitarle.' : ''), true)
 }
+// ── CORREO-NEGOCIO-1 (17-oct, 113.ª) · escribir a un negocio desde su ficha y ver lo que se le ha mandado ──
+async function pintarCorreosNeg(c) {
+  const correo = String(c.correo || '').trim()
+  $('f2-correos').classList.toggle('oculto', !c.id)
+  $('f2-escribir').disabled = !correo
+  if (!correo) { $('f2-envios').innerHTML = '<div>Apunta su correo en «Datos de contacto» para poder escribirle.</div>'; return }
+  $('f2-envios').innerHTML = '<div>Cargando…</div>'
+  try {
+    const r = await invitar({ modo: 'envios', email: correo })
+    if (fichaId !== c.id) return
+    const l = r.envios || []
+    $('f2-envios').innerHTML = l.length ? l.map(x => `<div><b style="color:var(--tx)">${esc(fmtFecha(x.creado))}</b> · ${esc(ENVIO_TXT[x.que] || x.que)}${x.titulo ? ' · «' + esc(x.titulo) + '»' : ''}${x.fuera ? ' · <span class="sub">desde tu correo</span>' : x.correo === 'fallo' ? ' · <span class="chip rojo">No salió</span>' : ''} <button class="btn3 f-ver" data-id="${esc(x.id)}" style="padding:2px 10px">Ver</button></div>`).join('')
+      : '<div>Aún no le hemos mandado nada desde aquí. (Las invitaciones de alta salen en Altas.)</div>'
+  } catch (e) { $('f2-envios').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>` }
+}
+function mailListo(listo) {
+  $('mail-enviar').classList.toggle('oculto', listo)
+  $('mail-cancelar').textContent = listo ? 'Salir' : 'Cancelar'
+  $('mail-cancelar').className = listo ? 'btn' : 'btn2'
+  ;['mail-asunto', 'mail-texto', 'mail-fuera'].forEach(k => { $(k).disabled = listo })
+}
+$('f2-escribir').onclick = () => {
+  const c = cands.find(x => x.id === fichaId); if (!c || !c.correo) return
+  mailListo(false); $('mail-aviso').innerHTML = ''
+  $('mail-quien').textContent = c.nombre || c.correo; $('mail-para').value = c.correo
+  $('mail-asunto').value = ''; $('mail-texto').value = ''; $('mail-fuera').checked = false
+  ;['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
+  $('mail-enviar').textContent = 'Enviar'
+  $('mail-capa').classList.remove('oculto'); $('mail-asunto').focus()
+}
+$('mail-fuera').onchange = () => { $('mail-enviar').textContent = $('mail-fuera').checked ? 'Apuntar' : 'Enviar' }
+$('mail-cancelar').onclick = () => {
+  const salir = $('mail-cancelar').textContent === 'Salir'
+  $('mail-capa').classList.add('oculto'); ['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
+  if (salir) { const c = cands.find(x => x.id === fichaId); if (c) pintarCorreosNeg(c) }
+}
+$('mail-enviar').onclick = async () => {
+  const asunto = $('mail-asunto').value.trim(), texto = $('mail-texto').value.trim(), fuera = $('mail-fuera').checked, para = $('mail-para').value
+  if (!asunto) return ($('mail-aviso').innerHTML = '<div class="aviso mal">Pon el asunto.</div>')
+  if (!texto) return ($('mail-aviso').innerHTML = '<div class="aviso mal">Pega el texto.</div>')
+  if (!fuera && !confirm(`¿Mandar este correo a ${para}?`)) return
+  $('mail-enviar').disabled = true
+  try {
+    await invitar({ modo: 'correo', email: para, asunto, texto, fuera })
+    $('mail-aviso').innerHTML = `<div class="aviso ok">${fuera ? '✅ Apuntado en su ficha.' : '✅ Correo enviado y guardado en su ficha.'}</div>`
+    mailListo(true)
+  } catch (e) { $('mail-aviso').innerHTML = `<div class="aviso mal">${fuera ? 'No se ha podido apuntar' : 'No ha salido'}: ${esc(e.message)}</div>` }
+  $('mail-enviar').disabled = false
+}
 // ADMIN-INVITA-FICHA-1: si acabas de escribir el correo en la ficha y das a «Invitar →» sin «Guardar», antes se invitaba
 // con lo de antes (sin correo). Ahora se guarda primero lo que hay en la ficha.
 $('f2-invitar').onclick = async () => {
@@ -1402,8 +1470,11 @@ function invitarCand(id) {
 // era ya el nuevo y nunca se recargaba (lo que vio Mario a las 11:36). Ahora se compara el código de la página ABIERTA (sus
 // <script> y <style>, que no cambian al usarla) con el de la que está publicada. Y la recarga pide la página nueva sin caché.
 const huella = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) } return t.length + ':' + (h >>> 0) }
-const codigoDe = (doc) => [...doc.querySelectorAll('script, style')].map(e => (e.getAttribute('src') || '') + '\n' + (e.src ? '' : e.textContent)).join('\n')
+// Revisión (113.ª): solo el código PRINCIPAL del panel (el <script> que lleva mirarVersionPanel), no todo lo que haya en la página:
+// una extensión del navegador (Dark Reader, Grammarly…) mete sus <style> y la huella no cuadraba nunca → recargas sin fin.
+const codigoDe = (doc) => ([...doc.querySelectorAll('script:not([src])')].find(e => e.textContent.includes('function mirarVersionPanel')) || {}).textContent || ''
 const firmaPanel = huella(codigoDe(document))
+let recienRecargado = false // si acabamos de recargar por una versión nueva y aún no cuadra, no se vuelve a recargar sola
 async function firmaDelPanel() {
   try {
     const r = await fetchOriginal(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })
@@ -1413,7 +1484,7 @@ async function firmaDelPanel() {
 }
 // La página nueva, sin caché: con ?v=… GitHub Pages la sirve fresca. Al entrar se quita el ?v= de la dirección.
 function recargarPanel() { const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.replace(u.toString()) }
-try { const u = new URL(location.href); if (u.searchParams.has('v')) { u.searchParams.delete('v'); history.replaceState(null, '', u.pathname + u.search + u.hash) } } catch (e) {}
+try { const u = new URL(location.href); if (u.searchParams.has('v')) { recienRecargado = true; u.searchParams.delete('v'); history.replaceState(null, '', u.pathname + u.search + u.hash) } } catch (e) {}
 // Lo que TÚ has escrito (no lo que rellena el panel): se marca al teclear y cuenta mientras el campo no esté vacío.
 document.addEventListener('input', (ev) => { if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) ev.target.dataset.tecleado = '1' }, true)
 const escrito = () => [...document.querySelectorAll('[data-tecleado]')].some(e => !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
@@ -1421,13 +1492,13 @@ const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
   if (enCamino > 0 || escrito()) return true
-  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
   if (!f) return
   if (f === firmaPanel) return
-  if (!ocupado()) return recargarPanel()
+  if (!ocupado() && !recienRecargado) return recargarPanel()
   if (!$('panel-nuevo')) {
     const d = document.createElement('div'); d.id = 'panel-nuevo'
     d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:60;background:#161412;color:#fff;border-radius:50px;padding:10px 16px;font:600 14px Manrope,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.25)'
