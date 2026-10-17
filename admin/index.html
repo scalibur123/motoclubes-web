@@ -301,9 +301,17 @@ function estado(a) {
   }
   if (a.envio_error) return '<span class="chip rojo">No se pudo enviar</span>'
   if (!a.enviada_en) return '<span class="chip gris">Enviando…</span>'
-  if (a.caducada) return '<span class="chip rojo">Enlace caducado</span>'
-  if (a.abierta) return `<span class="chip gris">Abrió el enlace${a.aperturas > 1 ? ' (' + a.aperturas + ' veces)' : ''}</span>`
-  return '<span class="chip gris">Invitación enviada</span>'
+  // RF-CADUCA-1 (112.ª, 17-oct, Mario: «deberías saber la fecha de cuándo caducan»): cuándo se envió, si abrió el enlace y
+  // cuándo caduca (15 días desde el envío o desde el último recordatorio); en amarillo los 3 últimos días.
+  const dia = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+  const abrio = a.abierta ? `abrió el enlace ${a.aperturas > 1 ? a.aperturas + ' veces' : '1 vez'}` : (a.caducada ? 'no lo abrió' : 'no lo ha abierto')
+  const envio = `<span class="chip gris">Enviada el ${dia(a.enviada_en)} · ${abrio}</span>`
+  if (!a.caduca_en) return envio + (a.caducada ? ' <span class="chip rojo">Enlace caducado</span>' : '')
+  if (a.caducada) return `${envio} <span class="chip rojo">Caducó el ${dia(a.caduca_en)}</span> <button class="btn3 o" data-reinvitar="${esc(a.id)}" style="padding:4px 12px">Invitar de nuevo</button>`
+  const d0 = (x) => { const d = new Date(x); d.setHours(0, 0, 0, 0); return d.getTime() }
+  const quedan = Math.round((d0(a.caduca_en) - d0(Date.now())) / 864e5) // días de calendario
+  const cuando = quedan <= 0 ? 'Caduca hoy' : quedan === 1 ? 'Caduca mañana' : 'Caduca en ' + quedan + ' días'
+  return `${envio} ${quedan <= 3 ? `<span class="chip amar">${cuando} · ${dia(a.caduca_en)}</span>` : `<span class="chip gris">Caduca el ${dia(a.caduca_en)}</span>`}`
 }
 const TIPO_TXT = Object.fromEntries(TIPOS)
 async function cargar() {
@@ -312,9 +320,10 @@ async function cargar() {
   fundadores = data.fundadores || 0
   const altas = data.altas || []
   $('n-altas').textContent = altas.length
-  const mapa = altas.filter(a => a.activo).length, curso = altas.filter(a => a.clase === 'invitacion').length
+  const mapa = altas.filter(a => a.activo).length, curso = altas.filter(a => a.clase === 'invitacion' && !a.caducada).length // RF-CADUCA-1: sin las caducadas
+  const caducadas = altas.filter(a => a.clase === 'invitacion' && a.caducada && !altas.some(b => b !== a && b.clase === 'invitacion' && b.correo === a.correo && !b.caducada)).length
   const cambios = altas.reduce((n, a) => n + (a.cambios_pendientes || 0), 0), correos = altas.reduce((n, a) => n + (a.correos_sin_contestar || 0), 0)
-  $('resumen').innerHTML = `${mapa} en el mapa · ${curso} invitaciones en curso · ${cambios} cambios por revisar · ${correos} correos sin contestar · <b>Socios fundadores: ${fundadores} de 10</b>`
+  $('resumen').innerHTML = `${mapa} en el mapa · ${curso} invitaciones en curso${caducadas ? ` · <b style="color:var(--red)">${caducadas} caducada${caducadas > 1 ? 's' : ''}</b>` : ''} · ${cambios} cambios por revisar · ${correos} correos sin contestar · <b>Socios fundadores: ${fundadores} de 10</b>`
   $('f-quedan').textContent = `(quedan ${Math.max(0, 10 - fundadores)} de 10)`
   ALTAS = altas; pintarAltas()
 }
@@ -347,7 +356,9 @@ async function borrar(clase, id, nombre) {
 }
 function pintarAltas() {
   const pend = (a) => (a.cambios_pendientes || 0) + (a.correos_sin_contestar || 0)
-  const altas = ordenar(ALTAS, ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
+  // RF-CADUCA-1: una invitación caducada a la que ya le siguió otra al mismo correo no se enseña (la nueva es la que cuenta)
+  const nueva = (a) => a.clase === 'invitacion' && a.caducada && ALTAS.some(b => b !== a && b.clase === 'invitacion' && b.correo === a.correo && String(b.enviada_en || '9') > String(a.enviada_en || ''))
+  const altas = ordenar(ALTAS.filter(a => !nueva(a)), ordenA, (a, k) => k === 'tipo' ? tipoTxt(a.tipo, a.categoria) : k === 'estado' ? txtPlano(estado(a)) : k === 'pendiente' ? pend(a) : a[k])
   marcarCab('a-cab', ordenA)
   $('filas').innerHTML = altas.map(a => `<tr>
     <td><b>${esc(a.nombre)}</b> ${a.fundador ? '<span class="corona" title="Socio fundador">👑</span>' : ''}<div class="sub" style="font-size:12px">${esc([a.categoria, a.municipio].filter(Boolean).join(' · '))}</div></td>
@@ -358,6 +369,21 @@ function pintarAltas() {
     <td style="text-align:right">${a.clase === 'invitacion' ? `<button class="btnx" title="Borrar esta invitación" data-borra-inv="${a.id}" data-nombre="${esc(a.nombre)}">🗑️</button>` : ''}</td>
   </tr>`).join('') || '<tr><td colspan="6" class="sub">Aún no hay altas.</td></tr>'
   $('filas').querySelectorAll('[data-borra-inv]').forEach(b => b.onclick = () => borrar('invitacion', b.dataset.borraInv, b.dataset.nombre))
+  $('filas').querySelectorAll('[data-reinvitar]').forEach(b => b.onclick = () => reinvitar(b.dataset.reinvitar)) // RF-CADUCA-1
+}
+// RF-CADUCA-1: «Invitar de nuevo» a una invitación caducada. Si el negocio tiene ficha en «Negocios», el formulario se rellena
+// con ella (como «Invitar →» de la ficha); si no, con los datos de la invitación caducada. La nueva sale con su enlace de 15 días.
+function reinvitar(id) {
+  const a = ALTAS.find(x => x.clase === 'invitacion' && x.id === id); if (!a) return
+  const c = fichaPorNombre(a.nombre) || cands.find(x => x.correo && x.correo.toLowerCase() === String(a.correo || '').toLowerCase())
+  if (c && c.correo) { invitarCand(c.id); return aviso(`Datos tomados de su ficha en «Negocios». Revisa el idioma y cómo le contactaste antes de enviar: sale con un enlace nuevo de 15 días.`, true) }
+  candidatoInvitando = null; desdeFicha = false
+  $('f-nombre').value = a.nombre || ''; $('f-cat').value = a.categoria || ''; $('f-contacto').value = a.contacto || ''; $('f-correo').value = a.correo || ''
+  tipo = tipoUi(a); opciones($('f-tipo'), TIPOS, tipo, v => tipo = v)
+  previo = PREVIO.some(([v]) => v === a.contacto_previo) ? a.contacto_previo : 'ninguno'; opciones($('f-previo'), PREVIO, previo, v => previo = v)
+  idioma = 'es'; opciones($('f-idioma'), IDIOMAS, idioma, v => idioma = v)
+  $('form').classList.remove('oculto'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' })
+  aviso('Datos de la invitación caducada. Revisa el idioma y cómo le contactaste antes de enviar: sale con un enlace nuevo de 15 días.', true)
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
