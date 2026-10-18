@@ -181,6 +181,24 @@ function pildora(ctx, x, y, w, h, r, fondo) {
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fillStyle = fondo; ctx.fill();
 }
 function recortar(txt, n) { txt = String(txt || ""); return txt.length > n ? txt.slice(0, n - 1) + "…" : txt; }
+/* 🆕 MARCA-HECHO-1 (18-oct, 115.ª · RUTAS-COMUNIDAD-1). Mario: «cuando lo publiquen, que ponga hecho por MOTOCLUBes», y en
+   la propuesta aprobada («todo»): «Hecho con MOTOCLUBes» en una esquina DURANTE TODO EL VÍDEO. Píldora oscura con el casco:
+   arriba a la izquierda, por debajo del título y de los letreros amarillos (y 210-306) y lejos de la cámara de Instagram; en
+   las pantallas de paneles (puertos, resumen, captura), que ocupan el ancho, abajo en el centro para no pisarlos. */
+function marcaHecho(ctx, casco, abajo, alfa) {
+  if (!(alfa > 0)) return;
+  var t1 = "Hecho con ", t2 = "MOTOCLUBes", h = 70, ic = 48, f1 = "600 34px Manrope, system-ui, sans-serif", f2 = "800 34px Manrope, system-ui, sans-serif";
+  ctx.font = f1; var w1 = ctx.measureText(t1).width;
+  ctx.font = f2; var w2 = ctx.measureText(t2).width;
+  var w = 16 + ic + 12 + w1 + w2 + 28, x = abajo ? (VIDEO.W - w) / 2 : 40, y = abajo ? VIDEO.H - 130 : 336;
+  ctx.globalAlpha = alfa;
+  pildora(ctx, x, y, w, h, h / 2, "rgba(14,14,14,.74)");
+  if (casco) ctx.drawImage(casco, x + 16, y + (h - ic) / 2, ic, ic);
+  ctx.textBaseline = "middle";
+  ctx.font = f1; ctx.fillStyle = "rgba(255,255,255,.88)"; escribir(ctx, t1, x + 16 + ic + 12, y + h / 2 + 1, "left");
+  ctx.font = f2; ctx.fillStyle = "#FF7A1A"; escribir(ctx, t2, x + 16 + ic + 12 + w1, y + h / 2 + 1, "left");
+  ctx.globalAlpha = 1;
+}
 
 /* ------------------------------------------------------------------ el guion: días, tiempos y cámara */
 /* 🆕 VIDEO-RESUMEN-PUERTOS-1 (7-oct, 102.ª). Mario, con el vídeo de la Transpirenaica para LinkedIn: «que fueran saliendo
@@ -831,10 +849,15 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           ctx.fillStyle = "rgba(14,14,14,.93)"; ctx.fillRect(0, 0, W, H);
           ctx.drawImage(casco, W / 2 - 150, 620, 300, 300);
           textoSombra(ctx, "MOTOCLUBes", W / 2, 1010, "800 92px Manrope, system-ui, sans-serif", "#fff");
-          textoSombra(ctx, "La app que viaja contigo", W / 2, 1100, "600 46px Manrope, system-ui, sans-serif", "rgba(255,255,255,.8)");
+          // NOMBRE-APP-2 (18-oct, 115.ª): que se vea que es una app para navegar, no una agencia ni un club (texto aprobado por Mario)
+          textoSombra(ctx, "La app de rutas y GPS para moto", W / 2, 1100, "600 46px Manrope, system-ui, sans-serif", "rgba(255,255,255,.8)");
           textoSombra(ctx, "motoclubes.es", W / 2, 1210, "800 54px Manrope, system-ui, sans-serif", "#FF7A1A");
           ctx.globalAlpha = 1;
         }
+
+        // MARCA-HECHO-1: «Hecho con MOTOCLUBes» todo el vídeo; se va fundiendo al entrar el cierre (allí ya está el logo)
+        marcaHecho(ctx, casco, tr.tipo === "puertos" || tr.tipo === "resumen" || tr.tipo === "captura",
+          tr.tipo === "cierre" ? 1 - tramo(t, tr.a, tr.a + 0.6) : 1);
 
         ctx.font = "500 22px Manrope, system-ui, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
         ctx.fillStyle = VIDEO_V6 && (tr.tipo === "dibujo" || tr.tipo === "tarjeta") ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.75)"; // v6: sin velo, en oscuro para que se lea
