@@ -282,6 +282,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="sub" style="white-space:pre-wrap;max-height:120px;overflow:auto;border-left:3px solid #EBE0D2;padding-left:10px" id="res-msg"></div>
     <label>TU RESPUESTA<textarea id="res-texto" rows="8" maxlength="3000"></textarea></label>
     <div class="sub">Le llega tal cual, con tu despedida: notificación al móvil y correo con el asunto «<span id="res-asunto"></span>».</div>
+    <!-- INCIDENCIA-CONTESTAR-2 (19-oct, 116.ª · Mario: «si le envío un correo porque he contestado y lo de avisar que está arreglado,
+         le vuelve a llegar otra notificación […] no tiene mucho sentido»): la respuesta cierra la incidencia, salvo que la desmarques
+         porque le has dicho «sale en la siguiente versión» y quieras avisarle cuando salga. -->
+    <label id="res-cerrar-l" style="display:flex;flex-direction:row;gap:8px;align-items:flex-start;font-weight:600;font-size:13px;color:inherit;letter-spacing:0"><input type="checkbox" id="res-cerrar" checked style="margin-top:3px"> Con esta respuesta la incidencia queda cerrada<div class="sub" style="font-weight:400">Desmárcalo si le has dicho que sale en la siguiente versión: así te queda el botón «Avisar que está arreglado» para cuando salga.</div></label>
     <div id="res-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="res-cancelar">Cancelar</button><button class="btn" id="res-enviar">Enviar respuesta</button></div>
   </div>
@@ -953,10 +957,15 @@ async function cargarIncidencias() {
   $('i-filas').innerHTML = INCIDENCIAS.map(f => {
     const movil = (f.plataforma === 'ios' ? 'iPhone' : f.plataforma === 'android' ? 'Android' : '—') + (f.build || f.version ? `<div class="sub">${esc(verApp(f.version, f.build))}</div>` : '') // VERSION-IGUAL-1
     // INCIDENCIA-CONTESTAR-1: «Avisar que está arreglado» solo en las incidencias (en una sugerencia diría «ya está arreglado»)
-    const arreglo = f.type !== 'incidencia' ? '<span class="sub">—</span>'
+    // INCIDENCIA-CONTESTAR-2: cerrada con la respuesta o sin aviso (se guarda en version_arreglo), o avisada con su versión
+    const cerrada = f.version_arreglo === 'respuesta' ? `✅ Cerrada con tu respuesta el ${fecha(f.arreglo_avisado_at)}`
+      : f.version_arreglo === 'sin aviso' ? `✅ Cerrada el ${fecha(f.arreglo_avisado_at)} (sin aviso)` : null
+    const arreglo = (f.type !== 'incidencia' ? '<span class="sub">—</span>'
       : f.arreglo_avisado_at
-      ? `<span class="chip verde">✅ Avisado el ${fecha(f.arreglo_avisado_at)}</span><div class="sub">${esc(f.version_arreglo || '')}</div>`
-      : `<button class="btn3 o i-avisar" data-id="${esc(f.id)}">Avisar que está arreglado</button>`
+      ? (cerrada ? `<span class="chip verde">${cerrada}</span>` : `<span class="chip verde">✅ Avisado el ${fecha(f.arreglo_avisado_at)}</span><div class="sub">${esc(f.version_arreglo || '')}</div>`)
+      : `<button class="btn3 o i-avisar" data-id="${esc(f.id)}">Avisar que está arreglado</button><div style="margin-top:6px"><button class="btn3 i-cerrar" data-id="${esc(f.id)}">Cerrar sin avisar</button></div>`)
+      // INCIDENCIA-BORRAR-1 (19-oct, 116.ª · Mario: «tengo aquí algunas mías de prueba que no se pueden borrar»)
+      + `<div style="margin-top:10px"><button class="btn3 i-borrar" data-id="${esc(f.id)}" style="color:#B3261E">Borrar</button></div>`
     const contestar = f.email ? `<div style="margin-top:6px"><button class="btn3 i-contestar" data-id="${esc(f.id)}">${f.respuesta ? 'Contestar otra vez' : 'Contestar'}</button></div>` : ''
     return `<tr><td><b>${esc(f.ref_code)}</b><div style="margin:4px 0"><span class="chip ${f.type === 'incidencia' ? 'rojo' : f.type === 'otro' ? 'gris' : 'azul'}">${esc(TIPO_INC[f.type] || f.type)}</span></div><div class="sub">${fecha(f.created_at)}</div></td>
       <td>${f.email ? `<button class="nombre-c t-ficha" data-email="${esc(f.email)}">${esc(f.nickname || f.email)}</button>` : esc(f.nickname || '—')}</td>
@@ -968,6 +977,24 @@ async function cargarIncidencias() {
 $('i-filas').addEventListener('click', async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'inc')
   const rc = ev.target.closest('.i-contestar'); if (rc) return abrirRespuesta(INCIDENCIAS.find(x => x.id === rc.dataset.id))
+  const ce = ev.target.closest('.i-cerrar') // INCIDENCIA-CONTESTAR-2: apunta y ya, no manda nada
+  if (ce) {
+    const f = INCIDENCIAS.find(x => x.id === ce.dataset.id); if (!f) return
+    if (!confirm(`¿Cerrar ${f.ref_code} de ${f.nickname || f.email} sin avisarle? No le llega nada; solo deja de contar como pendiente.`)) return
+    ce.disabled = true
+    try { await invitar({ modo: 'cerrar', id: f.id }); iAviso(`✅ ${esc(f.ref_code)} cerrada sin aviso.`, true) } catch (e) { iAviso('No se ha podido cerrar: ' + esc(e.message)) }
+    return cargarIncidencias()
+  }
+  const bo = ev.target.closest('.i-borrar') // INCIDENCIA-BORRAR-1: de verdad, con tu sesión (política «Admins can delete feedback»)
+  if (bo) {
+    const f = INCIDENCIAS.find(x => x.id === bo.dataset.id); if (!f) return
+    if (!confirm(`¿Borrar ${f.ref_code} de ${f.nickname || f.email}?\n\n«${(f.message || '').slice(0, 80)}»\n\nSe borra del todo y no se puede deshacer.`)) return
+    bo.disabled = true
+    const { error, count } = await sb.from('feedback').delete({ count: 'exact' }).eq('id', f.id)
+    if (error || !count) iAviso('No se ha podido borrar' + (error ? ': ' + esc(error.message) : ' (no tienes permiso o ya no existe)'))
+    else iAviso(`🗑️ ${esc(f.ref_code)} borrada.`, true)
+    return cargarIncidencias()
+  }
   const b = ev.target.closest('.i-avisar'); if (!b) return
   const f = INCIDENCIAS.find(x => x.id === b.dataset.id); if (!f) return
   const v = versionArreglo()
@@ -996,6 +1023,8 @@ function abrirRespuesta(f) {
   $('res-quien').textContent = f.nickname || f.email; $('res-ref').textContent = f.ref_code; $('res-msg').textContent = f.message
   $('res-asunto').textContent = `Respuesta a ${QUE_INC[f.type] || 'tu mensaje'} ${f.ref_code}`
   $('res-texto').value = `Hola${f.nickname ? ' ' + f.nickname : ''},\n\n\n\nUn saludo,\nMario`
+  const puedeCerrar = f.type === 'incidencia' && !f.arreglo_avisado_at // INCIDENCIA-CONTESTAR-2
+  $('res-cerrar-l').classList.toggle('oculto', !puedeCerrar); $('res-cerrar').checked = puedeCerrar
   delete $('res-texto').dataset.tecleado
   $('res-capa').classList.remove('oculto')
   $('res-texto').focus(); $('res-texto').setSelectionRange($('res-texto').value.indexOf('\n\n') + 2, $('res-texto').value.indexOf('\n\n') + 2)
@@ -1008,10 +1037,12 @@ $('res-enviar').onclick = async () => {
   if (!confirm(`¿Mandar la respuesta a ${f.nickname || f.email} (${f.ref_code})? Le llega una notificación y un correo.`)) return
   $('res-enviar').disabled = true
   try {
-    const r = await invitar({ modo: 'contestar', id: f.id, texto })
+    const cerrar = f.type === 'incidencia' && !f.arreglo_avisado_at && $('res-cerrar').checked // INCIDENCIA-CONTESTAR-2
+    const r = await invitar({ modo: 'contestar', id: f.id, texto, cerrar })
     if (!r || !('enviados' in r)) throw new Error('la función del servidor aún no tiene «Contestar» (falta publicarla)')
     const partes = [r.enviados ? `✅ Notificación en ${r.enviados} ${r.enviados === 1 ? 'móvil' : 'móviles'}` : '❌ Sin notificación (no tiene la app o las notificaciones)',
-      r.correo === 'enviado' ? '✅ Correo enviado' : r.correo === 'baja' ? '❌ Sin correo: se dio de baja de los correos' : '❌ El correo no ha salido']
+      r.correo === 'enviado' ? '✅ Correo enviado' : r.correo === 'baja' ? '❌ Sin correo: se dio de baja de los correos' : '❌ El correo no ha salido',
+      ...(cerrar ? [r.cerrada ? '✅ Incidencia cerrada' : '⚠️ No se ha cerrado (la función del servidor es la de antes)'] : [])]
     $('res-aviso').innerHTML = `<div class="aviso ok">${partes.join(' · ')}</div>`
     resListo(true)
   } catch (e) { $('res-aviso').innerHTML = `<div class="aviso mal">No se ha podido mandar: ${esc(e.message)}</div>` }
