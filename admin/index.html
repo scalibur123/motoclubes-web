@@ -212,6 +212,8 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 </main>
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
+  <div class="cifras" id="r-cifras" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div><!-- RIDERS-RESUMEN-1 -->
+  <div class="sub" id="r-cifras-nota" style="font-size:12px"></div>
   <div id="r-aviso"></div>
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div></div><!-- PERIODO-1 · QUIEN-INVITA-1 -->
   <div class="card tabla oculto" id="r-inv"></div>
@@ -926,6 +928,7 @@ async function cargarRiders() {
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
+  await pintarCifrasRiders() // RIDERS-RESUMEN-1
   // RIDERS-FILTRO-HOY-1 (17-oct, Mario: «hoy sigue sin aparecer Rapazdoorgal»): el periodo mira cuándo abrió la app, no el alta
   pintarPeriodo('r-periodo', RIDERS, (r) => r.abrio, 'abrieron la app', verInvitan ? null : perR, (k) => { perR = k; verInvitan = false; cargarRiders() }) // PERIODO-1
   $('r-invitan').classList.toggle('sel', verInvitan); $('r-inv').classList.toggle('oculto', !verInvitan); $('r-tabla').classList.toggle('oculto', verInvitan)
@@ -942,6 +945,37 @@ async function cargarRiders() {
     <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="9" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie abrió la app en ese periodo.'}</td></tr>`
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
+// ── RIDERS-RESUMEN-1 (19-oct-2026, 116.ª) · Mario: «de un vistazo, cuántos están ya con todo preparado y pueden utilizar la app, y
+// cuántos están pendientes porque están a medias o sin pulsar». Ya pueden: las cuentas de la app SIN la oficial ni las de prueba
+// (`mc_cuentas_ocultas()`, la misma lista que quita la app de «A quién seguir»: hoy MOTOCLUBes y Prueba_Android). En camino: los de
+// Solicitudes a medias y sin pulsar (la fase la da la función). No se cuenta a nadie dos veces: los «Dentro» de Solicitudes ya tienen
+// cuenta. Cada número del recuadro naranja abre Solicitudes con ese filtro.
+let OCULTAS = null // apodos que no son riders
+async function pintarCifrasRiders() {
+  if (!OCULTAS) {
+    try {
+      const { data: ids, error } = await sb.rpc('mc_cuentas_ocultas'); if (error) throw error
+      let pf = []
+      if (ids && ids.length) { const r = await sb.from('profiles').select('nickname').in('id', ids); if (r.error) throw r.error; pf = r.data || [] }
+      OCULTAS = new Set(pf.map(p => p.nickname).filter(Boolean))
+    } catch (e) { console.error('[RIDERS-RESUMEN-1] cuentas ocultas', e) }
+  }
+  if (!TESTERS.length) await cargarTesters()
+  const ya = RIDERS.filter(r => !(OCULTAS && OCULTAS.has(r.rider))).length
+  const medias = TESTERS.filter(t => t.fase === 'a_medias').length, sinP = TESTERS.filter(t => t.fase === 'sin_pulsar').length
+  const enlace = (f, txt) => `<button type="button" class="btn3" data-fase="${f}" style="padding:4px 10px;margin:6px 6px 0 0">${txt}</button>`
+  $('r-cifras').innerHTML =
+    `<div class="card cifra c-dentro"><b>${ya}</b><span>Ya pueden usar la app · tienen su cuenta</span></div>` +
+    `<div class="card cifra c-medias"><b>${medias + sinP}</b><span>En camino · invitados sin cuenta todavía</span><div>${enlace('a_medias', medias + ' a medias')}${enlace('sin_pulsar', sinP + ' sin pulsar')}</div></div>` +
+    `<div class="card cifra"><b>${ya + medias + sinP}</b><span>En total, cuando entren todos</span></div>`
+  $('r-cifras-nota').textContent = OCULTAS ? (OCULTAS.size ? `Sin contar ${[...OCULTAS].join(' ni ')} (cuenta oficial y de pruebas).` : '')
+    : 'Ojo: no se han podido quitar la cuenta oficial y las de pruebas; el primer número las incluye.'
+}
+$('r-cifras').onclick = (ev) => {
+  const b = ev.target.closest('[data-fase]'); if (!b) return
+  filtroFase = b.dataset.fase; perT = 'todos'; verPestana('test'); tAviso(''); pintarTesters()
+  $('t-periodo').scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 // ── INCIDENCIA-VERSION-1 (16-oct-2026, 110.ª) · en qué versión se arregló y avisar al que lo reportó (web-invitar-testers) ──
 const VERSION_ULTIMA = '1.26.10154' // la de la entrega del 16-oct; se cambia en el campo de arriba y se recuerda en este navegador
 function versionArreglo() { const v = $('i-version').value.trim(); try { localStorage.setItem('mc:version_arreglo', v) } catch (e) {} ; return v }
