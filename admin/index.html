@@ -269,8 +269,8 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card" style="max-width:460px;width:100%;display:flex;flex-direction:column;gap:12px">
     <div style="font-weight:800;font-size:18px">Mandar un aviso a <span id="push-quien"></span></div>
     <div class="sub">Le llega como notificación al móvil, como los avisos de la app. Si no tiene la app o las notificaciones, le llega por correo.</div>
-    <label>TÍTULO<input type="text" id="push-titulo" maxlength="80"></label>
-    <label>TEXTO<textarea id="push-texto" rows="3" maxlength="240"></textarea></label>
+    <label>TÍTULO<input type="text" id="push-titulo" maxlength="80" placeholder="Hasta 80 letras"></label>
+    <label>TEXTO<textarea id="push-texto" rows="3" maxlength="240" placeholder="Hasta 240 letras"></textarea></label>
     <label class="check"><input type="checkbox" id="push-correo" checked> Mandarlo también por correo</label><!-- AVISO-CORREO-1 -->
     <div id="push-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
@@ -763,10 +763,10 @@ let pushPara = null
 function abrirAviso(email, quien, abrio, movil, version) {
   pushPara = email; $('push-quien').textContent = quien; $('push-aviso').innerHTML = ''
   avisoListo(false) // AVISO-SALIR-1: cada aviso nuevo empieza con «Cancelar» y «Mandar aviso»
-  const v = vieja(movil, version)
-  $('push-titulo').value = v ? '🏍️ Nueva versión de MOTOCLUBes' : '¿Salimos a rodar? 🏍️'
-  $('push-texto').value = v ? (movil === 'ios' ? 'Ya tienes la versión nueva con lo último. Ábrela en TestFlight y pulsa Actualizar.' : 'Ya tienes la versión nueva con lo último. Actualízala en Play Store.')
-    : 'Planifica tu próxima ruta con curvas y puertos y sal con tu grupo, todos en el mapa y hablando por la radio del casco.'
+  // AVISO-VACIO-1 (21-oct, 119.ª · Mario: «preséntalo en vacío… cada vez que abro tengo que borrar lo que hay escrito»): el cuadro
+  // se abre sin texto de ejemplo; la gris de dentro es solo una pista y no se manda.
+  $('push-titulo').value = ''
+  $('push-texto').value = ''
   $('push-capa').classList.remove('oculto')
 }
 $('push-cancelar').onclick = () => { $('push-capa').classList.add('oculto'); if ($('push-cancelar').textContent === 'Salir') { if (!$('v-rid').classList.contains('oculto')) cargarRiders(); if (!$('v-ficha').classList.contains('oculto') && FICHA) verFicha(FICHA.email, fichaVuelve) } } // AVISO-SALIR-1: al salir, se ve al día
