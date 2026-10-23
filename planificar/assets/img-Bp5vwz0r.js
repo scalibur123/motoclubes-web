@@ -1,0 +1,1 @@
+const i="/storage/v1/object/public/",o="/storage/v1/render/image/public/";function a(e,n,c,r=60){if(!e)return null;if(!e.includes(i))return e;const t=e.replace(i,o),s=t.includes("?")?"&":"?";return`${t}${s}width=${n}&height=${c}&resize=cover&quality=${r}`}export{a as m};

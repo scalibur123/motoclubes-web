@@ -1,0 +1,1 @@
+const e="https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/fuel-stations";async function n(s){const t=await fetch(e,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s.data)});return t.ok?await t.json():(console.error("[fuel-stations-edge] HTTP",t.status),{fetchedAt:Date.now(),pricesUpdatedAt:null,stations:[]})}export{n as g};

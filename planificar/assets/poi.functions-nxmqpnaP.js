@@ -1,0 +1,1 @@
+const o="https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/pois";async function e(t){const s=await fetch(o,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(t.data)});return s.ok?await s.json():(console.error("[pois-edge] HTTP",s.status),{pois:[],fallos:t.data.categories.slice()})}export{e as g};

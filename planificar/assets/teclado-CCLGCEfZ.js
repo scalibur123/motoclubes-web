@@ -1,0 +1,1 @@
+function t(){return typeof window>"u"||!window.matchMedia?!0:!window.matchMedia("(pointer: coarse)").matches}function n(){try{const e=typeof document<"u"?document.activeElement:null;e&&(e.tagName==="INPUT"||e.tagName==="TEXTAREA"||e.isContentEditable)&&e.blur()}catch{}}export{n as c,t as e};

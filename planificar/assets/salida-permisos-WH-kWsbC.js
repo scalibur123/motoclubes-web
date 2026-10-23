@@ -1,0 +1,1 @@
+function r(e){return!!e&&e.status==="active"}function n(e,t,a){return!e||e.status!=="active"?!1:e.role==="leader"?!0:!!a&&!!t&&t===a}function i(e){if(!e||e.is_temporary||e.recado_hasta||e.is_planned===!0)return!1;const t=(e.origin??"").toLowerCase();return t!=="planned"&&t!=="imported"}export{r as a,i as e,n as p};
