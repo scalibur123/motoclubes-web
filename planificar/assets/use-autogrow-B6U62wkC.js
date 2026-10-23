@@ -1,1 +1,0 @@
-import{r}from"./index-D5vx1day.js";function n(s,e=140){const o=r.useRef(null);return r.useEffect(()=>{const t=o.current;if(!t)return;t.style.height="auto";const l=Math.min(t.scrollHeight,e);t.style.height=`${l}px`,t.style.overflowY=t.scrollHeight>e?"auto":"hidden"},[s,e]),o}export{n as u};
