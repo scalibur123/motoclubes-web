@@ -450,7 +450,7 @@ async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
   if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
-  if (!admin) { await sb.auth.signOut(); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
+  if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
@@ -478,7 +478,7 @@ $('l-entrar').onclick = async () => {
   entrar()
 }
 $('l-clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('l-entrar').click() })
-$('salir').onclick = async () => { await sb.auth.signOut(); entrar() }
+$('salir').onclick = async () => { await sb.auth.signOut({ scope: 'local' }); entrar() } // CERRAR-SESION-LOCAL-1: solo en este navegador, no en el móvil
 $('b-invitar').onclick = () => { candidatoInvitando = null; desdeFicha = false; idioma = 'es'; opciones($('f-idioma'), IDIOMAS, idioma, v => idioma = v); $('form').classList.remove('oculto'); aviso(''); $('f-nombre').focus() }
 $('b-cancelar').onclick = () => { $('form').classList.add('oculto'); candidatoInvitando = null }
 // MC-ADMIN-INVITA-FICHA-6OCT-2026 (101.ª, `ADMIN-INVITA-FICHA-1`). Mario (Casa Lascorz): había rellenado el contacto y el correo
