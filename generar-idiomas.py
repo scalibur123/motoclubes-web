@@ -19,6 +19,7 @@ FR = {
    "MOTOCLUBes est l'app des motards : préparez vos itinéraires, naviguez avec un GPS pensé pour la moto, roulez en groupe avec l'intercom et partagez vos parcours avec la communauté.",
  "Qué es":"L'app", "Funciones":"Fonctions", "Proyecto":"Le projet", "Preguntas":"Questions",
  "Negocios":"Professionnels", "Descarga":"Télécharger",
+ "Planificar":"Planifier", "Planificador de varios días":"Planificateur sur plusieurs jours", "🖥️ Planifica en el ordenador":"🖥️ Planifier sur ordinateur",  # PLANIFICAR-WEB-ENLACE-1 (127.ª)
  "La app que viaja contigo.":"L'app qui roule avec vous.",
  "Tu club. Tus rutas. Tu comunidad.":"Votre club. Vos itinéraires. Votre communauté.",
  "Ver qué hace":"Voir ce qu'elle fait", "Soy un negocio":"Je suis un professionnel",
@@ -160,6 +161,7 @@ PT = {
    "MOTOCLUBes é a app para motards: planeia rotas, navega com GPS pensado para a mota, anda em grupo com intercomunicador e partilha as tuas rotas com a comunidade.",
  "Qué es":"A app", "Funciones":"Funções", "Proyecto":"O projeto", "Preguntas":"Perguntas",
  "Negocios":"Negócios", "Descarga":"Descarregar",
+ "Planificar":"Planear", "🖥️ Planifica en el ordenador":"🖥️ Planeia no computador",  # PLANIFICAR-WEB-ENLACE-1 (127.ª)
  "La app que viaja contigo.":"A app que viaja consigo.",
  "Tu club. Tus rutas. Tu comunidad.":"O teu clube. As tuas rotas. A tua comunidade.",
  "Ver qué hace":"Ver o que faz", "Soy un negocio":"Tenho um negócio",
