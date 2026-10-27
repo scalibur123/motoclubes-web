@@ -27,7 +27,7 @@ td{padding:13px 14px;border-top:1px solid #EFEAE3;vertical-align:top}.tabla{over
 .chip{display:inline-block;border-radius:50px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
 .verde{background:#DFF3E4;color:#1E6B34}.amar{background:#FFF1C2;color:#6B5100}.azul{background:#E4EDFB;color:#244A86}.gris{background:#EFEAE3;color:#5C5750}.rojo{background:#FBE3E1;color:#8E1F18}
 label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--g);letter-spacing:.3px}
-input[type=text],input[type=email],input[type=password]{padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font:500 14px Manrope,sans-serif;background:var(--bg);color:var(--tx)}
+input[type=text],input[type=email],input[type=password],input[type=date]{padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font:500 14px Manrope,sans-serif;background:var(--bg);color:var(--tx)}
 .fila{display:grid;grid-template-columns:1fr 1fr;gap:14px}.opc{display:flex;flex-wrap:wrap;gap:8px}
 .opc button{border:1.5px solid var(--line);background:#fff;color:var(--tx);border-radius:50px;padding:9px 14px;font:600 13px Manrope,sans-serif;cursor:pointer}
 .opc button.sel{background:var(--o);border-color:var(--o);color:#fff}
@@ -65,16 +65,17 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 .col{display:flex;flex-direction:column;gap:20px}
 .volver{background:none;border:none;color:var(--od);font:600 14px Manrope,sans-serif;cursor:pointer;padding:0;align-self:flex-start}
 .tcambios td,.tcambios th{padding:8px 10px;font-size:13px}.tcambios .antes{color:var(--gl);text-decoration:line-through}
+.fila.nota{grid-template-columns:160px minmax(0,1fr)}.partir{overflow-wrap:anywhere}/* CONTACTOS-1 */
 @media (max-width:900px){.ficha{grid-template-columns:1fr}}
 @media (max-width:760px){.cifras5{grid-template-columns:1fr 1fr}}
-@media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila{grid-template-columns:1fr}}
+@media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila,.fila.nota{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -229,6 +230,19 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="i-aviso"></div>
   <div class="card tabla"><table><thead><tr><th>Aviso</th><th>Rider</th><th>Qué nos contó</th><th>Lo que le contestaste</th><th>Su móvil</th><th>Arreglo</th></tr></thead><tbody id="i-filas"></tbody></table></div>
 </main>
+<!-- CONTACTOS-1 (27-oct, 127.ª · Mario: «debería tener en el portal de administración, aparte de la parte de negocios, todo el
+     tema de contactos con terceros […] y tener ahí un poco el histórico de todo lo que se ha hecho»). Funciones de la base:
+     mc_admin_contactos, mc_admin_contacto_guardar, mc_admin_contacto_nota, mc_admin_contacto_borrar (db/contactos_2_hacer.sql). -->
+<main id="v-con" class="oculto">
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1" class="partir"><h1>Contactos</h1><div class="sub">Todo lo que no es un negocio ni un rider de la app: creadores de rutas, prensa, inversores, instituciones, motoclubs, negocios que aún no están en Rider Friendly… Cada uno con en qué punto está, el siguiente paso con su fecha y el histórico de lo hecho. El número de la pestaña es a cuántos te toca escribir hoy.</div></div>
+    <button class="btn" id="co-nuevo">+ Añadir contacto</button>
+  </div>
+  <div id="co-aviso"></div>
+  <div class="cifras" id="co-cifras"></div>
+  <div class="filtros"><label>BUSCAR<input type="text" id="co-buscar" placeholder="Nombre, quién es, notas…"></label><label>TIPO<select id="co-tipo"></select></label></div>
+  <div class="card tabla"><table><thead id="co-cab"><tr><th data-k="nombre">Contacto</th><th data-k="tipo">Tipo · canal</th><th data-k="estado">Estado</th><th data-k="siguiente_fecha">Siguiente paso</th><th data-k="ultima">Lo último</th></tr></thead><tbody id="co-filas"></tbody></table></div>
+</main>
 <!-- CONTENIDO-WEB-1 (16-oct, 110.ª · Mario: «tengo cosas en el teléfono y cosas en el portal admin y al final me voy a liar […]
      quiero que se pueda hacer desde los dos sitios»): las guías en vídeo y las noticias, también desde aquí. Mismas funciones de
      la base que el Panel admin de la app (mc_guia_guardar, mc_publicar_noticia, mc_noticia_video) y el mismo bucket privado `videos`
@@ -303,6 +317,26 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="sub" id="mail-nota">Sale de «Mario de MOTOCLUBes», tal cual lo escribes. Si contesta, la respuesta llega a negocios@motoclubes.es.</div>
     <div id="mail-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="mail-cancelar">Cancelar</button><button class="btn" id="mail-enviar">Enviar</button></div>
+  </div>
+</div>
+<!-- CONTACTOS-1: la ficha de un contacto (nueva o para cambiarla) y su histórico -->
+<div id="co-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
+  <div class="card" style="max-width:720px;width:100%;max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:12px">
+    <div style="font-weight:800;font-size:18px" id="co-titulo"></div>
+    <label>NOMBRE<input type="text" id="co-nombre" maxlength="120" placeholder="Nombre · lo que hace"></label>
+    <label>QUIÉN ES<input type="text" id="co-quien" maxlength="300" placeholder="Autor de un blog de rutas en moto"></label>
+    <div class="fila"><label>TIPO<select id="co-f-tipo"></select></label><label>POR DÓNDE<select id="co-canal"></select></label></div>
+    <div class="fila"><label>ENLACE<input type="text" id="co-enlace" maxlength="300" placeholder="https://…"></label><label>CORREO<input type="email" id="co-correo" maxlength="200"></label></div>
+    <div class="fila"><label>TELÉFONO<input type="text" id="co-telefono" maxlength="40"></label><label>EN QUÉ PUNTO ESTÁ<select id="co-estado"></select></label></div>
+    <div class="fila"><label>SIGUIENTE PASO<input type="text" id="co-siguiente" maxlength="300" placeholder="Llamarle para ver si la ha probado"></label><label>¿CUÁNDO?<input type="date" id="co-fecha" min="2020-01-01" max="2100-12-31"></label></div>
+    <label>NOTAS FIJAS<textarea id="co-fijas" rows="3" maxlength="2000" placeholder="Lo que conviene saber siempre de él"></textarea></label>
+    <div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-weight:800">Histórico</div>
+      <div class="fila nota"><label>FECHA<input type="date" id="co-n-fecha" min="2020-01-01" max="2100-12-31"></label><label>QUÉ HAS HECHO (SE APUNTA AL GUARDAR)<textarea id="co-n-texto" rows="2" maxlength="2000" placeholder="Le he llamado: dice que la prueba esta semana"></textarea></label></div>
+      <div id="co-hist" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
+    </div>
+    <div id="co-f-aviso"></div>
+    <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap"><button class="btn2" id="co-borrar" style="color:var(--red)">Borrar contacto</button><span style="display:flex;gap:10px;margin-left:auto"><button class="btn2" id="co-cancelar">Cancelar</button><button class="btn" id="co-guardar">Guardar</button></span></div>
   </div>
 </div>
 <main id="v-ficha" class="oculto">
@@ -448,14 +482,14 @@ function reinvitar(id) {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
-  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'gui', 'not']
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not'] // CONTACTOS-1: + con
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -464,7 +498,7 @@ async function entrar() {
   if (fichaUrl) { history.replaceState(null, '', location.pathname); verFicha(fichaUrl, 'test').then(() => { if ($('f-play') && !FICHA?.web?.play_enviado_at) $('f-play').click() }) }
   // SOLICITUDES-1 (15-oct, Mario: «cuando entro en el portal no me lo refresca […] son solicitudes más que testers»): la
   // pestaña se llama «Solicitudes» y su cifra (los que faltan por invitar) se carga al entrar, como Riders.
-  await Promise.all([cargar(), cargarCand(), cargarRiders(), cargarTesters()]) // FICHA-RIDER-1: la cifra de la pestaña Riders
+  await Promise.all([cargar(), cargarCand(), cargarRiders(), cargarTesters(), cargarContactos()]) // CONTACTOS-1: la cifra de la pestaña // FICHA-RIDER-1: la cifra de la pestaña Riders
   if (!fichaUrl) { // SIGUE-DONDE-ESTABAS-1
     if (donde.startsWith('ficha=')) { const [em, vu] = donde.slice(6).split('|'); if (em) verFicha(em, PESTANAS.includes(vu) ? vu : 'rid') }
     else if (PESTANAS.includes(donde) && donde !== 'altas') $('p-' + donde).click()
@@ -548,11 +582,12 @@ function verPestana(cual) {
   // la pestaña va en la dirección (#test, #rid…); la ficha de un rider la pone verFicha (#ficha=…).
   // Revisión: sin el estado de la ficha de Negocios (si no, tras recargar «Volver» sacaba de la página)
   if (cual !== 'ficha') { try { history.replaceState(null, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
-  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not')
+  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not'); $('p-con').classList.toggle('sel', cual === 'con')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
   $('v-inc').classList.toggle('oculto', cual !== 'inc') // INCIDENCIA-VERSION-1
   $('v-gui').classList.toggle('oculto', cual !== 'gui'); $('v-not').classList.toggle('oculto', cual !== 'not') // CONTENIDO-WEB-1
+  $('v-con').classList.toggle('oculto', cual !== 'con') // CONTACTOS-1
 }
 // ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
 function tAviso(txt, bien) { const h = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : ''; $('t-aviso').innerHTML = h; if ($('f-aviso')) $('f-aviso').innerHTML = h }
@@ -1536,6 +1571,139 @@ function invitarCand(id) {
   previo = 'telefono'; opciones($('f-previo'), PREVIO, previo, v => previo = v)
   $('form').classList.remove('oculto'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
+// ── CONTACTOS-1 (27-oct, 127.ª) · contactos con terceros: ficha, siguiente paso con fecha e histórico ──
+// Los que no son negocios (Negocios) ni riders de la app (Solicitudes, Riders). Claude apunta lo de cada sesión con un SQL
+// (mc_contacto_apuntar) y Mario lo de cada día desde aquí. «Te toca hoy» = siguiente paso con fecha de hoy o pasada, sin cerrar.
+const CO_TIPOS = [['creador', 'Creador de rutas'], ['prensa', 'Prensa'], ['inversor', 'Inversor'], ['institucion', 'Institución'], ['colaborador', 'Colaborador'], ['motoclub', 'Motoclub'], ['negocio', 'Negocio (aún no en Rider Friendly)'], ['rider', 'Posible rider'], ['otro', 'Otro']]
+const CO_CANALES = [['instagram', 'Instagram'], ['web', 'Web'], ['linkedin', 'LinkedIn'], ['correo', 'Correo'], ['whatsapp', 'WhatsApp'], ['telefono', 'Teléfono'], ['en_persona', 'En persona'], ['otro', 'Otro']]
+const CO_ESTADOS = [['por_escribir', 'Por escribir'], ['esperando', 'Esperando respuesta'], ['hablando', 'Hablando'], ['cerrado', 'Cerrado']]
+const CO_CHIP = { por_escribir: 'amar', esperando: 'azul', hablando: 'verde', cerrado: 'gris' }
+const coTxt = (lista, v) => (lista.find(x => x[0] === v) || [v, v || ''])[1]
+let CONTACTOS = [], coFiltro = 'todos', coId = null, coAbierto = null, ordenCo = { k: null, asc: true } // coAbierto: la ficha tal como se abrió
+const hoyIso = () => new Date().toLocaleDateString('sv-SE') // AAAA-MM-DD en la hora del ordenador (España)
+const coToca = (c) => c.estado !== 'cerrado' && !!c.siguiente_fecha && c.siguiente_fecha <= hoyIso()
+const coFecha = (iso) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', Object.assign({ day: 'numeric', month: 'short' }, String(iso).slice(0, 4) === hoyIso().slice(0, 4) ? {} : { year: 'numeric' })) : ''
+// Solo enlaces de verdad (http/https); «80kmh.es» se completa con https://
+const coUrl = (u) => { u = String(u || '').trim(); if (/^https?:\/\/\S+$/i.test(u)) return u; return /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(u) ? 'https://' + u : null }
+function coAviso(txt, bien) { $('co-aviso').innerHTML = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : '' }
+function coFAviso(txt) { $('co-f-aviso').innerHTML = txt ? `<div class="aviso mal">${txt}</div>` : '' }
+function coError(e) {
+  const m = String(e?.message || e || '')
+  if (m.includes('mc_contactos_nombre_key')) return 'Ya hay un contacto con ese nombre.'
+  if (m.includes('MC_SOLO_ADMIN')) return 'Solo un administrador puede hacer esto.'
+  if (m.includes('MC_NO_EXISTE')) return 'Ese contacto ya no existe (¿lo has borrado en otra ventana?). Recarga el panel.'
+  return esc(m)
+}
+async function cargarContactos() {
+  const { data, error } = await sb.rpc('mc_admin_contactos')
+  if (error) {
+    $('n-con').textContent = '·'
+    return coAviso(/mc_admin_contactos|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Aún no están creados los contactos en la base: falta ejecutar <b>db/contactos_2_hacer.sql</b> en Supabase.' : 'No se han podido cargar los contactos: ' + esc(error.message))
+  }
+  CONTACTOS = Array.isArray(data) ? data : []
+  if ($('co-aviso').querySelector('.mal')) coAviso('') // revisión: un error de antes no se queda puesto
+  $('n-con').textContent = CONTACTOS.filter(coToca).length
+  pintarContactos()
+}
+function pintarContactos() {
+  const n = { toca: CONTACTOS.filter(coToca).length, esperando: CONTACTOS.filter(c => c.estado === 'esperando').length, hablando: CONTACTOS.filter(c => c.estado === 'hablando').length, todos: CONTACTOS.length }
+  const CIF = [['toca', 'Te toca hoy'], ['esperando', 'Esperando respuesta'], ['hablando', 'Hablando'], ['todos', 'Todos']]
+  $('co-cifras').innerHTML = CIF.map(([k, t]) => `<button type="button" class="card cifra pulsable${coFiltro === k ? ' sel' : ''}" data-cf="${k}"><b>${n[k]}</b><span>${t}</span></button>`).join('')
+  $('co-cifras').querySelectorAll('[data-cf]').forEach(b => b.onclick = () => { coFiltro = b.dataset.cf; pintarContactos() })
+  const tipo = $('co-tipo').value, q = $('co-buscar').value.trim().toLowerCase()
+  let lista = CONTACTOS.filter(c => coFiltro === 'todos' || (coFiltro === 'toca' ? coToca(c) : c.estado === coFiltro))
+  if (tipo) lista = lista.filter(c => c.tipo === tipo)
+  if (q) lista = lista.filter(c => [c.nombre, c.quien, c.siguiente, c.notas_fijas, c.correo, c.enlace, ...(c.notas || []).map(x => x.texto)].some(v => String(v || '').toLowerCase().includes(q)))
+  // Sin ordenar por columna: primero lo que toca hoy, luego por fecha del siguiente paso, lo cerrado al final
+  const urgencia = (c) => (c.estado === 'cerrado' ? '3' : coToca(c) ? '0' : c.siguiente_fecha ? '1' : '2') + (c.siguiente_fecha || '9999')
+  lista = ordenCo.k ? ordenar(lista, ordenCo, (c, k) => k === 'tipo' ? coTxt(CO_TIPOS, c.tipo) : k === 'estado' ? coTxt(CO_ESTADOS, c.estado) : k === 'ultima' ? ((c.notas || [])[0]?.fecha || '') : k === 'siguiente_fecha' ? (c.siguiente_fecha || '9999') : c[k])
+                    : lista.slice().sort((a, b) => urgencia(a).localeCompare(urgencia(b)) || String(b.actualizado_en).localeCompare(String(a.actualizado_en)))
+  marcarCab('co-cab', ordenCo)
+  const hoy = hoyIso()
+  $('co-filas').innerHTML = lista.map(c => {
+    const url = coUrl(c.enlace), ult = (c.notas || [])[0]
+    const cuando = !c.siguiente_fecha || c.estado === 'cerrado' ? '' : c.siguiente_fecha < hoy ? `<span class="chip rojo">Desde el ${coFecha(c.siguiente_fecha)}</span>` : c.siguiente_fecha === hoy ? '<span class="chip amar">Hoy</span>' : `<span class="sub" style="font-size:12px">El ${coFecha(c.siguiente_fecha)}</span>`
+    return `<tr class="org-fila" data-co="${esc(c.id)}">
+      <td class="partir"><button class="nombre-c">${esc(c.nombre)}</button><div class="sub" style="font-size:12px">${esc(c.quien || '')}</div></td>
+      <td>${esc(coTxt(CO_TIPOS, c.tipo))}<div class="sub" style="font-size:12px">${esc(coTxt(CO_CANALES, c.canal))}${url ? ` · <a class="tel" href="${esc(url)}" target="_blank" rel="noopener noreferrer">abrir ↗</a>` : ''}</div></td>
+      <td><span class="chip ${CO_CHIP[c.estado] || 'gris'}">${esc(coTxt(CO_ESTADOS, c.estado))}</span></td>
+      <td style="max-width:260px" class="partir">${esc(c.siguiente || '')}${cuando ? `<div style="margin-top:4px">${cuando}</div>` : ''}</td>
+      <td class="sub partir" style="max-width:300px;font-size:13px">${ult ? `<b>${coFecha(ult.fecha)}</b> · ${esc(ult.texto.length > 140 ? ult.texto.slice(0, 140) + '…' : ult.texto)}` : '—'}</td>
+    </tr>`
+  }).join('') || `<tr><td colspan="5" class="sub">${CONTACTOS.length ? 'Ninguno con este filtro.' : 'Aún no hay contactos.'}</td></tr>`
+}
+$('co-filas').onclick = (ev) => { if (ev.target.closest('a')) return; const tr = ev.target.closest('[data-co]'); if (tr) abrirContacto(CONTACTOS.find(c => c.id === tr.dataset.co)) }
+clicCab('co-cab', ordenCo, pintarContactos)
+$('co-tipo').innerHTML = '<option value="">Todos</option>' + CO_TIPOS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')
+$('co-tipo').onchange = () => pintarContactos()
+$('co-buscar').oninput = () => pintarContactos()
+const coSelect = (id, lista, v) => { $(id).innerHTML = lista.map(([k, l]) => `<option value="${k}"${k === v ? ' selected' : ''}>${l}</option>`).join('') }
+const CO_CAMPOS = ['co-nombre', 'co-quien', 'co-enlace', 'co-correo', 'co-telefono', 'co-siguiente', 'co-fecha', 'co-fijas', 'co-n-fecha', 'co-n-texto']
+function abrirContacto(c) {
+  coId = c ? c.id : null; coAbierto = c ? JSON.parse(JSON.stringify(c)) : null; coFAviso('')
+  $('co-titulo').textContent = c ? c.nombre : 'Nuevo contacto'
+  const val = { 'co-nombre': c?.nombre, 'co-quien': c?.quien, 'co-enlace': c?.enlace, 'co-correo': c?.correo, 'co-telefono': c?.telefono, 'co-siguiente': c?.siguiente, 'co-fecha': c?.siguiente_fecha, 'co-fijas': c?.notas_fijas, 'co-n-fecha': hoyIso(), 'co-n-texto': '' }
+  CO_CAMPOS.forEach(k => { $(k).value = val[k] || ''; delete $(k).dataset.tecleado })
+  coSelect('co-f-tipo', CO_TIPOS, c?.tipo || 'otro'); coSelect('co-canal', CO_CANALES, c?.canal || 'instagram'); coSelect('co-estado', CO_ESTADOS, c?.estado || 'por_escribir')
+  $('co-borrar').classList.toggle('oculto', !c)
+  pintarHistorico(c)
+  $('co-capa').classList.remove('oculto'); (c ? $('co-n-texto') : $('co-nombre')).focus()
+}
+function pintarHistorico(c) {
+  const notas = c?.notas || []
+  $('co-hist').innerHTML = notas.map(x => `<div style="display:flex;gap:10px;align-items:flex-start;border-left:3px solid #EBE0D2;padding-left:10px">
+      <b style="white-space:nowrap;min-width:52px">${coFecha(x.fecha)}</b><span style="flex:1;white-space:pre-wrap" class="partir">${esc(x.texto)}</span>
+      <button class="btnx" data-borra-nota="${esc(x.id)}" title="Borrar esta nota">🗑️</button></div>`).join('') || '<div class="sub">Sin notas todavía.</div>'
+  $('co-hist').querySelectorAll('[data-borra-nota]').forEach(b => b.onclick = async () => {
+    if (!confirm('¿Borrar esta nota del histórico? No se puede deshacer.')) return
+    const { error } = await sb.rpc('mc_admin_contacto_borrar', { p_clase: 'nota', p_id: b.dataset.borraNota })
+    if (error) return coFAviso('No se ha podido borrar la nota: ' + coError(error))
+    await cargarContactos(); pintarHistorico(CONTACTOS.find(x => x.id === coId))
+  })
+}
+function cerrarContacto() { $('co-capa').classList.add('oculto'); CO_CAMPOS.forEach(k => delete $(k).dataset.tecleado); coId = null; coAbierto = null }
+$('co-nuevo').onclick = () => { coAviso(''); abrirContacto(null) }
+$('co-cancelar').onclick = () => cerrarContacto()
+$('co-guardar').onclick = async () => {
+  const nombre = $('co-nombre').value.trim()
+  if (!nombre) { coFAviso('Pon al menos el nombre.'); return $('co-nombre').focus() }
+  // Revisión: una fecha a medio escribir o con el año en dos cifras (0026) no se guarda a escondidas
+  for (const [k, que] of [['co-fecha', 'del siguiente paso'], ['co-n-fecha', 'de la nota']]) {
+    const v = $(k).value
+    if ($(k).validity.badInput || (v && (v < '2020-01-01' || v > '2100-12-31'))) { coFAviso(`Revisa la fecha ${que}: escríbela entera, con el año en cuatro cifras.`); return $(k).focus() }
+  }
+  const texto = $('co-n-texto').value.trim()
+  const todos = { nombre, quien: $('co-quien').value.trim(), tipo: $('co-f-tipo').value, canal: $('co-canal').value, enlace: $('co-enlace').value.trim(), correo: $('co-correo').value.trim(),
+    telefono: $('co-telefono').value.trim(), estado: $('co-estado').value, siguiente: $('co-siguiente').value.trim(), siguiente_fecha: $('co-fecha').value || '', notas_fijas: $('co-fijas').value.trim() }
+  // Revisión: de una ficha ya creada se manda SOLO lo que has cambiado. Si mientras tanto Claude apuntó algo por SQL y tu
+  // panel llevaba horas abierto, no se pisa lo que no has tocado.
+  const idAlEmpezar = coId, antes = coAbierto && coAbierto.id === idAlEmpezar ? coAbierto : null // revisión 2: lo que se abrió, no la lista recargada
+  const datos = antes ? Object.fromEntries(Object.entries(todos).filter(([k, v]) => String(v ?? '') !== String(antes[k] ?? ''))) : todos
+  $('co-guardar').disabled = true; $('co-cancelar').disabled = true; coFAviso('')
+  try {
+    let id = idAlEmpezar
+    if (!antes || Object.keys(datos).length) {
+      const r = await sb.rpc('mc_admin_contacto_guardar', { p_id: idAlEmpezar, p_datos: datos })
+      if (r.error) throw r.error
+      id = r.data; coId = id; coAbierto = Object.assign({}, antes || {}, todos, { id }) // si la nota falla, al volver a pulsar «Guardar» se cambia la ficha ya creada (no sale otra igual)
+    }
+    if (texto) {
+      const r = await sb.rpc('mc_admin_contacto_nota', { p_contacto: id, p_texto: texto, p_fecha: $('co-n-fecha').value || null })
+      if (r.error) { await cargarContactos(); return coFAviso('La ficha se ha guardado, pero la nota no: ' + coError(r.error)) }
+    }
+    cerrarContacto(); await cargarContactos(); coAviso(`Guardado: ${esc(nombre)}.`, true)
+  } catch (e) { coFAviso('No se ha podido guardar: ' + coError(e)) }
+  finally { $('co-guardar').disabled = false; $('co-cancelar').disabled = false }
+}
+$('co-borrar').onclick = async () => {
+  const c = CONTACTOS.find(x => x.id === coId); if (!c) return coFAviso('Ese contacto ya no está en la lista. Cierra y recarga el panel.')
+  if (!confirm(`¿Borrar a «${c.nombre}» y todo su histórico? No se puede deshacer.`)) return
+  const { error } = await sb.rpc('mc_admin_contacto_borrar', { p_clase: 'contacto', p_id: c.id })
+  if (error) return coFAviso('No se ha podido borrar: ' + coError(error))
+  cerrarContacto(); await cargarContactos(); coAviso(`Borrado: ${esc(c.nombre)}.`, true)
+}
+$('p-con').onclick = () => { verPestana('con'); coAviso(''); cargarContactos() }
+
 // PANEL-SE-ACTUALIZA-1 (17-oct, Mario: «yo no debería recargar el panel; cuando salga, debe recargarlo solo»). Cada minuto y
 // al volver a la pestaña se mira si en la web hay otra versión de esta página (su ETag o su fecha en GitHub Pages, sin
 // caché). Si la hay: se recarga sola si no estás escribiendo ni con un cuadro abierto; si lo estás, sale un aviso arriba
@@ -1569,7 +1737,7 @@ const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
   if (enCamino > 0 || escrito()) return true
-  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('co-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
