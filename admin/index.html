@@ -75,7 +75,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-uso">Uso</button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -270,6 +270,18 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div style="display:flex;justify-content:flex-end"><button class="btn" id="n-publicar">Publicar</button></div>
   </div>
   <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo</th></tr></thead><tbody id="n-filas"></tbody></table></div>
+</main>
+<!-- USO-APP-1 (28-oct, 129.ª · Mario: «hay que tener monitorizada la app para saber cuáles son lo que más visita o qué más
+     mira la gente. Noticias, foro, todo»). Lee el registro que la app ya sube (app_registro, 90 días) con mc_admin_uso(p_dias)
+     (db/uso_app_2_crear.sql). Sin contar a los admin, la cuenta oficial ni Prueba_Android. -->
+<main id="v-uso" class="oculto">
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1" class="partir"><h1>Uso de la app</h1><div class="sub">Qué miran los riders: vídeos, guía, noticias, foro y pantallas. Sale del registro que manda la app (se guarda 90 días), sin contarte a ti, a la cuenta oficial ni a Prueba_Android. Toca una fila para ver quiénes son.</div></div>
+    <label>DÍAS<select id="u-dias"><option value="7">Últimos 7</option><option value="30" selected>Últimos 30</option><option value="90">Últimos 90</option></select></label>
+  </div>
+  <div id="u-aviso"></div>
+  <div class="cifras" id="u-cifras"></div>
+  <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
 </main>
 <!-- TESTERS-SEGUIMIENTO-1: el aviso (push) a un rider -->
 <!-- ENVIOS-FICHA-1: lo que le llegó, tal cual (notificación y correo) -->
@@ -482,14 +494,14 @@ function reinvitar(id) {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
-  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not'] // CONTACTOS-1: + con
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso'] // CONTACTOS-1: + con · USO-APP-1: + uso
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -582,12 +594,13 @@ function verPestana(cual) {
   // la pestaña va en la dirección (#test, #rid…); la ficha de un rider la pone verFicha (#ficha=…).
   // Revisión: sin el estado de la ficha de Negocios (si no, tras recargar «Volver» sacaba de la página)
   if (cual !== 'ficha') { try { history.replaceState(null, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
-  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not'); $('p-con').classList.toggle('sel', cual === 'con')
+  $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not'); $('p-con').classList.toggle('sel', cual === 'con'); $('p-uso').classList.toggle('sel', cual === 'uso')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
   $('v-inc').classList.toggle('oculto', cual !== 'inc') // INCIDENCIA-VERSION-1
   $('v-gui').classList.toggle('oculto', cual !== 'gui'); $('v-not').classList.toggle('oculto', cual !== 'not') // CONTENIDO-WEB-1
   $('v-con').classList.toggle('oculto', cual !== 'con') // CONTACTOS-1
+  $('v-uso').classList.toggle('oculto', cual !== 'uso') // USO-APP-1
 }
 // ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
 function tAviso(txt, bien) { const h = txt ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${txt}</div>` : ''; $('t-aviso').innerHTML = h; if ($('f-aviso')) $('f-aviso').innerHTML = h }
@@ -1703,6 +1716,58 @@ $('co-borrar').onclick = async () => {
   cerrarContacto(); await cargarContactos(); coAviso(`Borrado: ${esc(c.nombre)}.`, true)
 }
 $('p-con').onclick = () => { verPestana('con'); coAviso(''); cargarContactos() }
+
+// ── USO-APP-1 (28-oct, 129.ª) · qué miran los riders ──
+const USO_BLOQUES = [
+  ['videos', '🎬 Vídeos', 'Cada vez que un vídeo de la guía o de una noticia llega a arrancar. «Llegan al» = hasta qué segundo lo ven, de media (solo cuenta cuando cierran el vídeo o cambian de pantalla). Desde la versión 1.26.10284.'],
+  ['noticias', '📰 Noticias', 'Cada vez que abren una noticia del foro.'],
+  ['hilos', '💬 Hilos del foro', 'Cada vez que abren un hilo que no es noticia.'],
+  ['guia', '📖 Guía · apartados', 'Cada apartado de la guía que abren. Desde la versión 1.26.10284.'],
+  ['guia_otros', '📖 Guía · otros botones', 'Por el texto del botón, en el idioma del rider (y los apartados en las versiones anteriores a la 1.26.10284).'],
+  ['pantallas', '📱 Pantallas', 'Cada vez que entran en una pantalla.'],
+]
+const USO_PANTALLA = { '/app': 'Inicio', '/app/notificaciones': 'Avisos (campanita)', '/app/rutas': 'Rutas', '/app/perfil': 'Perfil', '/app/foro': 'Foro',
+  '/app/foro/:id': 'Foro · un hilo', '/app/comunidad': 'Comunidad', '/app/grupos/:id': 'Un grupo', '/app/rutas/:id': 'Una ruta', '/app/rider-friendly': 'Rider Friendly',
+  '/app/planificar': 'Planificar', '/app/planificador': 'Planificador', '/app/permisos': 'Permisos', '/app/rutas/explorar': 'Explorar rutas', '/app/retos': 'Retos',
+  '/app/editar-perfil': 'Editar perfil', '/app/u/:id': 'Perfil de otro rider', '/app/navegar/:id': 'Navegar', '/app/navegar/temp': 'Navegar (ruta rápida)',
+  '/app/vuela/:id': 'Vídeo de la ruta', '/app/grupos/:id/salidas/:id/etapas': 'Salida · etapas', '/app/mapa': 'Mapa', '/app/te-escuchamos': 'Te escuchamos',
+  '/app/descubrir-riders': 'Descubrir riders', '/app/ranking': 'Ranking', '/app/lugares': 'Lugares', '/app/mis-rutas': 'Mis rutas', '/app/guia': 'Guía',
+  '/app/grupos/:id/salidas/:id/detalle': 'Salida · detalle', '/app/grupos/:id/salidas/:id/resumen': 'Salida · resumen', '/app/planificar-grupo': 'Planificar en grupo',
+  '/app/grabar': 'Grabar', '/app/mis-usos': 'Mis usos', '/app/mis-qr': 'Mis QR', '/app/navegar-resumen': 'Resumen de navegar', '/app/gasolineras': 'Gasolineras',
+  '/app/aceptar-terminos': 'Aceptar condiciones', '/app/completar-perfil': 'Completar perfil', '/app/actividad': 'Actividad', '/app/market/:id': 'Market · anuncio' }
+let USO = null, usoAbierta = null, usoPet = 0 // usoPet: si cambias los días rápido, solo vale la última respuesta (revisión)
+const usoAviso = (t, bien) => { $('u-aviso').innerHTML = t ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${t}</div>` : '' }
+const usoSeg = (s) => s == null ? '' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
+async function cargarUso() {
+  const n = ++usoPet
+  usoAviso(''); $('u-bloques').innerHTML = '<div class="sub">Cargando…</div>'
+  const { data, error } = await sb.rpc('mc_admin_uso', { p_dias: Number($('u-dias').value) || 30 })
+  if (n !== usoPet) return
+  if (error) { $('u-bloques').innerHTML = ''; return usoAviso(/mc_admin_uso|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Aún no está creada la función en la base: falta ejecutar <b>db/uso_app_2_crear.sql</b> en Supabase.' : 'No se ha podido cargar el uso: ' + esc(error.message)) }
+  USO = data || { activos: 0, filas: [] }; usoAbierta = null
+  pintarUso()
+}
+function pintarUso() {
+  const filas = Array.isArray(USO?.filas) ? USO.filas : []
+  const de = (b) => filas.filter(f => f.bloque === b)
+  const suma = (b) => new Set(de(b).flatMap(f => f.quienes || [])).size
+  $('u-cifras').innerHTML = [[USO?.activos ?? 0, 'Riders con la app abierta'], [suma('noticias'), 'Han leído alguna noticia'], [suma('videos'), 'Han visto algún vídeo'], [new Set([...de('guia'), ...de('guia_otros')].flatMap(f => f.quienes || [])).size, 'Han tocado algo en la guía']]
+    .map(([n, t]) => `<div class="card cifra"><b>${n}</b><span>${t}</span></div>`).join('')
+  $('u-bloques').innerHTML = USO_BLOQUES.map(([b, titulo, ayuda]) => {
+    const lista = de(b), conSeg = b === 'videos'
+    const cuerpo = lista.map((f, i) => {
+      const k = b + '|' + i, abierta = usoAbierta === k
+      const nombre = b === 'pantallas' ? (USO_PANTALLA[f.que] ? `${esc(USO_PANTALLA[f.que])} <span class="sub" style="font-size:12px">${esc(f.que)}</span>` : esc(f.que)) : esc(f.que)
+      return `<tr class="org-fila" data-uso="${k}"><td class="partir"><button class="nombre-c">${nombre}</button>${abierta ? `<div class="sub partir" style="font-size:13px;margin-top:6px">${esc((f.quienes || []).join(', '))}</div>` : ''}</td>
+        <td><b>${f.riders}</b></td><td>${f.veces}</td>${conSeg ? `<td>${f.seg != null ? usoSeg(f.seg) + (f.dura ? ` de ${usoSeg(f.dura)}` : '') : '—'}</td>` : ''}</tr>`
+    }).join('') || `<tr><td colspan="${conSeg ? 4 : 3}" class="sub">Nada en estos días.</td></tr>`
+    return `<div><h2 style="margin:0 0 4px">${titulo}</h2><div class="sub" style="margin-bottom:8px">${ayuda}</div>
+      <div class="card tabla"><table><thead><tr><th>Qué</th><th>Riders</th><th>Veces</th>${conSeg ? '<th>Llegan al</th>' : ''}</tr></thead><tbody>${cuerpo}</tbody></table></div></div>`
+  }).join('')
+}
+$('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
+$('u-dias').onchange = () => cargarUso()
+$('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
 
 // PANEL-SE-ACTUALIZA-1 (17-oct, Mario: «yo no debería recargar el panel; cuando salga, debe recargarlo solo»). Cada minuto y
 // al volver a la pestaña se mira si en la web hay otra versión de esta página (su ETag o su fecha en GitHub Pages, sin
