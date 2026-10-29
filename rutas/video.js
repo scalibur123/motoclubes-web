@@ -567,7 +567,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
     if (VIDEO_3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H); }).then(function (v) { V3D = v; }, function (e) {
       console.warn("[video] sin 3D: " + ((e && e.message) || e));
-      if (avisar.aviso) avisar.aviso("No ha cargado el mapa en 3D: sale el vídeo de siempre.");
+      if (avisar.aviso) avisar.aviso("El vídeo en 3D no se puede hacer aquí: sale el de siempre.");
     });
   }).then(function () {
     if (V3D) return; // VIDEO-3D-1

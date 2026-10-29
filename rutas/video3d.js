@@ -9,7 +9,9 @@
    video.js encima, como siempre, en el punto de la pantalla que le da Mapbox (`proy`).
    Cada fotograma ESPERA a que Mapbox acabe de pintarlo (como mucho 2 s, nunca se queda colgado) y se graba con su hora
    exacta (i/30 s) con WebCodecs (VideoEncoder, H.264) + mp4-muxer: aunque un fotograma tarde, el vídeo no da saltos.
-   Sin VideoEncoder, MediaRecorder como hoy, parando la grabación mientras el mapa pinta (ver `grabarMR`).
+   Sin VideoEncoder con H.264 (Safari de antes de la 16.4, algunos Firefox) no se hace en 3D: sale el vídeo de siempre, con
+   aviso. Se probó grabar con MediaRecorder parándolo mientras el mapa pinta y en Chromium el vídeo salía de 8 minutos en vez
+   de 22 s (la pausa no descuenta el tiempo): un vídeo así no sirve para publicar.
    Si el mapa 3D no carga, video.js hace el vídeo de siempre (se avisa). En el reel corto (&corto=1) no se usa. */
 (function () {
   var V3 = {
@@ -193,11 +195,7 @@
         console.log("[video3d] " + (total + 1) + " fotogramas en " + Math.round((performance.now() - t0) / 1000) + " s; sin acabar de pintar: " + lentos);
         limpiar(); return r;
       };
-      return elegirCodec().then(function (codec) {
-        if (codec) return grabarCodec(codec);
-        console.log("[video3d] sin VideoEncoder H.264: MediaRecorder");
-        return grabarMR();
-      }).then(fin, function (e) { limpiar(); console.warn("[video3d] " + ((e && e.stack) || e)); throw e; });
+      return Promise.resolve().then(function () { return grabarCodec(codecElegido); }).then(fin, function (e) { limpiar(); console.warn("[video3d] " + ((e && e.stack) || e)); throw e; });
 
       // WebCodecs: cada fotograma con su hora exacta (i/30 s), tarde lo que tarde en pintarse
       function grabarCodec(codec) {
@@ -230,40 +228,13 @@
           return { blob: new Blob([muxer.target.buffer], { type: "video/mp4" }), ext: "mp4", segundos: Math.round(G.DUR) };
         });
       }
-
-      // Sin WebCodecs: MediaRecorder como el vídeo de siempre, pero EN PAUSA mientras Mapbox pinta cada fotograma; solo
-      // graba 1/30 s con el fotograma ya pintado. Así el tiempo de espera no entra en el vídeo (en Chromium probado: dura lo
-      // que debe; en otros navegadores, sin probar). Va más lento que WebCodecs.
-      function grabarMR() {
-        var tipo = tipoGrabacion();
-        if (!tipo || !cv.captureStream) throw new Error("Este navegador no sabe grabar vídeo. Prueba con Safari.");
-        var flujo = cv.captureStream(0), pista = flujo.getVideoTracks()[0];
-        if (!pista || typeof pista.requestFrame !== "function") { flujo = cv.captureStream(FPS); pista = null; }
-        var rec = new MediaRecorder(flujo, { mimeType: tipo, videoBitsPerSecond: V3.BITRATE });
-        var trozos = [];
-        rec.ondataavailable = function (e) { if (e.data && e.data.size) trozos.push(e.data); };
-        var hecho = new Promise(function (ok) { rec.onstop = function () { ok(new Blob(trozos, { type: tipo.split(";")[0] })); }; });
-        var i = 0, empezado = false, dt = 1000 / FPS;
-        function paso() {
-          if (cancelado()) { try { rec.stop(); } catch (e) {} throw new Error("cancelado"); }
-          if (empezado && rec.state === "recording") rec.pause();
-          return fotograma(i).then(function (t) {
-            if (!empezado) { empezado = true; if (avisar.lienzo) avisar.lienzo(cv); rec.start(250); }
-            else if (rec.state === "paused") rec.resume();
-            if (pista) pista.requestFrame();
-            if (avisar.progreso) avisar.progreso(t, G.DUR);
-            i++;
-            return dormir(dt).then(function () { if (i > total) return; return paso(); });
-          });
-        }
-        return paso().then(function () { return dormir(200); }).then(function () { rec.stop(); return hecho; }).then(function (blob) {
-          return { blob: blob, ext: tipo.indexOf("mp4") >= 0 ? "mp4" : "webm", segundos: Math.round(G.DUR) };
-        });
-      }
     }
 
+    var codecElegido = null;
     var muxerListo = window.VideoEncoder && !window.Mp4Muxer ? cargarScript(V3.MUXER).catch(function () {}) : Promise.resolve();
-    return muxerListo.then(function () {
+    return muxerListo.then(elegirCodec).then(function (codec) {
+      if (!codec) { limpiar(); throw new Error("este navegador no graba H.264 con WebCodecs"); }
+      codecElegido = codec;
       return new Promise(function (ok, mal) {
         var tiempo = setTimeout(function () { limpiar(); mal(new Error("el mapa 3D no carga")); }, V3.ARRANQUE_MS);
         try {
