@@ -147,6 +147,19 @@ var VIDEO_SOLO = (location.search.match(/[?&]solo=(puertos|linea)(?:&|$)/) || []
 // 🆕 SIN-FOTOS-1 (16-oct, 110.ª). Mario, para el reel del día 1: con «&fotos=0» el vídeo sale sin las fotos de la salida
 // (mapa, tramos y cierre); las fotos y sus vídeos se meten después en el montaje. Sin el parámetro, como siempre.
 var VIDEO_SIN_FOTOS = /[?&]fotos=0(&|$)/.test(location.search);
+/* 🆕 VIDEO-3D-1 (130.ª, 29-oct). Mario quiere el aspecto de Relive: relieve en 3D y la cámara detrás del casco, inclinada y
+   girando con la carretera. Solo con «&video=3d» en el enlace (como «&video=6»); sin él, el vídeo de siempre, igual que hoy.
+   Todo lo del 3D está en video3d.js, que solo se carga con el parámetro; aquí, solo unos enganches marcados «VIDEO-3D-1».
+   En el reel corto (&corto=1) no se usa. */
+var VIDEO_3D = /[?&]video=3d(&|$)/.test(location.search) && !VIDEO_CORTO;
+function cargarVideo3D() {
+  if (window.Video3D) return Promise.resolve();
+  return new Promise(function (ok, mal) {
+    var s = document.createElement("script"); s.src = "video3d.js?v=1"; // el ?v= se sube con cada cambio de video3d.js
+    s.onload = function () { ok(); }; s.onerror = function () { mal(new Error("video3d.js no carga")); };
+    document.head.appendChild(s);
+  });
+}
 
 function mercX(lng) { return (lng + 180) / 360; }
 function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
@@ -535,6 +548,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     return out.slice(0, 12);
   })();
   var cache = {}, lista = [];
+  var V3D = null; // VIDEO-3D-1: el mapa 3D (video3d.js) si va con «&video=3d» y ha cargado
   var capturaIm = null; // VIDEO-CAPTURA-1: si no carga, el vídeo sale sin ella
   var capturaLista = VIDEO_CAPTURA ? cargarImagen("/img/video/" + VIDEO_CAPTURA + ".jpg").then(function (im) { capturaIm = im; }).catch(function () {}) : Promise.resolve();
   var destListos = resolverDestacados(pts, puertos, paradas); // VIDEO-DESTACAR-1
@@ -550,6 +564,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
     G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados);
+    // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
+    if (VIDEO_3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H); }).then(function (v) { V3D = v; }, function (e) {
+      console.warn("[video] sin 3D: " + ((e && e.message) || e));
+      if (avisar.aviso) avisar.aviso("No ha cargado el mapa en 3D: sale el vídeo de siempre.");
+    });
+  }).then(function () {
+    if (V3D) return; // VIDEO-3D-1
     // 1) qué teselas va a ver la cámara, simulándola entera
     for (var s = 0; s <= G.DUR; s += 0.1) {
       var cs = G.camara(s);
@@ -608,9 +629,9 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       }
 
       function cuadro(t) {
-        var tr = G.tramoEn(t), cam = G.camara(t), pr = proy(cam);
-        var P = G.M.map(pr), km = G.kmCabeza(t);
-        mapa(cam);
+        var tr = G.tramoEn(t), cam = G.camara(t), pr = V3D ? V3D.proy : proy(cam); // VIDEO-3D-1: en 3D, el punto en pantalla lo da Mapbox
+        var P = V3D ? null : G.M.map(pr), km = G.kmCabeza(t);
+        if (V3D) V3D.pintar(ctx); else mapa(cam);
         if (!VIDEO_V6) velo(true, true);
         else { // v6: sin velos mientras se rueda; se van al empezar el día 1 y vuelven al alejarse (para el título)
           var va = tr.tipo === "dibujo" || tr.tipo === "parada" ? 0 : tr.tipo === "tarjeta" ? (tr.dia === 0 ? 1 - tramo(t, tr.a, tr.a + 0.6) : 0) :
@@ -618,11 +639,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           if (va > 0) { ctx.globalAlpha = va; velo(true, true); ctx.globalAlpha = 1; }
         }
 
+        var cab = pr(G.enKm(km)); // dónde va el casco (VIDEO-3D-1: sacado de aquí abajo, que en 3D no se ejecuta)
+        if (!V3D) { // VIDEO-3D-1: en 3D la línea (y lo amarillo) la pinta Mapbox, pegada al relieve
         // la ruta entera, tenue (se ve hacia dónde se va) y lo ya recorrido, fuerte
         linea(P, P.length, 7, "rgba(255,255,255,.55)"); ctx.stroke();
         var n = 1; while (n < G.acum.length && G.acum[n] <= km) n++;
         if (G.corto) n = P.length; // REEL-CORTO-1: el día entero ya dibujado
-        var cab = pr(G.enKm(km));
         [[16, "#ffffff"], [9, "#7C3AED"]].forEach(function (c) { linea(P, n, c[0], c[1]); if (km > 0 && !G.corto) ctx.lineTo(cab.x, cab.y); ctx.stroke(); });
         // VIDEO-DESTACAR-1: lo ya recorrido de cada tramo destacado, en amarillo y más gordo
         G.dest.forEach(function (d) {
@@ -635,6 +657,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             ctx.lineTo(fin.x, fin.y); ctx.stroke();
           });
         });
+        } // VIDEO-3D-1
 
         // CARTEL-CARRETERA-1: el número de la carretera en su cartel, sobre lo amarillo, ~190 px por detrás del casco
         if (tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") G.dest.forEach(function (d) {
@@ -954,6 +977,8 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         escribir(ctx, "© Mapbox © OpenStreetMap", W - 24, H - 24, "right");
       }
 
+      // VIDEO-3D-1: en 3D cada fotograma espera a que Mapbox lo acabe y se graba con su hora exacta (video3d.js)
+      if (V3D) return V3D.grabar(cv, cuadro, avisar);
       var tipo = tipoGrabacion();
       if (!tipo || !cv.captureStream) throw new Error("Este navegador no sabe grabar vídeo. Prueba con Safari.");
       // v5 · «va a trompicones»: antes el tiempo del vídeo era el del reloj, y si un fotograma tardaba, el siguiente saltaba.
