@@ -354,11 +354,11 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card" style="max-width:600px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:92vh;overflow:auto">
     <div style="font-weight:800;font-size:18px">Correo a <span id="mail-quien"></span></div>
     <label>PARA<input type="email" id="mail-para" maxlength="200" readonly></label>
-    <label>DE<select id="mail-de"><option value="soporte">Soporte MOTOCLUBes</option><option value="equipo">Equipo MOTOCLUBes</option></select></label><!-- CORREO-SOPORTE-1: nunca «Mario» -->
+    <label>DE<select id="mail-de"><option value="mario" id="mail-de-mario">Mario · MOTOCLUBes</option><option value="soporte">Soporte MOTOCLUBes</option><option value="equipo">Equipo MOTOCLUBes</option></select></label><!-- CORREO-SOPORTE-1: a riders, nunca «Mario» · NEGOCIOS-MARIO-1: a negocios, Mario de entrada -->
     <label>ASUNTO<input type="text" id="mail-asunto" maxlength="150"></label>
     <label>TEXTO<textarea id="mail-texto" rows="12" maxlength="8000" placeholder="Pega aquí el texto, con tu saludo y tu firma"></textarea></label>
     <label class="check" id="mail-fuera-fila"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
-    <div class="sub" id="mail-nota">Sale de «Mario de MOTOCLUBes», tal cual lo escribes. Si contesta, la respuesta llega a negocios@motoclubes.es.</div>
+    <div class="sub" id="mail-nota"></div>
     <div id="mail-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="mail-cancelar">Cancelar</button><button class="btn" id="mail-enviar">Enviar</button></div>
   </div>
@@ -543,7 +543,8 @@ async function entrar() {
   // SOLICITUDES-1 (15-oct, Mario: «cuando entro en el portal no me lo refresca […] son solicitudes más que testers»): la
   // pestaña se llama «Solicitudes» y su cifra (los que faltan por invitar) se carga al entrar, como Riders.
   await Promise.allSettled([cargar(), cargarCand(), cargarRiders(), cargarTesters(), cargarContactos(), cargarForo(true), cargarIncidencias()]) // si una carga falla, se sigue igual (y se vuelve a la pestaña donde estabas) // CONTACTOS-1: la cifra de la pestaña // FICHA-RIDER-1: la cifra de la pestaña Riders
-  if (!fichaUrl) { // SIGUE-DONDE-ESTABAS-1
+  // PANEL-SALTO-1 (130.ª, revisión): mientras carga, si ya has tocado otra pestaña, no se te mueve de ahí.
+  if (!fichaUrl && !pestanaTocada) { // SIGUE-DONDE-ESTABAS-1
     if (donde.startsWith('ficha=')) { const [em, vu] = donde.slice(6).split('|'); if (em) verFicha(em, PESTANAS.includes(vu) ? vu : 'rid') }
     else if (PESTANAS.includes(donde) && donde !== 'altas') (donde === 'cor' ? $('s-cor') : $('p-' + donde)).click()
     else if (!donde) $('p-cont').click() // PANEL-CONTESTAR-1: al entrar, lo de cada día: Contestar
@@ -622,7 +623,11 @@ const CAMPO_TXT = { nombre: 'Nombre', municipio: 'Pueblo', zona: 'Zona', tipo: '
   notas_fijas: 'Notas fijas', motivo: 'Por qué encaja', prioridad: 'Empezar por este' }
 const CAMPOS = ['nombre','contacto','cargo','telefono','telefono2','correo','web','direccion','municipio','zona','categoria','motivo','notas_fijas']
 let cands = [], fichaId = null, candidatoInvitando = null, f2Tipo = 'restaurante', llEstado = 'por_llamar'
+var pestanaActual = '' // PANEL-SALTO-1: la que se ve ahora (var, no let: se usa antes de llegar a esta línea)
+var pestanaTocada = false // PANEL-SALTO-1 (2.ª revisión): si TÚ tocas una pestaña (aunque sea Altas) mientras carga, no se te mueve
+document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('#pestanas, #sub-cont')) pestanaTocada = true }, true)
 function verPestana(cual) {
+  pestanaActual = cual
   // SIGUE-DONDE-ESTABAS-1 (17-oct, Mario: «cada vez que recargo me lleva a Altas; donde esté se debe actualizar sin sacarme»):
   // la pestaña va en la dirección (#test, #rid…); la ficha de un rider la pone verFicha (#ficha=…).
   // Revisión: sin el estado de la ficha de Negocios (si no, tras recargar «Volver» sacaba de la página)
@@ -758,7 +763,7 @@ function pintarTesters() {
     const ayuda = filtroFase === 'a_medias', nMand = vis.filter(t => !t.bloqueado).length // a los bloqueados no se les manda
     g.style.display = ''
     g.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="flex-grow:1"><b>${ayuda ? 'A medias' : 'Sin pulsar'} · ${vis.length}</b>
-      <div class="sub" style="font-size:13px">${ayuda ? 'Les llega «Te falta un paso», con los pasos de su móvil. El automático sale solo a los 2 días de quedarse a medias, una vez.' : 'Les llega el recordatorio con su enlace. El automático sale solo a los 3 días de la invitación, una vez.'} Desde «Mario de MOTOCLUBes»; si contestan, va a mario@motoclubes.es.</div></div>
+      <div class="sub" style="font-size:13px">${ayuda ? 'Les llega «Te falta un paso», con los pasos de su móvil. El automático sale solo a los 2 días de quedarse a medias, una vez.' : 'Les llega el recordatorio con su enlace. El automático sale solo a los 3 días de la invitación, una vez.'} Desde «Equipo MOTOCLUBes»; si contestan, va a soporte@motoclubes.es.</div></div>
       <button class="btn2" data-ver="${ayuda ? 'ayuda' : 'recordatorio'}" data-plat="ios" style="padding:8px 14px">Ver el correo · iPhone</button>
       <button class="btn2" data-ver="${ayuda ? 'ayuda' : 'recordatorio'}" data-plat="android" style="padding:8px 14px">Ver el correo · Android</button>
       <button class="btn" id="t-grupo-enviar" ${nMand ? '' : 'disabled'}>${ayuda ? 'Mandar ayuda' : 'Recordar'} a ${nMand === 1 ? '1' : 'los ' + nMand}</button></div>`
@@ -1148,7 +1153,7 @@ function abrirRespuesta(f) {
   resPara = f; resListo(false); $('res-aviso').innerHTML = ''
   $('res-quien').textContent = f.nickname || f.email; $('res-ref').textContent = f.ref_code; $('res-msg').textContent = f.message
   $('res-asunto').textContent = `Respuesta a ${QUE_INC[f.type] || 'tu mensaje'} ${f.ref_code}`
-  $('res-texto').value = `Hola${f.nickname ? ' ' + f.nickname : ''},\n\n\n\nUn saludo,\nMario`
+  $('res-texto').value = `Hola${f.nickname ? ' ' + f.nickname : ''},\n\n\n\nUn saludo,\nEl equipo de MOTOCLUBes` // CORREO-SOPORTE-1: a un rider, nunca Mario
   const puedeCerrar = f.type === 'incidencia' && !f.arreglo_avisado_at // INCIDENCIA-CONTESTAR-2
   $('res-cerrar-l').classList.toggle('oculto', !puedeCerrar); $('res-cerrar').checked = puedeCerrar
   delete $('res-texto').dataset.tecleado
@@ -1159,7 +1164,7 @@ $('res-cancelar').onclick = () => { const salir = $('res-cancelar').textContent 
 $('res-enviar').onclick = async () => {
   const texto = $('res-texto').value.trim(), f = resPara
   if (!f) return
-  if (texto.replace(/^Hola[^\n]*|Un saludo,\s*Mario$/g, '').trim().length < 3) return ($('res-aviso').innerHTML = '<div class="aviso mal">Escribe la respuesta.</div>')
+  if (texto.replace(/^Hola[^\n]*|Un saludo,\s*(Mario|El equipo de MOTOCLUBes)$/g, '').trim().length < 3) return ($('res-aviso').innerHTML = '<div class="aviso mal">Escribe la respuesta.</div>')
   if (!confirm(`¿Mandar la respuesta a ${f.nickname || f.email} (${f.ref_code})? Le llega una notificación y un correo.`)) return
   $('res-enviar').disabled = true
   try {
@@ -1348,7 +1353,7 @@ async function verFicha(email, vuelve) {
     : '<div class="sub" style="padding:16px">Todavía no le hemos mandado nada.</div>'
   await cargarUltima()
   $('f-cuerpo').innerHTML = `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><div style="flex-grow:1"><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
-    ${c ? '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="f-avisar">Mandarle un aviso</button><button class="btn2" id="f-correo">✉️ Mandarle un correo</button></div>' : ''}</div>
+    ${c ? '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="f-avisar">Mandarle un aviso</button><button class="btn2" id="f-correo-rider">✉️ Mandarle un correo</button></div>' : ''}</div>
     <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Lo que le hemos mandado</div>${env}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
@@ -1364,7 +1369,7 @@ $('f-cuerpo').onclick = (ev) => {
     mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
     return
   }
-  if (ev.target.closest('#f-correo') && FICHA) return abrirCorreo(FICHA.perfil?.nickname || FICHA.email, FICHA.email, null, 'rider') // CORREO-SOPORTE-1: también desde la ficha
+  if (ev.target.closest('#f-correo-rider') && FICHA) return abrirCorreo(FICHA.perfil?.nickname || FICHA.email, FICHA.email, null, 'rider') // CORREO-SOPORTE-1: también desde la ficha
   if (ev.target.closest('#f-avisar') && FICHA) return abrirAviso(FICHA.email, FICHA.perfil?.nickname || FICHA.email, FICHA.perfil?.app_version_at, FICHA.perfil?.app_platform, FICHA.perfil?.app_version)
   const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve)
 }
@@ -1600,11 +1605,14 @@ $('f2-escribir').onclick = () => { const c = cands.find(x => x.id === fichaId); 
 let mailDestino = 'negocio' // CORREO-SOPORTE-1: 'rider' | 'negocio' (a dónde contestan: soporte@ o negocios@)
 function abrirCorreo(nombre, correo, desdeFicha, destino) {
   correoDesdeFicha = desdeFicha; mailDestino = destino === 'rider' ? 'rider' : 'negocio'
-  $('mail-de').value = 'soporte'
+  // NEGOCIOS-MARIO-1 (130.ª, Mario 20:03): a un negocio sale de Mario (fundador) de entrada; a un rider, la opción ni aparece
+  $('mail-de-mario').hidden = mailDestino === 'rider'; $('mail-de-mario').disabled = mailDestino === 'rider'
+  $('mail-de').value = mailDestino === 'rider' ? 'soporte' : 'mario'
+  $('mail-texto').placeholder = mailDestino === 'rider' ? 'Pega aquí el texto, con el saludo y la firma del equipo («El equipo de MOTOCLUBes»)' : 'Pega aquí el texto, con tu saludo y tu firma («Mario · Fundador de MOTOCLUBes»)'
   $('mail-fuera-fila').classList.toggle('oculto', mailDestino === 'rider') // a un rider siempre se le manda desde aquí
   $('mail-nota').textContent = mailDestino === 'rider'
     ? 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes» (nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
-    : 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes». Si contesta, la respuesta llega a negocios@motoclubes.es.'
+    : 'Sale tal cual lo escribes, de «Mario · MOTOCLUBes» (o Soporte / Equipo, si lo cambias). Firma tú al final («Mario · Fundador de MOTOCLUBes»). Si contesta, la respuesta llega a negocios@motoclubes.es.'
   mailListo(false); $('mail-aviso').innerHTML = ''
   $('mail-quien').textContent = nombre || correo; $('mail-para').value = correo
   $('mail-asunto').value = ''; $('mail-texto').value = ''; $('mail-fuera').checked = false
@@ -1617,6 +1625,12 @@ $('mail-cancelar').onclick = () => {
   const salir = $('mail-cancelar').textContent === 'Salir'
   $('mail-capa').classList.add('oculto'); ['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
   if (salir && correoDesdeFicha) { const c = cands.find(x => x.id === correoDesdeFicha); if (c) pintarCorreosNeg(c) }
+  // PANEL-FICHA-REFRESCO-1 (130.ª, revisión): mandado un correo a un rider, su ficha (si la tienes abierta) y la lista de
+  // Riders se vuelven a cargar, para que salga ya el correo que acabas de mandar.
+  if (salir && mailDestino === 'rider') {
+    if (pestanaActual === 'ficha' && FICHA && FICHA.email === $('mail-para').value) verFicha(FICHA.email, fichaVuelve)
+    cargarRiders().catch(() => {})
+  }
 }
 $('mail-enviar').onclick = async () => {
   const asunto = $('mail-asunto').value.trim(), texto = $('mail-texto').value.trim(), fuera = $('mail-fuera').checked, para = $('mail-para').value
