@@ -216,7 +216,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="cifras" id="r-cifras" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div><!-- RIDERS-RESUMEN-1 -->
   <div class="sub" id="r-cifras-nota" style="font-size:12px"></div>
   <div id="r-aviso"></div>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div></div><!-- PERIODO-1 · QUIEN-INVITA-1 -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><input type="text" id="r-buscar" placeholder="🔍 Buscar rider o correo" style="flex:1;min-width:220px;max-width:340px"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div></div><!-- PERIODO-1 · QUIEN-INVITA-1 · RIDERS-BUSCAR-1 -->
   <div class="card tabla oculto" id="r-inv"></div>
   <div class="card tabla" id="r-tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="envio">Último envío</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
@@ -318,7 +318,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div style="font-weight:800;font-size:18px">Mandar un aviso a <span id="push-quien"></span></div>
     <div class="sub">Le llega como notificación al móvil, como los avisos de la app. Si no tiene la app o las notificaciones, le llega por correo.</div>
     <label>TÍTULO<input type="text" id="push-titulo" maxlength="80" placeholder="Hasta 80 letras"></label>
-    <label>TEXTO<textarea id="push-texto" rows="3" maxlength="240" placeholder="Hasta 240 letras"></textarea></label>
+    <label>TEXTO<textarea id="push-texto" rows="5" maxlength="3000" placeholder="El móvil enseña el principio; entero en la campanita y en el correo"></textarea></label><!-- CORREO-SOPORTE-1: sin el tope de 240 -->
     <label class="check"><input type="checkbox" id="push-correo" checked> Mandarlo también por correo</label><!-- AVISO-CORREO-1 -->
     <div id="push-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
@@ -345,6 +345,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card" style="max-width:600px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:92vh;overflow:auto">
     <div style="font-weight:800;font-size:18px">Correo a <span id="mail-quien"></span></div>
     <label>PARA<input type="email" id="mail-para" maxlength="200" readonly></label>
+    <label>DE<select id="mail-de"><option value="soporte">Soporte MOTOCLUBes</option><option value="equipo">Equipo MOTOCLUBes</option></select></label><!-- CORREO-SOPORTE-1: nunca «Mario» -->
     <label>ASUNTO<input type="text" id="mail-asunto" maxlength="150"></label>
     <label>TEXTO<textarea id="mail-texto" rows="12" maxlength="8000" placeholder="Pega aquí el texto, con tu saludo y tu firma"></textarea></label>
     <label class="check"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
@@ -994,26 +995,31 @@ function estadoInvitado(i) {
   if (i.fase === 'sin_pulsar') return '<span class="chip gris">Sin la app · no ha pulsado la invitación</span>'
   return i.invitado_at ? '<span class="chip gris">Sin la app</span>' : '<span class="chip gris">Sin la app</span>'
 }
-async function cargarRiders() {
+async function cargarRiders(soloPintar) {
+  // RIDERS-BUSCAR-1 (29-oct, 130.ª, Mario: «busca Derekrider… y no existe el botón de buscar»): al escribir en el buscador solo se
+  // vuelve a pintar (sin pedir otra vez la lista), y se busca en TODOS, sin mirar el periodo.
+  if (!soloPintar || !RIDERS.length) {
   $('r-aviso').innerHTML = ''
   await cargarUltima() // TESTERS-SEGUIMIENTO-1
   try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { $('r-aviso').innerHTML = `<div class="aviso mal">No se ha podido cargar: ${esc(e.message)}</div>`; return }
   $('n-rid').textContent = RIDERS.length
   await pintarCifrasRiders() // RIDERS-RESUMEN-1
+  }
   // RIDERS-FILTRO-HOY-1 (17-oct, Mario: «hoy sigue sin aparecer Rapazdoorgal»): el periodo mira cuándo abrió la app, no el alta
   pintarPeriodo('r-periodo', RIDERS, (r) => r.abrio, 'abrieron la app', verInvitan ? null : perR, (k) => { perR = k; verInvitan = false; cargarRiders() }) // PERIODO-1
   $('r-invitan').classList.toggle('sel', verInvitan); $('r-inv').classList.toggle('oculto', !verInvitan); $('r-tabla').classList.toggle('oculto', verInvitan)
   if (verInvitan) pintarInvitan()
   // Sin columna elegida: el último que abrió la app arriba (Mario, 11:06: «mira el orden de apertura de la app»). «Último envío»
   // se ordena pulsando su cabecera.
-  const base = RIDERS.filter(r => enPeriodo(r.abrio, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || ''))
+  const q = ($('r-buscar').value || '').trim().toLowerCase() // RIDERS-BUSCAR-1
+  const base = RIDERS.filter(r => q ? ((r.rider || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q)) : enPeriodo(r.abrio, perR)).sort((a, b) => (b.abrio || '').localeCompare(a.abrio || ''))
   marcarCab('r-cab', ordenR) // ORDENAR-TODO-1
   $('r-filas').innerHTML = ordenar(base, ordenR, (r, k) => k === 'origen' ? deDonde(r.origen) : k === 'movil' ? movilTxt(r.movil) : k === 'version' ? claveVer(r.version, r.build) : k === 'rider' ? (r.rider || '') : k === 'envio' ? (r.ultimo_envio?.creado || '') : r[k] ?? '').map(r => `<tr>
     <td><button class="nombre-c r-ficha" data-email="${esc(r.email)}">${esc(r.rider || '(sin nombre)')}</button></td><td class="sub">${esc(r.email)}</td>
     <td>${movilTxt(r.movil)}</td><td class="sub">${esc(verApp(r.version, r.build))}${vieja(r.movil, r.version) ? ' <span class="chip amar">Versión vieja</span>' : ''}</td>
     <td>${hace(r.abrio)}${dormido(r.abrio) ? ' <span class="chip rojo">Dormido</span>' : ''}</td>
     <td>${r.ultimo_envio ? `${esc(ENVIO_TXT[r.ultimo_envio.que] || r.ultimo_envio.que)}<div class="sub" style="font-size:12px">${hace(r.ultimo_envio.creado)}</div>` : '<span class="sub">—</span>'}</td><td class="sub">${fecha(r.alta)}</td><td class="sub">${esc(deDonde(r.origen))}</td>
-    <td><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button></td></tr>`).join('') || `<tr><td colspan="9" class="sub">${perR === 'todos' ? 'Sin cuentas.' : 'Nadie abrió la app en ese periodo.'}</td></tr>`
+    <td style="white-space:nowrap"><button class="btn3 r-avisar" data-email="${esc(r.email)}">Avisar</button> <button class="btn3 r-correo" data-email="${esc(r.email)}">✉️ Correo</button></td></tr>`).join('') || `<tr><td colspan="9" class="sub">${q ? 'Nadie con ese nombre o correo.' : perR === 'todos' ? 'Sin cuentas.' : 'Nadie abrió la app en ese periodo.'}</td></tr>`
 }
 $('p-rid').onclick = () => { verPestana('rid'); cargarRiders() }
 // ── RIDERS-RESUMEN-1 (19-oct-2026, 116.ª) · Mario: «de un vistazo, cuántos están ya con todo preparado y pueden utilizar la app, y
@@ -1235,7 +1241,11 @@ $('n-publicar').onclick = async () => {
 $('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
 clicCab('t-cab', ordenT, () => pintarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-inv').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') } // QUIEN-INVITA-1
+let rBuscarT = null
+$('r-buscar').oninput = () => { verInvitan = false; clearTimeout(rBuscarT); rBuscarT = setTimeout(() => cargarRiders(true), 150) } // RIDERS-BUSCAR-1 (en «Quién invita» la tabla está oculta)
 $('r-filas').onclick = (ev) => {
+  const co = ev.target.closest('.r-correo') // CORREO-SOPORTE-1: correo a un rider, de Soporte o Equipo MOTOCLUBes
+  if (co) { const r = RIDERS.find(x => x.email === co.dataset.email); return abrirCorreo(r?.rider || co.dataset.email, co.dataset.email, null, 'rider') }
   const a = ev.target.closest('.r-avisar')
   if (a) { const r = RIDERS.find(x => x.email === a.dataset.email); return abrirAviso(r.email, r.rider || r.email, r.abrio, r.movil, r.version) }
   const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid')
@@ -1556,12 +1566,17 @@ function mailListo(listo) {
   $('mail-enviar').classList.toggle('oculto', listo)
   $('mail-cancelar').textContent = listo ? 'Salir' : 'Cancelar'
   $('mail-cancelar').className = listo ? 'btn' : 'btn2'
-  ;['mail-asunto', 'mail-texto', 'mail-fuera'].forEach(k => { $(k).disabled = listo })
+  ;['mail-asunto', 'mail-texto', 'mail-fuera', 'mail-de'].forEach(k => { $(k).disabled = listo })
 }
 let correoDesdeFicha = null // CORREO-NEGOCIO-1: si se abrió desde una ficha de Negocios, al salir se repinta su lista
 $('f2-escribir').onclick = () => { const c = cands.find(x => x.id === fichaId); if (c && c.correo) abrirCorreo(c.nombre, c.correo, c.id) }
-function abrirCorreo(nombre, correo, desdeFicha) {
-  correoDesdeFicha = desdeFicha
+let mailDestino = 'negocio' // CORREO-SOPORTE-1: 'rider' | 'negocio' (a dónde contestan: soporte@ o negocios@)
+function abrirCorreo(nombre, correo, desdeFicha, destino) {
+  correoDesdeFicha = desdeFicha; mailDestino = destino === 'rider' ? 'rider' : 'negocio'
+  $('mail-de').value = 'soporte'
+  $('mail-nota').textContent = mailDestino === 'rider'
+    ? 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes» (nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
+    : 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes». Si contesta, la respuesta llega a negocios@motoclubes.es.'
   mailListo(false); $('mail-aviso').innerHTML = ''
   $('mail-quien').textContent = nombre || correo; $('mail-para').value = correo
   $('mail-asunto').value = ''; $('mail-texto').value = ''; $('mail-fuera').checked = false
@@ -1582,10 +1597,10 @@ $('mail-enviar').onclick = async () => {
   if (!fuera && !confirm(`¿Mandar este correo a ${para}?`)) return
   $('mail-enviar').disabled = true
   try {
-    await invitar({ modo: 'correo', email: para, asunto, texto, fuera })
+    await invitar({ modo: 'correo-mc', email: para, asunto, texto, fuera, remitente: $('mail-de').value, destino: mailDestino }) // CORREO-SOPORTE-1
     $('mail-aviso').innerHTML = `<div class="aviso ok">${fuera ? '✅ Apuntado.' : '✅ Correo enviado y guardado.'}</div>`
     mailListo(true)
-  } catch (e) { $('mail-aviso').innerHTML = `<div class="aviso mal">${fuera ? 'No se ha podido apuntar' : 'No ha salido'}: ${esc(e.message)}</div>` }
+  } catch (e) { $('mail-aviso').innerHTML = `<div class="aviso mal">${fuera ? 'No se ha podido apuntar' : 'No ha salido'}: ${e.message === 'modo' ? 'falta poner al día la función del servidor (el comando de despliegue de Claude). No ha salido nada.' : esc(e.message)}</div>` }
   $('mail-enviar').disabled = false
 }
 // ADMIN-INVITA-FICHA-1: si acabas de escribir el correo en la ficha y das a «Invitar →» sin «Guardar», antes se invitaba
