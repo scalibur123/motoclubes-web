@@ -75,7 +75,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button></nav>
+<!-- PANEL-CONTESTAR-1 (29-oct, 130.ª · Mario: «tiene que haber un sitio… lo que hago normalmente, que es contestar. Y dentro, foro,
+     correo… tengo 9 pestañas»). Una pestaña «Contestar» con tres apartados: el Foro, Te escuchamos y un correo a un rider. -->
+<nav class="pest oculto" id="sub-cont" style="background:#FBF8F4"><button type="button" id="s-for">Foro <span class="n" id="s-n-for">·</span></button><button type="button" id="s-inc">Te escuchamos <span class="n" id="s-n-inc">·</span></button><button type="button" id="s-cor">✉️ Correo a un rider</button></nav>
 
 <div id="v-login" class="login card oculto">
   <h1 style="font-size:22px">Entrar</h1>
@@ -288,9 +291,14 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
      contesta en cualquiera, también en los comentarios de las noticias, firmado por la cuenta oficial MOTOCLUBes, como el
      interruptor del móvil (FORO-PANEL-1). Sin SQL nuevo: las políticas `threads_admin` y `posts_admin` dejan al admin guardar
      con el user_id de la cuenta oficial (`mc_cuenta_oficial`). -->
+<main id="v-cor" class="oculto">
+  <div><h1>Correo a un rider</h1><div class="sub">Busca al rider y pulsa «✉️ Correo». Sale de Soporte o Equipo MOTOCLUBes (nunca con tu nombre) y, si contesta, la respuesta llega a soporte@motoclubes.es.</div></div>
+  <input type="text" id="c2-buscar" placeholder="🔍 Nombre o correo del rider" style="max-width:420px">
+  <div class="card tabla"><table><thead><tr><th>Rider</th><th>Correo</th><th>Abrió la app</th><th></th></tr></thead><tbody id="c2-filas"></tbody></table></div>
+</main>
 <main id="v-for" class="oculto">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-    <div style="flex-grow:1" class="partir"><h1>Foro</h1><div class="sub">Abre hilos y contesta como MOTOCLUBes (la cuenta oficial), también en los comentarios de las noticias. «Por contestar» = el último mensaje no es de MOTOCLUBes. Las noticias se publican en su pestaña.</div></div>
+    <div style="flex-grow:1" class="partir"><h1>Foro</h1><div class="sub">Abre hilos y contesta como MOTOCLUBes (la cuenta oficial), también en los comentarios de las noticias. «Por contestar» = el último mensaje no es tuyo ni de MOTOCLUBes. Las noticias se publican en su pestaña.</div></div>
     <label>VER<select id="fo-cat"><option value="pend">Por contestar</option><option value="">Todo</option><option value="noticias">Noticias y sus comentarios</option><option value="general">General</option><option value="rutas">Rutas</option><option value="mecanica">Mecánica</option><option value="equipamiento">Equipamiento</option></select></label>
     <button class="btn" id="fo-nuevo">Nuevo hilo</button>
   </div>
@@ -300,6 +308,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>CATEGORÍA<select id="fo-f-cat"><option value="general">General</option><option value="rutas">Rutas</option><option value="mecanica">Mecánica</option><option value="equipamiento">Equipamiento</option></select></label>
     <label>TÍTULO<input type="text" id="fo-f-titulo" maxlength="140"></label>
     <label>TEXTO<textarea id="fo-f-texto" rows="12"></textarea></label>
+    <label class="check"><input type="checkbox" id="fo-f-como" checked> Publicar como MOTOCLUBes <span class="sub" style="font-weight:500">(si la quitas, sale con tu cuenta)</span></label>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="fo-f-cancelar">Cancelar</button><button class="btn" id="fo-f-publicar">Publicar</button></div>
   </div>
   <div class="card tabla" id="fo-lista"><table><thead><tr><th>Hilo</th><th>Categoría</th><th>Abierto por</th><th>Último mensaje</th><th>Respuestas</th></tr></thead><tbody id="fo-filas"></tbody></table></div>
@@ -517,14 +526,14 @@ function reinvitar(id) {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('v-cor').classList.add('oculto'); $('sub-cont').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
-  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -533,10 +542,11 @@ async function entrar() {
   if (fichaUrl) { history.replaceState(null, '', location.pathname); verFicha(fichaUrl, 'test').then(() => { if ($('f-play') && !FICHA?.web?.play_enviado_at) $('f-play').click() }) }
   // SOLICITUDES-1 (15-oct, Mario: «cuando entro en el portal no me lo refresca […] son solicitudes más que testers»): la
   // pestaña se llama «Solicitudes» y su cifra (los que faltan por invitar) se carga al entrar, como Riders.
-  await Promise.all([cargar(), cargarCand(), cargarRiders(), cargarTesters(), cargarContactos(), cargarForo(true)]) // CONTACTOS-1: la cifra de la pestaña // FICHA-RIDER-1: la cifra de la pestaña Riders
+  await Promise.allSettled([cargar(), cargarCand(), cargarRiders(), cargarTesters(), cargarContactos(), cargarForo(true), cargarIncidencias()]) // si una carga falla, se sigue igual (y se vuelve a la pestaña donde estabas) // CONTACTOS-1: la cifra de la pestaña // FICHA-RIDER-1: la cifra de la pestaña Riders
   if (!fichaUrl) { // SIGUE-DONDE-ESTABAS-1
     if (donde.startsWith('ficha=')) { const [em, vu] = donde.slice(6).split('|'); if (em) verFicha(em, PESTANAS.includes(vu) ? vu : 'rid') }
-    else if (PESTANAS.includes(donde) && donde !== 'altas') $('p-' + donde).click()
+    else if (PESTANAS.includes(donde) && donde !== 'altas') (donde === 'cor' ? $('s-cor') : $('p-' + donde)).click()
+    else if (!donde) $('p-cont').click() // PANEL-CONTESTAR-1: al entrar, lo de cada día: Contestar
   }
 }
 $('l-entrar').onclick = async () => {
@@ -618,6 +628,9 @@ function verPestana(cual) {
   // Revisión: sin el estado de la ficha de Negocios (si no, tras recargar «Volver» sacaba de la página)
   if (cual !== 'ficha') { try { history.replaceState(null, '', location.pathname + location.search + '#' + cual) } catch (e) {} }
   $('p-altas').classList.toggle('sel', cual === 'altas'); $('p-cand').classList.toggle('sel', cual === 'cand'); $('p-test').classList.toggle('sel', cual === 'test'); $('p-rid').classList.toggle('sel', cual === 'rid'); $('p-inc').classList.toggle('sel', cual === 'inc'); $('p-gui').classList.toggle('sel', cual === 'gui'); $('p-not').classList.toggle('sel', cual === 'not'); $('p-con').classList.toggle('sel', cual === 'con'); $('p-uso').classList.toggle('sel', cual === 'uso'); $('p-for').classList.toggle('sel', cual === 'for')
+  const enCont = ['for', 'inc', 'cor'].includes(cual) // PANEL-CONTESTAR-1
+  $('p-cont').classList.toggle('sel', enCont); $('sub-cont').classList.toggle('oculto', !enCont)
+  $('s-for').classList.toggle('sel', cual === 'for'); $('s-inc').classList.toggle('sel', cual === 'inc'); $('s-cor').classList.toggle('sel', cual === 'cor'); $('v-cor').classList.toggle('oculto', cual !== 'cor')
   $('v-panel').classList.toggle('oculto', cual !== 'altas'); $('v-cand').classList.toggle('oculto', cual !== 'cand'); $('v-test').classList.toggle('oculto', cual !== 'test')
   $('v-rid').classList.toggle('oculto', cual !== 'rid'); $('v-ficha').classList.toggle('oculto', cual !== 'ficha') // FICHA-RIDER-1
   $('v-inc').classList.toggle('oculto', cual !== 'inc') // INCIDENCIA-VERSION-1
@@ -1065,6 +1078,8 @@ async function cargarIncidencias() {
   // INCIDENCIA-CONTESTAR-1: lo que te queda por hacer: sin contestar, o incidencias sin «Avisar que está arreglado»
   const teToca = INCIDENCIAS.filter(f => (!f.respuesta && f.status !== 'resolved') || (f.type === 'incidencia' && !f.arreglo_avisado_at)).length
   $('n-inc').textContent = teToca
+  const tocaF = (f) => (!f.respuesta && f.status !== 'resolved') || (f.type === 'incidencia' && !f.arreglo_avisado_at) // PANEL-CONTESTAR-1: lo que te toca, arriba
+  INCIDENCIAS = INCIDENCIAS.map((f, i) => [f, i]).sort((a, b) => (tocaF(b[0]) - tocaF(a[0])) || (a[1] - b[1])).map(x => x[0])
   $('i-filas').innerHTML = INCIDENCIAS.map(f => {
     const movil = (f.plataforma === 'ios' ? 'iPhone' : f.plataforma === 'android' ? 'Android' : '—') + (f.build || f.version ? `<div class="sub">${esc(verApp(f.version, f.build))}</div>` : '') // VERSION-IGUAL-1
     // INCIDENCIA-CONTESTAR-1: «Avisar que está arreglado» solo en las incidencias (en una sugerencia diría «ya está arreglado»)
@@ -1176,7 +1191,7 @@ async function subirVideoWeb(archivo, carpeta) {
 async function urlVideoWeb(ruta) { try { const { data } = await sb.storage.from('videos').createSignedUrl(ruta, 3600); return data?.signedUrl || null } catch (e) { return null } }
 let GUIAS = [], gEditando = null
 async function cargarGuias() {
-  const { data, error } = await sb.from('guia_secciones').select('id, titulo, cuerpo, icono, video_url').not('video_url', 'is', null).order('orden')
+  const { data, error } = await sb.from('guia_secciones').select('id, titulo, cuerpo, icono, video_url').not('video_url', 'is', null).order('updated_at', { ascending: false }) // PANEL-CONTESTAR-1: lo último subido arriba
   if (error) return gAviso('No se han podido cargar: ' + esc(error.message))
   GUIAS = data || []
   const urls = await Promise.all(GUIAS.map(g => urlVideoWeb(g.video_url)))
@@ -1216,7 +1231,17 @@ $('p-gui').onclick = () => { verPestana('gui'); gAviso(''); cargarGuias() }
 async function cargarNoticias() {
   const { data, error } = await sb.from('threads').select('id, title, created_at, reply_count, video_url').eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
   if (error) return nAviso('No se han podido cargar las noticias: ' + esc(error.message))
-  $('n-filas').innerHTML = (data || []).map(t => `<tr><td><b>${esc(t.title)}</b></td><td class="sub">${fecha(t.created_at)}</td><td>${t.reply_count || 0}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
+  // PANEL-CONTESTAR-1 (Mario: «las opiniones a cero es mentira»): `reply_count` no se actualiza; se cuentan los comentarios de verdad.
+  // Lo último arriba (publicada o comentada) y cada noticia se pincha para leerla y contestar en el Foro.
+  const ids = (data || []).map(t => t.id), coms = []
+  for (let i = 0; i < ids.length; i += 10) {
+    const { data: ps, error: ec } = await sb.from('posts').select('thread_id, created_at').in('thread_id', ids.slice(i, i + 10)).is('hidden_at', null)
+    if (ec) return nAviso('No se han podido contar los comentarios: ' + esc(ec.message)) // mejor nada que una cifra falsa
+    coms.push(...(ps || []))
+  }
+  const filas = (data || []).map(t => { const c = coms.filter(p => p.thread_id === t.id).map(p => p.created_at).sort(); return { ...t, n: c.length, ult: c.length ? c[c.length - 1] : t.created_at } })
+    .sort((a, b) => a.ult < b.ult ? 1 : -1)
+  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button></td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
 }
 $('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
 $('n-publicar').onclick = async () => {
@@ -1239,6 +1264,7 @@ $('n-publicar').onclick = async () => {
   $('n-publicar').disabled = false; $('n-publicar').textContent = 'Publicar'
 }
 $('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
+$('n-filas').onclick = (ev) => { const tr = ev.target.closest('[data-noticia]'); if (!tr) return; if (foAbierto && foAbierto !== tr.dataset.noticia && !foPuedeSalir()) return; verPestana('for'); foAviso(''); abrirHilo(tr.dataset.noticia); void cargarForo() } // PANEL-CONTESTAR-1
 clicCab('t-cab', ordenT, () => pintarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-inv').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') } // QUIEN-INVITA-1
 let rBuscarT = null
@@ -1811,7 +1837,7 @@ $('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
 
 // ── FORO-ADMIN-WEB-1 (29-oct, 130.ª) · hilos y respuestas como MOTOCLUBes ──
 const FO_CAT = { general: 'General', rutas: 'Rutas', mecanica: 'Mecánica', equipamiento: 'Equipamiento', noticias: 'Noticias' }
-let FO = [], foOficial = null, foNombres = {}, foAbierto = null, foPet = 0
+let FO = [], foYo = null, foOficial = null, foNombres = {}, foAbierto = null, foPet = 0
 const foAviso = (t, bien) => { $('fo-aviso').innerHTML = t ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${t}</div>` : '' }
 const foQuien = (id) => id && id === foOficial ? '<b style="color:var(--od)">MOTOCLUBes</b>' : esc(foNombres[id] || 'Rider')
 const foTexto = (t) => `<div style="white-space:pre-wrap;line-height:1.5;font-size:14px">${esc(t || '')}</div>`
@@ -1825,6 +1851,7 @@ async function foNombresDe(ids) {
 async function cargarForo(soloCifra) {
   const n = ++foPet
   if (!foOficial) { const { data } = await sb.rpc('mc_cuenta_oficial'); foOficial = data || null }
+  if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null // contestado con tu cuenta también cuenta como contestado
   // Los 80 hilos más nuevos y TODAS sus respuestas (para saber cuál es el último mensaje y si es de MOTOCLUBes).
   const CAMPOS = 'id, user_id, category, title, created_at, reply_count'
   const { data: hilos0, error } = await sb.from('threads').select(CAMPOS).is('hidden_at', null).order('created_at', { ascending: false }).limit(80)
@@ -1852,7 +1879,7 @@ async function cargarForo(soloCifra) {
     const suyos = posts.filter(p => p.thread_id === h.id).sort((a, b) => a.created_at < b.created_at ? -1 : 1)
     const ult = suyos[suyos.length - 1] || { user_id: h.user_id, created_at: h.created_at }
     // Una noticia sin comentarios no está «por contestar»: la escribió MOTOCLUBes.
-    return Object.assign({}, h, { ultimoDe: ult.user_id, ultimoEn: ult.created_at, respuestas: suyos.length, pend: ult.user_id !== foOficial })
+    return Object.assign({}, h, { ultimoDe: ult.user_id, ultimoEn: ult.created_at, respuestas: suyos.length, pend: ult.user_id !== foOficial && ult.user_id !== foYo })
   }).sort((a, b) => a.ultimoEn < b.ultimoEn ? 1 : -1)
   $('n-for').textContent = String(FO.filter(h => h.pend).length)
   if (soloCifra) return
@@ -1886,7 +1913,8 @@ async function abrirHilo(id) {
     <div><span class="chip gris">${esc(FO_CAT[h.category] || h.category)}</span><h2 style="margin-top:8px;font-size:22px">${esc(h.title)}</h2></div>
     ${msg(h.user_id, h.created_at, h.body)}
     ${(ps || []).map(p => msg(p.user_id, p.created_at, p.body)).join('') || '<div class="sub">Aún no hay respuestas.</div>'}
-    <div class="card" style="display:flex;flex-direction:column;gap:10px"><label>CONTESTAR COMO MOTOCLUBes<textarea id="fo-resp" rows="6"></textarea></label>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px"><label>TU RESPUESTA<textarea id="fo-resp" rows="6"></textarea></label>
+    <label class="check"><input type="checkbox" id="fo-como" checked> Contestar como MOTOCLUBes <span class="sub" style="font-weight:500">(si la quitas, sale con tu cuenta)</span></label>
     <div style="display:flex;justify-content:flex-end"><button class="btn" id="fo-enviar">Contestar</button></div></div>`
   $('fo-volver').onclick = () => { if (foPuedeSalir()) verForoLista() }
   $('fo-enviar').onclick = () => contestarHilo(id)
@@ -1899,11 +1927,13 @@ async function contestarHilo(id) {
   if (texto.length < 2) return foAviso('Escribe la respuesta.')
   if (!foOficial) return foAviso('No se encuentra la cuenta oficial MOTOCLUBes.')
   $('fo-enviar').disabled = true; $('fo-enviar').textContent = 'Enviando…'
-  const { error } = await sb.from('posts').insert({ thread_id: id, user_id: foOficial, body: texto })
+  const como = $('fo-como').checked // PANEL-CONTESTAR-1: la casilla, a la vista (Mario: «no que me pregunte luego»)
+  const yo = (await sb.auth.getSession()).data.session?.user?.id
+  const { error } = await sb.from('posts').insert({ thread_id: id, user_id: como ? foOficial : yo, body: texto })
   if (error) { $('fo-enviar').disabled = false; $('fo-enviar').textContent = 'Contestar'; return foAviso('No se ha podido contestar: ' + esc(error.message)) }
   $('fo-resp').value = ''; delete $('fo-resp').dataset.tecleado
   await abrirHilo(id); cargarForo(true).then(() => { if (!foAbierto) pintarForo() })
-  foAviso('✅ Contestado como MOTOCLUBes.', true) // después de abrir el hilo, que limpia el aviso
+  foAviso(como ? '✅ Contestado como MOTOCLUBes.' : '✅ Contestado con tu cuenta.', true) // después de abrir el hilo, que limpia el aviso
 }
 $('fo-nuevo').onclick = () => { if (foAbierto && !foPuedeSalir()) return; verForoLista(); foAviso(''); $('fo-form').classList.remove('oculto'); $('fo-f-titulo').focus() }
 $('fo-f-cancelar').onclick = () => { $('fo-form').classList.add('oculto'); $('fo-f-titulo').value = ''; $('fo-f-texto').value = '' }
@@ -1911,19 +1941,42 @@ $('fo-f-publicar').onclick = async () => {
   const titulo = $('fo-f-titulo').value.trim(), texto = $('fo-f-texto').value.trim(), cat = $('fo-f-cat').value
   if (titulo.length < 3 || texto.length < 10) return foAviso('Falta el título o el texto.')
   if (!foOficial) return foAviso('No se encuentra la cuenta oficial MOTOCLUBes.')
-  if (!confirm(`¿Publicar en ${FO_CAT[cat]}, firmado por MOTOCLUBes? Lo verá todo el mundo.`)) return
+  const como = $('fo-f-como').checked, yo = (await sb.auth.getSession()).data.session?.user?.id // PANEL-CONTESTAR-1: sin preguntar; lo dice la casilla
   $('fo-f-publicar').disabled = true; $('fo-f-publicar').textContent = 'Publicando…'
-  const { data, error } = await sb.from('threads').insert({ user_id: foOficial, category: cat, title: titulo, body: texto }).select('id').single()
+  const { data, error } = await sb.from('threads').insert({ user_id: como ? foOficial : yo, category: cat, title: titulo, body: texto }).select('id').single()
   $('fo-f-publicar').disabled = false; $('fo-f-publicar').textContent = 'Publicar'
   if (error) return foAviso('No se ha podido publicar: ' + esc(error.message))
-  $('fo-f-titulo').value = ''; $('fo-f-texto').value = ''; delete $('fo-f-titulo').dataset.tecleado; delete $('fo-f-texto').dataset.tecleado
+  $('fo-f-como').checked = true; $('fo-f-titulo').value = ''; $('fo-f-texto').value = ''; delete $('fo-f-titulo').dataset.tecleado; delete $('fo-f-texto').dataset.tecleado
   $('fo-form').classList.add('oculto')
   await cargarForo(); if (data?.id) await abrirHilo(data.id)
-  foAviso(`✅ Publicado en ${FO_CAT[cat]}, firmado por MOTOCLUBes.`, true)
+  foAviso(`✅ Publicado en ${FO_CAT[cat]}, ${como ? 'firmado por MOTOCLUBes' : 'con tu cuenta'}.`, true)
 }
 $('fo-filas').onclick = (ev) => { const tr = ev.target.closest('[data-hilo]'); if (tr) abrirHilo(tr.dataset.hilo) }
 $('fo-cat').onchange = () => { if (foAbierto && !foPuedeSalir()) return; verForoLista() }
 $('p-for').onclick = () => { if (foAbierto && !foPuedeSalir()) return verPestana('for'); verPestana('for'); foAviso(''); verForoLista(); $('fo-filas').innerHTML = '<tr><td colspan="5" class="sub">Cargando…</td></tr>'; cargarForo() }
+
+// ── PANEL-CONTESTAR-1 (29-oct, 130.ª) · «Contestar»: Foro, Te escuchamos y Correo a un rider en un sitio ──
+function cifraContestar() {
+  const f = Number($('n-for').textContent) || 0, i = Number($('n-inc').textContent) || 0
+  $('s-n-for').textContent = $('n-for').textContent; $('s-n-inc').textContent = $('n-inc').textContent
+  $('n-cont').textContent = String(f + i)
+}
+new MutationObserver(cifraContestar).observe($('n-for'), { childList: true, characterData: true, subtree: true })
+new MutationObserver(cifraContestar).observe($('n-inc'), { childList: true, characterData: true, subtree: true })
+$('p-cont').onclick = () => { const f = Number($('n-for').textContent) || 0, i = Number($('n-inc').textContent) || 0; (f || !i ? $('p-for') : $('p-inc')).click() }
+$('s-for').onclick = () => $('p-for').click()
+$('s-inc').onclick = () => $('p-inc').click()
+function pintarCorreoRider() {
+  const q = ($('c2-buscar').value || '').trim().toLowerCase()
+  const l = RIDERS.filter(r => !q || (r.rider || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q))
+    .sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')).slice(0, 30)
+  $('c2-filas').innerHTML = l.map(r => `<tr><td><b>${esc(r.rider || '(sin nombre)')}</b></td><td class="sub">${esc(r.email)}</td><td class="sub">${hace(r.abrio)}</td>
+    <td style="text-align:right"><button class="btn3 o c2-correo" data-email="${esc(r.email)}">✉️ Correo</button></td></tr>`).join('')
+    || `<tr><td colspan="4" class="sub">${RIDERS.length ? 'Nadie con ese nombre o correo.' : 'Cargando…'}</td></tr>`
+}
+$('s-cor').onclick = async () => { verPestana('cor'); pintarCorreoRider(); if (!RIDERS.length) { await cargarRiders(); pintarCorreoRider() } setTimeout(() => $('c2-buscar').focus(), 50) }
+$('c2-buscar').oninput = () => pintarCorreoRider()
+$('c2-filas').onclick = (ev) => { const b = ev.target.closest('.c2-correo'); if (!b) return; const r = RIDERS.find(x => x.email === b.dataset.email); abrirCorreo(r?.rider || b.dataset.email, b.dataset.email, null, 'rider') }
 
 // PANEL-SE-ACTUALIZA-1 (17-oct, Mario: «yo no debería recargar el panel; cuando salga, debe recargarlo solo»). Cada minuto y
 // al volver a la pestaña se mira si en la web hay otra versión de esta página (su ETag o su fecha en GitHub Pages, sin
