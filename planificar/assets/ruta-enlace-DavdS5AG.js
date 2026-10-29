@@ -1,2 +1,0 @@
-import{t as e,a as i}from"./index-KoKjuWnx.js";import{S as s}from"./index-Dfjx6LS7.js";function u(a){return`https://www.motoclubes.es/rutas/?id=${a}`}function l(a,t){const r=(a??"").trim()||e("Ruta en MOTOCLUBes");return typeof t=="number"&&t>0?`${r} · ${Math.round(t)} km`:r}async function h(a,t,r){const o=u(a),c=l(t,r);let n=!1;try{n=(await s.canShare()).value}catch{}if(n){try{await s.share({title:t??e("Ruta"),text:c,url:o})}catch{}return}try{await navigator.clipboard?.writeText(`${c}
-${o}`),i.success(e("Enlace copiado"))}catch{}}export{h as c,u};
