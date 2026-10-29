@@ -348,7 +348,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>DE<select id="mail-de"><option value="soporte">Soporte MOTOCLUBes</option><option value="equipo">Equipo MOTOCLUBes</option></select></label><!-- CORREO-SOPORTE-1: nunca «Mario» -->
     <label>ASUNTO<input type="text" id="mail-asunto" maxlength="150"></label>
     <label>TEXTO<textarea id="mail-texto" rows="12" maxlength="8000" placeholder="Pega aquí el texto, con tu saludo y tu firma"></textarea></label>
-    <label class="check"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
+    <label class="check" id="mail-fuera-fila"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
     <div class="sub" id="mail-nota">Sale de «Mario de MOTOCLUBes», tal cual lo escribes. Si contesta, la respuesta llega a negocios@motoclubes.es.</div>
     <div id="mail-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="mail-cancelar">Cancelar</button><button class="btn" id="mail-enviar">Enviar</button></div>
@@ -1322,7 +1322,7 @@ async function verFicha(email, vuelve) {
     : '<div class="sub" style="padding:16px">Todavía no le hemos mandado nada.</div>'
   await cargarUltima()
   $('f-cuerpo').innerHTML = `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><div style="flex-grow:1"><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
-    ${c ? '<button class="btn2" id="f-avisar">Mandarle un aviso</button>' : ''}</div>
+    ${c ? '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="f-avisar">Mandarle un aviso</button><button class="btn2" id="f-correo">✉️ Mandarle un correo</button></div>' : ''}</div>
     <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Lo que le hemos mandado</div>${env}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
@@ -1338,6 +1338,7 @@ $('f-cuerpo').onclick = (ev) => {
     mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
     return
   }
+  if (ev.target.closest('#f-correo') && FICHA) return abrirCorreo(FICHA.perfil?.nickname || FICHA.email, FICHA.email, null, 'rider') // CORREO-SOPORTE-1: también desde la ficha
   if (ev.target.closest('#f-avisar') && FICHA) return abrirAviso(FICHA.email, FICHA.perfil?.nickname || FICHA.email, FICHA.perfil?.app_version_at, FICHA.perfil?.app_platform, FICHA.perfil?.app_version)
   const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve)
 }
@@ -1574,6 +1575,7 @@ let mailDestino = 'negocio' // CORREO-SOPORTE-1: 'rider' | 'negocio' (a dónde c
 function abrirCorreo(nombre, correo, desdeFicha, destino) {
   correoDesdeFicha = desdeFicha; mailDestino = destino === 'rider' ? 'rider' : 'negocio'
   $('mail-de').value = 'soporte'
+  $('mail-fuera-fila').classList.toggle('oculto', mailDestino === 'rider') // a un rider siempre se le manda desde aquí
   $('mail-nota').textContent = mailDestino === 'rider'
     ? 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes» (nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
     : 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes». Si contesta, la respuesta llega a negocios@motoclubes.es.'
