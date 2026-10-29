@@ -15,6 +15,7 @@
    se graba el lienzo en tiempo real con MediaRecorder (MP4 en Safari). Sin música: se pone en Instagram (con licencia).
    v5: zoom fundiendo niveles, fotogramas a paso fijo, más lento (km/15 s), abajo solo paradas de verdad y puertos.
    v4 (FOTOS-SALIDA-1): tras alejarse, las fotos de la salida (r.fotos de mc_ruta_publica), 2,6 s cada una.
+   FOTOS-PARADA-1 (130.ª): la foto con parada (lat/lng/pie) sale al pasar por ella, con su rótulo; las demás, al final.
    Usa lo que ya tiene la página (index.html): esc, fmtMiles, kmAcum, aligerarTraza, MAPBOX_TOKEN.
    🟢 25-sep: revisado por Mario en v5 y puesto a la vista de todos en la página de cada ruta pública. */
 
@@ -126,6 +127,7 @@ function resolverDestacados(pts, puertos, paradas) {
 var VIDEO = {
   W: 1080, H: 1920, FPS: 30,
   T_VISTA: 2.5, T_ZOOM: 3.6, T_TARJETA: 2.2, T_ALEJAR: 3, T_FOTO: 2.6, T_RESUMEN: 3.2, T_CIERRE: 3, T_CAPTURA: 6,
+  T_PARADA: 1.6, T_FOTO_PARADA: 2.2, // FOTOS-PARADA-1: el rótulo de la parada en el mapa y cada foto de esa parada
   // 🔄 v5 (Mario: «va muy rápido y no te da tiempo a ver los nombres»): km/15 por segundo, entre 20 y 58 s de dibujo
   DIBUJO_MIN: 20, DIBUJO_MAX: 58, KM_POR_S: 15,
   ESTILO: "outdoors-v12"
@@ -302,6 +304,24 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
     d.pxKm = Math.max(1, largoM * 512 * Math.pow(2, zDest) * 2 / Math.max(d.b - d.a, 0.01)); d.zPx = zDest;
   });
 
+  // 🆕 FOTOS-PARADA-1 (130.ª, 29-oct · Fèlix y Mario «vamos a hacerlo»): la foto puesta en una parada (lat/lng de la parada,
+  // con `mc_foto_situar`) sale AL PASAR el casco por ella: el mapa se para con el rótulo 📷 y pasan sus fotos con su texto, y
+  // sigue. Como Relive, con la marca MOTOCLUBes. Las que no tienen parada (o quedan a más de 1,5 km de la ruta), al final.
+  // En el reel corto (REEL-CORTO-1) y sin fotos (&fotos=0), como antes.
+  var acumOrig = kmAcum(pts), grupos = [], alFinal = [];
+  if (!(VIDEO_CORTO && dest.length > 0)) fotos.forEach(function (f, i) {
+    if (f.lat == null || f.lng == null || !(isFinite(f.lat) && isFinite(f.lng))) { alFinal.push(i); return; }
+    var c = Math.cos(f.lat * Math.PI / 180), mejor = -1, dMin = Infinity;
+    for (var k = 0; k < pts.length; k++) { var dx = (pts[k].lng - f.lng) * c, dy = pts[k].lat - f.lat, dd = dx * dx + dy * dy; if (dd < dMin) { dMin = dd; mejor = k; } }
+    if (mejor < 0 || Math.sqrt(dMin) * 111.32 > 1.5) { alFinal.push(i); return; }
+    var kmP = Math.max(0, Math.min(total, kmF(acumOrig[mejor])));
+    var g = null; grupos.forEach(function (x) { if (Math.abs(x.km - kmP) < 0.3) g = x; });
+    if (!g) { g = { km: kmP, idxs: [], pie: "" }; grupos.push(g); }
+    g.idxs.push(i); if (!g.pie && f.pie) g.pie = String(f.pie);
+  });
+  else fotos.forEach(function (f, i) { alFinal.push(i); });
+  grupos.sort(function (a, b) { return a.km - b.km; });
+
   // Tiempos.
   var tDibujo = Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
   var tramos = []; var t = 0;
@@ -309,12 +329,20 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   tramos.push({ tipo: "zoom", a: t, b: t += VIDEO.T_ZOOM });
   for (var d = 0; d < dias; d++) {
     tramos.push({ tipo: "tarjeta", dia: d, a: t, b: t += VIDEO.T_TARJETA });
-    tramos.push({ tipo: "dibujo", dia: d, a: t, b: t += tDibujo * largoPesado(limites[d], limites[d + 1]) / total }); // VIDEO-DESTACAR-1
+    var ult = d === dias - 1, x0 = limites[d], x1 = ult ? total : limites[d + 1]; // revisión: el último día llega hasta el final
+    grupos.forEach(function (g) { // FOTOS-PARADA-1: el día se trocea en cada parada con fotos
+      if (g.km < x0 || (!ult && g.km >= x1)) return;
+      if (g.km > x0) tramos.push({ tipo: "dibujo", dia: d, x0: x0, x1: g.km, a: t, b: t += tDibujo * largoPesado(x0, g.km) / total });
+      tramos.push({ tipo: "parada", dia: d, km: g.km, g: g, a: t, b: t += VIDEO.T_PARADA });
+      g.idxs.forEach(function (i, n) { tramos.push({ tipo: "foto", i: i, km: g.km, dia: d, primera: n === 0, a: t, b: t += VIDEO.T_FOTO_PARADA }); });
+      x0 = g.km;
+    });
+    if (x1 > x0) tramos.push({ tipo: "dibujo", dia: d, x0: x0, x1: x1, a: t, b: t += tDibujo * largoPesado(x0, x1) / total }); // VIDEO-DESTACAR-1
   }
   tramos.push({ tipo: "alejar", a: t, b: t += VIDEO.T_ALEJAR });
   if (captura) tramos.push({ tipo: "captura", a: t, b: t += VIDEO.T_CAPTURA }); // VIDEO-CAPTURA-1
   // 🆕 FOTOS-SALIDA-1: tras la ruta, las fotos de los que fueron (Mario: «primero poner la ruta, luego poner las fotos»)
-  fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
+  alFinal.forEach(function (i, n) { tramos.push({ tipo: "foto", i: i, primera: n === 0, a: t, b: t += VIDEO.T_FOTO }); });
   // VIDEO-RESUMEN-PUERTOS-1: los puertos uno a uno (0,3 s cada uno) y el resumen con sus filas entrando una a una
   var DR = datosResumen(paradas, puertos);
   if (DR.lista.length >= 2) DR.paginas.forEach(function (pg, k) {
@@ -352,7 +380,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
       tramos.push({ tipo: "ver", i: i, a: t, b: t += 1.4 });
     });
     tramos.push({ tipo: "alejar", a: t, b: t += 1.6 });
-    fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, a: t, b: t += VIDEO.T_FOTO }); });
+    fotos.forEach(function (f, i) { tramos.push({ tipo: "foto", i: i, primera: i === 0, a: t, b: t += VIDEO.T_FOTO }); });
     tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
     DUR = t;
   }
@@ -374,8 +402,9 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
     }
     if (tr.tipo === "vista" || tr.tipo === "zoom") return 0;
     if (tr.tipo === "tarjeta") return limites[tr.dia];
+    if (tr.km != null && (tr.tipo === "parada" || tr.tipo === "foto")) return tr.km; // FOTOS-PARADA-1: quieto en la parada
     if (tr.tipo === "dibujo") { // VIDEO-DESTACAR-1: más despacio en los tramos destacados
-      var x0 = limites[tr.dia], x1 = limites[tr.dia + 1];
+      var x0 = tr.x0 != null ? tr.x0 : limites[tr.dia], x1 = tr.x1 != null ? tr.x1 : limites[tr.dia + 1];
       return kmDePeso(x0, x1, largoPesado(x0, x1) * Math.min(1, (t - tr.a) / (tr.b - tr.a)));
     }
     return total;
@@ -401,7 +430,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
       if (tr.tipo === "alejar") { var de2 = entero(dest.length - 1), cl = interp(de2.c, cFit, tramo(t, tr.a, tr.b), de2.z, zFit); cl.fundir = true; return cl; }
       return { c: cFit, z: zFit };
     }
-    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || tr.tipo === "foto" || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
+    if (tr.tipo === "vista" || tr.tipo === "resumen" || tr.tipo === "cierre" || (tr.tipo === "foto" && tr.km == null) || tr.tipo === "puertos" || tr.tipo === "captura") return { c: cFit, z: zFit };
     if (tr.tipo === "zoom") { var cz = interp(cFit, sigue(0), tramo(t, tr.a, tr.b), zFit, zDet); cz.fundir = true; return cz; }
     if (tr.tipo === "alejar") { var ca = interp(sigue(total), cFit, tramo(t, tr.a, tr.b), zDet, zFit); ca.fundir = true; return ca; }
     var kc = kmCabeza(t);
@@ -467,7 +496,15 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
   var fotosR = VIDEO_SIN_FOTOS ? [] : (function () {
     // TRANSPI-PORTADA-1 (15-oct): la madre puede llevar de portada fotos que también están en su etapa: sin repetir (por URL).
-    var vistas = {}, todas = (Array.isArray(r.fotos) ? r.fotos : []).filter(function (f) { if (!f || vistas[f.url]) return false; vistas[f.url] = 1; return true; }), porDia = {};
+    // FOTOS-PARADA-1 (revisión): de las repetidas se queda la que tiene parada o texto y, si no, la del día más alto (la de la etapa)
+    var vistas = {}, orden = [];
+    (Array.isArray(r.fotos) ? r.fotos : []).forEach(function (f) {
+      if (!f) return;
+      var v = vistas[f.url], peso = function (x) { return (x.lat != null ? 2 : 0) + (x.pie ? 1 : 0); };
+      if (!v) { vistas[f.url] = f; orden.push(f.url); return; }
+      if (peso(f) > peso(v) || (peso(f) === peso(v) && (f.dia || 0) > (v.dia || 0))) vistas[f.url] = f;
+    });
+    var todas = orden.map(function (u) { return vistas[u]; }), porDia = {};
     todas.forEach(function (f) { (porDia[f.dia] = porDia[f.dia] || []).push(f); });
     var diasF = Object.keys(porDia).sort(function (a, b) { return a - b; });
     var cupo = diasF.length ? Math.ceil(12 / diasF.length) : 0, out = [];
@@ -480,7 +517,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   var destListos = resolverDestacados(pts, puertos, paradas); // VIDEO-DESTACAR-1
   var destacados = [];
   var fotosListas = Promise.all(fotosR.map(function (f) {
-    return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor }; }).catch(function () { return null; });
+    return cargarImagen(f.url).then(function (im) { return { im: im, dia: f.dia, autor: f.autor, lat: f.lat, lng: f.lng, pie: f.pie }; }).catch(function () { return null; }); // FOTOS-PARADA-1
   })).then(function (rs) { return capturaLista.then(function () { return rs; }); }).then(function (rs) {
     return destListos.then(function (dr) {
       destacados = dr.tramos;
@@ -553,7 +590,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         mapa(cam);
         if (!VIDEO_V6) velo(true, true);
         else { // v6: sin velos mientras se rueda; se van al empezar el día 1 y vuelven al alejarse (para el título)
-          var va = tr.tipo === "dibujo" ? 0 : tr.tipo === "tarjeta" ? (tr.dia === 0 ? 1 - tramo(t, tr.a, tr.a + 0.6) : 0) :
+          var va = tr.tipo === "dibujo" || tr.tipo === "parada" ? 0 : tr.tipo === "tarjeta" ? (tr.dia === 0 ? 1 - tramo(t, tr.a, tr.a + 0.6) : 0) :
             tr.tipo === "alejar" ? tramo(t, tr.a, tr.a + 0.6) : 1;
           if (va > 0) { ctx.globalAlpha = va; velo(true, true); ctx.globalAlpha = 1; }
         }
@@ -650,6 +687,27 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           }
         }
 
+        // 🆕 FOTOS-PARADA-1: en la parada con fotos, la cámara naranja encima del casco y el rótulo amarillo con su texto
+        if (tr.tipo === "parada") {
+          var aP = tramo(t, tr.a, tr.a + 0.35), saltoP = (1 - tramo(t, tr.a, tr.a + 0.5)) * 40;
+          ctx.globalAlpha = aP;
+          var pyP = Math.max(120, cab.y - 150 - saltoP);
+          ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
+          ctx.beginPath(); ctx.arc(cab.x, pyP, 50, 0, 2 * Math.PI); ctx.fillStyle = "#FF7A1A"; ctx.fill();
+          ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+          ctx.lineWidth = 7; ctx.strokeStyle = "#fff"; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cab.x - 16, pyP + 46); ctx.lineTo(cab.x, pyP + 72); ctx.lineTo(cab.x + 16, pyP + 46); ctx.closePath(); ctx.fillStyle = "#fff"; ctx.fill();
+          ctx.font = "48px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textBaseline = "middle"; escribir(ctx, "📷", cab.x, pyP + 2, "center");
+          var nF = tr.g.idxs.length, txP = tr.g.pie ? recortar(tr.g.pie, 44) : (nF === 1 ? "1 foto" : nF + " fotos"), fP = 50;
+          do { ctx.font = "800 " + fP + "px Manrope, system-ui, sans-serif"; fP -= 2; } while (fP >= 32 && ctx.measureText(txP).width + 80 > W - 64);
+          var wP = ctx.measureText(txP).width + 80, hP = 100, xP = (W - wP) / 2, yP = H - 360;
+          ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
+          pildora(ctx, xP, yP, wP, hP, hP / 2, "#FFC400");
+          ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+          ctx.fillStyle = "#111"; ctx.textBaseline = "middle"; escribir(ctx, txP, W / 2, yP + hP / 2 + 2, "center");
+          ctx.globalAlpha = 1;
+        }
+
         // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
         if ((tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") && G.dest.length) {
           var dAct = null; G.dest.forEach(function (d) { if (km >= d.a - DESTACAR.BORDE_KM && km <= d.b + DESTACAR.BORDE_KM) dAct = d; });
@@ -677,7 +735,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         }
 
         // día y km arriba mientras se rueda
-        if (VIDEO_V6 && (tr.tipo === "tarjeta" || tr.tipo === "dibujo")) {
+        if (VIDEO_V6 && (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada")) {
           // v6: los km grandes arriba a la derecha (por debajo del icono de cámara de Instagram) y el día en una etiqueta
           textoSombra(ctx, fmtMiles(km * kmRuta / G.total), W - 56, 250, "800 200px Manrope, system-ui, sans-serif", "#FF7A1A", "right");
           textoSombra(ctx, "KM", W - 62, 382, "800 58px Manrope, system-ui, sans-serif", "#FF7A1A", "right");
@@ -687,7 +745,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             pildora(ctx, 56, 150, wD, 80, 40, "rgba(14,14,14,.78)");
             ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txD, 84, 191);
           }
-        } else if (tr.tipo === "tarjeta" || tr.tipo === "dibujo") {
+        } else if (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada") {
           var d = tr.dia;
           textoSombra(ctx, (G.dias > 1 ? "DÍA " + (d + 1) + " · " : "") + "km " + fmtMiles(km * kmRuta / G.total), W / 2, 150, "800 60px Manrope, system-ui, sans-serif", "#fff");
         }
@@ -745,7 +803,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
         if (tr.tipo === "foto") {
           var fo = fotosIm[tr.i], u = (t - tr.a) / (tr.b - tr.a);
           var entra = tramo(t, tr.a, tr.a + 0.4);
-          ctx.globalAlpha = tr.i === 0 ? entra : 1;
+          ctx.globalAlpha = tr.primera ? entra : 1; // FOTOS-PARADA-1: funde la primera de cada parada (y la primera del final)
           ctx.fillStyle = "#0e0e0e"; ctx.fillRect(0, 0, W, H);
           var k = Math.max(W / fo.im.width, H / fo.im.height) * (1 + 0.08 * u);
           var iw = fo.im.width * k, ih = fo.im.height * k;
@@ -753,6 +811,15 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           ctx.drawImage(fo.im, (W - iw) / 2, (H - ih) / 2, iw, ih);
           ctx.globalAlpha = 1;
           velo(false, true);
+          if (fo.pie) { // FOTOS-PARADA-1: el texto de la foto, en el rótulo amarillo de la parada
+            var txF = "📷 " + recortar(fo.pie, 44), fF = 50;
+            do { ctx.font = "800 " + fF + "px Manrope, system-ui, sans-serif"; fF -= 2; } while (fF >= 30 && ctx.measureText(txF).width + 80 > W - 64);
+            var wF = ctx.measureText(txF).width + 80, hF = 100;
+            ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
+            pildora(ctx, (W - wF) / 2, H - 420, wF, hF, hF / 2, "#FFC400");
+            ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+            ctx.fillStyle = "#111"; ctx.textBaseline = "middle"; escribir(ctx, txF, W / 2, H - 420 + hF / 2 + 2, "center");
+          }
           var pie = (G.dias > 1 ? "Día " + fo.dia : "") + (fo.autor ? (G.dias > 1 ? " · " : "") + "📸 " + fo.autor : "");
           if (pie) {
             ctx.font = "700 42px Manrope, system-ui, sans-serif";
