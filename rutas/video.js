@@ -309,12 +309,35 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   // sigue. Como Relive, con la marca MOTOCLUBes. Las que no tienen parada (o quedan a más de 1,5 km de la ruta), al final.
   // En el reel corto (REEL-CORTO-1) y sin fotos (&fotos=0), como antes.
   var acumOrig = kmAcum(pts), grupos = [], alFinal = [];
+  // 🆕 RUTA-VUELTA-1 (130.ª, revisión de fin de día): en una ruta que vuelve a donde empezó, o de ida y vuelta, el punto «más
+  // cerca» de la foto puede ser la otra pasada. 1) Si la foto está en una parada (lo normal: la puso ahí quien la subió), va
+  // en el km de ESA parada, que ya sale en el orden de la ruta (paradasConKm). 2) Si no, el punto más cerca. En las rutas de
+  // varios días, el día de la foto solo sirve para ELEGIR entre pasadas (con el mismo margen que el hotel de cada noche):
+  // nunca se manda al final una foto que antes salía (2.ª revisión: los días se reparten por los km de cada etapa, no exactos).
+  var margenDia = total * 0.06 + 5;
   if (!(VIDEO_CORTO && dest.length > 0)) fotos.forEach(function (f, i) {
     if (f.lat == null || f.lng == null || !(isFinite(f.lat) && isFinite(f.lng))) { alFinal.push(i); return; }
-    var c = Math.cos(f.lat * Math.PI / 180), mejor = -1, dMin = Infinity;
-    for (var k = 0; k < pts.length; k++) { var dx = (pts[k].lng - f.lng) * c, dy = pts[k].lat - f.lat, dd = dx * dx + dy * dy; if (dd < dMin) { dMin = dd; mejor = k; } }
-    if (mejor < 0 || Math.sqrt(dMin) * 111.32 > 1.5) { alFinal.push(i); return; }
-    var kmP = Math.max(0, Math.min(total, kmF(acumOrig[mejor])));
+    var dF = dias > 1 && f.dia >= 1 && f.dia <= dias ? f.dia - 1 : -1;
+    var enDia = function (km) { return dF < 0 || (km >= limites[dF] - margenDia && km <= limites[dF + 1] + margenDia); };
+    var kmP = null, enParada = null, enParadaDia = null;
+    (paradas || []).forEach(function (p) {
+      if (p.km == null || !p.w || !isFinite(p.w.lat) || !isFinite(p.w.lng) || hav(p.w, f) > 0.03) return;
+      var mejorQue = function (x) { return !x || ((x.inicio || x.fin) && !p.inicio && !p.fin); }; // una de en medio antes que la salida o la llegada
+      if (mejorQue(enParada)) enParada = p;
+      if (enDia(kmF(p.km)) && mejorQue(enParadaDia)) enParadaDia = p;
+    });
+    if (enParadaDia || enParada) kmP = Math.max(0, Math.min(total, kmF((enParadaDia || enParada).km)));
+    else {
+      var c = Math.cos(f.lat * Math.PI / 180), mejor = -1, dMin = Infinity, mejorD = -1, dMinD = Infinity;
+      for (var k = 0; k < pts.length; k++) {
+        var dx = (pts[k].lng - f.lng) * c, dy = pts[k].lat - f.lat, dd = dx * dx + dy * dy;
+        if (dd < dMin) { dMin = dd; mejor = k; }
+        if (dF >= 0 && dd < dMinD && enDia(kmF(acumOrig[k]))) { dMinD = dd; mejorD = k; }
+      }
+      if (mejor < 0 || Math.sqrt(dMin) * 111.32 > 1.5) { alFinal.push(i); return; }
+      if (mejorD >= 0 && Math.sqrt(dMinD) * 111.32 <= 1.5) mejor = mejorD; // la pasada de su día, si la hay
+      kmP = Math.max(0, Math.min(total, kmF(acumOrig[mejor])));
+    }
     var g = null; grupos.forEach(function (x) { if (Math.abs(x.km - kmP) < 0.3) g = x; });
     if (!g) { g = { km: kmP, idxs: [], pie: "" }; grupos.push(g); }
     g.idxs.push(i); if (!g.pie && f.pie) g.pie = String(f.pie);

@@ -416,13 +416,40 @@ function puertosEnRuta(t, paradas) {
     });
 }
 
-/* Las paradas con su km, en orden de la ruta. */
+/* Las paradas con su km, en orden de la ruta.
+   🆕 RUTA-VUELTA-1 (130.ª, revisión de fin de día): en una ruta que vuelve a donde empezó, o de ida y vuelta, el sitio «más
+   cerca» de una parada puede ser la otra pasada (la llegada a casa salía en el km 0, la gasolinera del km 1 en el 88). Ahora:
+   se mide la distancia a cada tramo y valen los que están a 20 m o menos de la mejor (la otra calzada de una autovía); de
+   ellos, el PRIMERO desde la parada anterior (el orden de la ruta) y, para la llegada, el ÚLTIMO; luego se afina al más cerca
+   de esa pasada. Si desde la anterior en adelante no hay ninguno (una parada puesta fuera de orden), el más cerca, como antes.
+   Las cuentas van con la ruta pasada a metros una sola vez (2.ª revisión: 50.000 puntos × 30 paradas, sin trabar la página). */
 function paradasConKm(r, pts) {
   var ps = Array.isArray(r.paradas) ? r.paradas : [];
   if (!ps.length || pts.length < 2) return [];
-  var acum = kmAcum(pts), n = ps.length;
+  var acum = kmAcum(pts), n = ps.length, desde = 0, nSeg = pts.length - 1, K = 111.32, k;
+  var c = Math.cos(pts[0].lat * Math.PI / 180), X = new Float64Array(pts.length), Y = new Float64Array(pts.length), d = new Float64Array(nSeg);
+  for (k = 0; k < pts.length; k++) { X[k] = pts[k].lng * c * K; Y[k] = pts[k].lat * K; }
   return ps.map(function (w, i) {
-    var km = i === 0 ? 0 : (acum[tramoCerca(pts, w).i] || 0);
+    var km = 0;
+    if (i > 0) {
+      var px = w.lng * c * K, py = w.lat * K, min = Infinity, iMin = 0;
+      for (k = 0; k < nSeg; k++) {
+        var ax = X[k] - px, ay = Y[k] - py, dx = X[k + 1] - X[k], dy = Y[k + 1] - Y[k], l2 = dx * dx + dy * dy;
+        var t = l2 > 0 ? -(ax * dx + ay * dy) / l2 : 0; if (t < 0) t = 0; else if (t > 1) t = 1;
+        var ex = ax + t * dx, ey = ay + t * dy; d[k] = ex * ex + ey * ey;
+        if (d[k] < min) { min = d[k]; iMin = k; }
+      }
+      var tol = Math.pow(Math.sqrt(min) + 0.02, 2), e = -1;
+      if (i === n - 1) { // la llegada: la última pasada
+        for (k = nSeg - 1; k >= desde; k--) if (d[k] <= tol) { e = k; break; }
+        if (e >= 0) while (e > desde && d[e - 1] < d[e]) e--;
+      } else {
+        for (k = desde; k < nSeg; k++) if (d[k] <= tol) { e = k; break; }
+        if (e >= 0) while (e + 1 < nSeg && d[e + 1] < d[e]) e++;
+      }
+      if (e >= 0) desde = e; else e = iMin;
+      km = acum[e] || 0;
+    }
     return { w: w, i: i, km: km, t: tipoDe(w), nombre: nombreParada(w, i, n), inicio: i === 0, fin: i === n - 1 && n > 1 };
   });
 }
