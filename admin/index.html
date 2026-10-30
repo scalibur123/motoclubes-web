@@ -1934,9 +1934,14 @@ async function abrirHilo(id) {
     ${(ps || []).map(p => msg(p.user_id, p.created_at, p.body)).join('') || '<div class="sub">Aún no hay respuestas.</div>'}
     <div class="card" style="display:flex;flex-direction:column;gap:10px"><label>TU RESPUESTA<textarea id="fo-resp" rows="6"></textarea></label>
     <label class="check"><input type="checkbox" id="fo-como" checked> Contestar como MOTOCLUBes <span class="sub" style="font-weight:500">(si la quitas, sale con tu cuenta)</span></label>
-    <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">${foBotonAtendido(id)}<button class="btn" id="fo-enviar">Contestar</button></div></div>`
+    <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><span id="fo-at-sitio"></span><button class="btn" id="fo-enviar">Contestar</button></div></div>`
   $('fo-volver').onclick = () => { if (foPuedeSalir()) verForoLista() }
   $('fo-enviar').onclick = () => contestarHilo(id)
+  pintarBotonAtendido(id)
+}
+function pintarBotonAtendido(id) { // FORO-ATENDIDO-1: solo el botón, sin tocar la respuesta que estás escribiendo
+  if (foAbierto !== id || !$('fo-at-sitio')) return
+  $('fo-at-sitio').innerHTML = foBotonAtendido(id)
   if ($('fo-atendido')) $('fo-atendido').onclick = () => marcarAtendido(id, $('fo-atendido').dataset.si === '1')
 }
 function foBotonAtendido(id) { // FORO-ATENDIDO-1
@@ -1980,14 +1985,21 @@ $('fo-f-publicar').onclick = async () => {
 $('fo-filas').onclick = (ev) => { const tr = ev.target.closest('[data-hilo]'); if (!tr) return; if (ev.target.closest('[data-atendido]')) return marcarAtendido(tr.dataset.hilo, true); abrirHilo(tr.dataset.hilo) }
 // FORO-ATENDIDO-1: «✓ No hace falta contestar» lo saca de «Por contestar» hasta que alguien escriba algo nuevo. Se puede deshacer.
 async function marcarAtendido(id, si) {
-  const { error } = await sb.rpc('mc_admin_hilo_atendido', { p_hilo: id, p_atendido: si })
-  if (error) return foAviso('No se ha podido guardar: ' + esc(error.message))
   const h = FO.find(x => x.id === id), titulo = h ? esc(h.title) : 'El hilo'
-  const borrador = foAbierto === id ? ($('fo-resp')?.value || '') : '', como = $('fo-como')?.checked // no perder lo que estabas escribiendo
-  await cargarForo()
-  if (foAbierto === id) { await abrirHilo(id); if ($('fo-resp')) $('fo-resp').value = borrador; if ($('fo-como') && como !== undefined) $('fo-como').checked = como }
+  // Se marca hasta el último mensaje que tenías delante: si llega otro mientras lo lees, sigue «Por contestar».
+  const { error } = await sb.rpc('mc_admin_hilo_atendido', { p_hilo: id, p_atendido: si, p_visto: h?.ultimoEn || null })
+  if (error) return foAviso('No se ha podido guardar: ' + esc(error.message))
+  if (h) { // al momento, sin volver a pintar el hilo abierto (no se toca lo que estás escribiendo)
+    const sinContestar = h.ultimoDe !== foOficial && h.ultimoDe !== foYo
+    if (si) foAtendidos[id] = h.ultimoEn; else delete foAtendidos[id]
+    h.atendido = si && sinContestar; h.pend = sinContestar && !h.atendido
+    $('n-for').textContent = String(FO.filter(x => x.pend).length)
+  }
+  if (!foAbierto) pintarForo()
+  pintarBotonAtendido(id)
   foAviso(si ? `«${titulo}» ya no sale en «Por contestar». Si alguien escribe algo nuevo, vuelve a salir. <button type="button" class="btn2" id="fo-deshacer" style="padding:3px 9px;font-size:12px">Deshacer</button>` : `«${titulo}» vuelve a estar en «Por contestar».`, true)
   if (si && $('fo-deshacer')) $('fo-deshacer').onclick = () => marcarAtendido(id, false)
+  cargarForo(!!foAbierto).then(() => pintarBotonAtendido(id)) // y se pide de nuevo a la base, por si alguien ha escrito
 }
 $('fo-cat').onchange = () => { if (foAbierto && !foPuedeSalir()) return; verForoLista() }
 $('p-for').onclick = () => { if (foAbierto && !foPuedeSalir()) return verPestana('for'); verPestana('for'); foAviso(''); verForoLista(); $('fo-filas').innerHTML = '<tr><td colspan="5" class="sub">Cargando…</td></tr>'; cargarForo() }
