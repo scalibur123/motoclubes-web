@@ -286,7 +286,8 @@
         function libre() { // deja respirar a la página (el aviso de progreso) y no amontona fotogramas en el codificador
           return dormir(0).then(function () { return enc.encodeQueueSize > 4 ? dormir(15).then(libre) : null; });
         }
-        return paso().then(function () { return enc.flush(); }).then(function () {
+        return paso().catch(function (e) { try { if (enc.state !== "closed") enc.close(); } catch (x) {} throw e; }) // revisión 131.ª: no dejar el codificador abierto
+          .then(function () { return enc.flush(); }).then(function () {
           if (fallo) throw fallo;
           enc.close(); muxer.finalize();
           return { blob: new Blob([muxer.target.buffer], { type: "video/mp4" }), ext: "mp4", segundos: Math.round(G.DUR) };
