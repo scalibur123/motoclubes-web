@@ -85,7 +85,12 @@
     background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px}
   .espera-video .casco{font-size:46px;animation:latir 1.4s ease-in-out infinite}
   @keyframes latir{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
-  .espera-video .frase{color:#fff;font-weight:700;font-size:16px;min-height:2.6em;transition:opacity .35s}
+  /* VIDEO-FRASES-RESTO-1 (132.ª, Mario 19:28 con captura: «debajo de Repostando aparece una letra que no sé qué es… solo al
+     principio»). La web hereda line-height 1.6: «Calentando el motor…» ocupaba dos líneas (3,2em) y la caja medía como poco
+     2,6em; al pasar a una frase de una línea la caja encogía y Safari dejaba sin borrar el trozo de «motor…» que quedaba fuera.
+     Ahora la caja mide SIEMPRE lo mismo (dos líneas justas) y nada sale de ella. */
+  .espera-video .frase{color:#fff;font-weight:700;font-size:16px;line-height:1.3;height:2.6em;overflow:hidden;display:flex;
+    align-items:center;justify-content:center;text-align:center;transition:opacity .35s}
   .espera-video .barra{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
   .espera-video .barra i{display:block;height:100%;width:0;background:#FF7A1A;transition:width .4s}
   .espera-video .fase{color:var(--texto-2);font-size:13px}
