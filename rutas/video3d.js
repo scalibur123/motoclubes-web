@@ -26,7 +26,13 @@
     // de 4 km por delante, ~24°).
     DELANTE_S: 0.6, DELANTE_KM: 2, ATRAS_S: 0.25, ATRAS_KM: 0.5,
     SUAVE_S: 0.5,     // …y suavizada en el tiempo (±0,5 s, dos pasadas) para que no dé tirones
-    ESPERA_MS: 2000,  // lo más que se espera a que Mapbox acabe un fotograma (luego se graba lo que haya)
+    // VIDEO-3D-ESPERA-1 (131.ª, Mario 09:56: «si está cargando… no puedes empezar con el vídeo»): antes, 2 s y se grababa lo que
+    // hubiera (con datos del móvil, fotogramas a medio pintar). Ahora, primero se recorre la ruta entera SIN grabar para que
+    // Mapbox tenga el mapa y el relieve (PRECARGA_*), y luego cada fotograma espera a estar pintado del todo (ESPERA_MS, solo
+    // un tope de seguridad para no quedarse colgado si se va la red).
+    ESPERA_MS: 20000, // lo más que se espera a que Mapbox acabe un fotograma (después de la precarga casi siempre es al momento)
+    PRECARGA_PASO_S: 0.5, // cada cuánto (en segundos de vídeo) se pone la cámara al recorrer la ruta antes de grabar
+    PRECARGA_MS: 20000,   // lo más que se espera a cada vista de la precarga
     ARRANQUE_MS: 25000, // lo más que se espera a que cargue el mapa al principio (si no, el vídeo de siempre)
     MUXER: "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js", // global Mp4Muxer
     CODECS: ["avc1.640028", "avc1.4d0028", "avc1.42e028"], // H.264 (High, Main, Baseline · nivel 4: 1080×1920 cabe)
@@ -59,7 +65,8 @@
     } catch (e) { return function () {}; } // si el navegador no deja, Mapbox pinta a su densidad y se escala al copiarlo
   }
 
-  function preparar(G, W, H) {
+  function preparar(G, W, H, avisar) { // VIDEO-3D-ESPERA-1: avisar.preparando(n, de) y avisar.cancelado()
+    avisar = avisar || {};
     if (!window.mapboxgl) return Promise.reject(new Error("sin Mapbox"));
     if (typeof mapboxgl.supported === "function" && !mapboxgl.supported()) return Promise.reject(new Error("sin WebGL"));
     if (G.corto) return Promise.reject(new Error("reel corto"));
@@ -147,7 +154,7 @@
       });
     }
     var lentos = 0, ultCam = "", ultKm = "", camPos = null, camF = [0, 0, -1];
-    function ponerFotograma(t) {
+    function ponerFotograma(t, ms) { // ms: lo que se espera a que se pinte (por defecto ESPERA_MS)
       var cam = camara(t), km = G.kmCabeza(t), cambia = false;
       var clave = [cam.c.x.toFixed(9), cam.c.y.toFixed(9), cam.zoom.toFixed(4), cam.pitch.toFixed(2), cam.bearing.toFixed(2), cam.pad.toFixed(1)].join();
       if (clave !== ultCam) {
@@ -162,7 +169,7 @@
         map.getSource("mc-hecho").setData(hecho(km));
         if (G.dest.length) map.getSource("mc-dest").setData(destacado(km));
       }
-      return cambia ? esperar(V3.ESPERA_MS) : Promise.resolve();
+      return cambia ? esperar(ms || V3.ESPERA_MS) : Promise.resolve();
     }
     // Para video.js: dónde cae en el lienzo (1080×1920) un punto Mercator, con el relieve; lo de detrás de la cámara, fuera
     function proy(q) {
@@ -174,6 +181,32 @@
       return { x: s.x * esc, y: s.y * esc };
     }
     function pintar(ctx) { ctx.drawImage(map.getCanvas(), 0, 0, W, H); }
+
+    // VIDEO-3D-ESPERA-1: la ruta entera, de PRECARGA_PASO_S en PRECARGA_PASO_S segundos de vídeo, con la cámara de verdad,
+    // esperando a que cada vista esté cargada. Así, al grabar, el mapa y el relieve ya están en el navegador.
+    function precargar() {
+      var ts = [];
+      for (var t = 0; t < G.DUR; t += V3.PRECARGA_PASO_S) ts.push(t);
+      ts.push(G.DUR);
+      var k = 0, t0 = performance.now(), lentosAntes = lentos;
+      function sig() {
+        if (!map) return Promise.reject(new Error("el mapa 3D se ha cerrado"));
+        if (avisar.cancelado && avisar.cancelado()) { limpiar(); return Promise.reject(new Error("cancelado")); }
+        if (k >= ts.length) {
+          console.log("[video3d] precarga: " + ts.length + " vistas en " + Math.round((performance.now() - t0) / 1000) + " s; sin acabar: " + (lentos - lentosAntes));
+          ultCam = ""; ultKm = ""; // que el primer fotograma de la grabación vuelva a poner la cámara
+          return Promise.resolve();
+        }
+        var cam = camara(ts[k]);
+        map.jumpTo({ center: aLngLat(cam.c), zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing, padding: { top: cam.pad, bottom: 0, left: 0, right: 0 } });
+        return esperar(V3.PRECARGA_MS).then(function () {
+          k++;
+          if (avisar.preparando) avisar.preparando(k, ts.length);
+          return sig();
+        });
+      }
+      return sig();
+    }
 
     function elegirCodec() {
       if (!window.VideoEncoder || !window.VideoFrame || !window.Mp4Muxer) return Promise.resolve(null);
@@ -261,12 +294,15 @@
             map.addLayer({ id: "mc-dest-borde", type: "line", source: "mc-dest", layout: redondo, paint: { "line-color": "#ffffff", "line-width": 13 } });
             map.addLayer({ id: "mc-dest", type: "line", source: "mc-dest", layout: redondo, paint: { "line-color": "#FFC400", "line-width": 8 } });
           } catch (e) { clearTimeout(tiempo); limpiar(); mal(e); return; }
-          ponerFotograma(0).then(function () { return map && esperar(V3.ARRANQUE_MS - 5000); }).then(function () {
+          ponerFotograma(0, V3.ARRANQUE_MS - 5000).then(function () { // VIDEO-3D-ESPERA-1: una sola espera al arrancar (antes 2 s + 20 s)
             if (!map) return; // ya se rindió por tiempo (y se avisó)
             clearTimeout(tiempo);
+            return precargar();
+          }).then(function () {
+            if (!map) return;
             console.log("[video3d] mapa listo, lienzo " + map.getCanvas().width + "×" + map.getCanvas().height + ", " + N + " fotogramas");
             ok({ proy: proy, pintar: pintar, grabar: grabar, limpiar: limpiar });
-          });
+          }).catch(function (e) { limpiar(); mal(e); }); // VIDEO-3D-ESPERA-1: cancelado o fallo en la precarga
         });
       });
     });

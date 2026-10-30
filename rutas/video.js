@@ -155,7 +155,7 @@ var VIDEO_3D = /[?&]video=3d(&|$)/.test(location.search) && !VIDEO_CORTO;
 function cargarVideo3D() {
   if (window.Video3D) return Promise.resolve();
   return new Promise(function (ok, mal) {
-    var s = document.createElement("script"); s.src = "video3d.js?v=1"; // el ?v= se sube con cada cambio de video3d.js
+    var s = document.createElement("script"); s.src = "video3d.js?v=2"; // el ?v= se sube con cada cambio de video3d.js
     s.onload = function () { ok(); }; s.onerror = function () { mal(new Error("video3d.js no carga")); };
     document.head.appendChild(s);
   });
@@ -565,7 +565,8 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     fotosIm = rs.filter(Boolean);
     G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados);
     // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
-    if (VIDEO_3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H); }).then(function (v) { V3D = v; }, function (e) {
+    if (VIDEO_3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H, avisar); }).then(function (v) { V3D = v; }, function (e) {
+      if (avisar.cancelado && avisar.cancelado()) throw e; // VIDEO-3D-ESPERA-1: cerrado a media precarga → no seguir con el de siempre
       console.warn("[video] sin 3D: " + ((e && e.message) || e));
       if (avisar.aviso) avisar.aviso("El vídeo en 3D no se puede hacer aquí: sale el de siempre.");
     });

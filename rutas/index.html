@@ -77,6 +77,18 @@
     display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.4);
     color:#fff;font:700 22px/1 Manrope,system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:rgba(255,122,26,.3)}
   .caja-video p{color:var(--texto-2);font-size:14px;margin:12px 0}
+  /* VIDEO-ESPERA-1 (131.ª, Mario 09:56): mientras se prepara y se graba no se enseña el vídeo a medias; una pantalla de espera
+     con mensajes de motero y, al acabar, el vídeo ya hecho. El lienzo sigue en la página (lo necesita la grabación), debajo. */
+  .caja-video .vista{position:relative}
+  .caja-video .vista canvas.detras{position:absolute;left:50%;top:0;height:100%;width:auto;aspect-ratio:9/16;transform:translateX(-50%);z-index:0;opacity:0}
+  .espera-video{position:relative;z-index:1;aspect-ratio:9/16;max-height:48vh;max-height:48dvh;margin:0 auto;border-radius:12px;
+    background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px}
+  .espera-video .casco{font-size:46px;animation:latir 1.4s ease-in-out infinite}
+  @keyframes latir{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .espera-video .frase{color:#fff;font-weight:700;font-size:16px;min-height:2.6em;transition:opacity .35s}
+  .espera-video .barra{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
+  .espera-video .barra i{display:block;height:100%;width:0;background:#FF7A1A;transition:width .4s}
+  .espera-video .fase{color:var(--texto-2);font-size:13px}
 </style>
 </head>
 <body>
@@ -641,24 +653,50 @@ function pintar(r) {
     var capa = document.createElement("div");
     capa.className = "capa-video";
     capa.innerHTML = '<button type="button" class="cerrar-x" id="xVideo" aria-label="Cerrar">✕</button>' +
-      '<div class="caja-video"><div class="vista" id="vistaVideo"></div><p id="estadoVideo">Preparando el mapa…</p>' +
+      '<div class="caja-video"><div class="vista" id="vistaVideo"><div class="espera-video" id="esperaVideo"><div class="casco">🏍️</div>' +
+      '<div class="frase" id="fraseVideo">Calentando el motor…</div><div class="barra"><i id="barraVideo"></i></div>' +
+      '<div class="fase" id="faseVideo">Preparando · 0 %</div></div></div>' +
+      '<p id="estadoVideo">No cierres esta pantalla: el vídeo sale cuando esté terminado.</p>' +
       '<div class="acciones" id="accVideo" style="justify-content:center"></div></div>';
     document.body.appendChild(capa);
     var estado = document.getElementById("estadoVideo"), vista = document.getElementById("vistaVideo"), acc = document.getElementById("accVideo");
     var cancelado = false; // VIDEO-CERRAR-1: cerrar a media grabación la para (video.js pregunta avisar.cancelado)
-    var cerrar = function () { cancelado = true; capa.remove(); };
+    // VIDEO-ESPERA-1: la pantalla de espera. Fases: cargar (teselas y fotos), preparar el 3D (solo con &video=3d) y montar.
+    var FRASES = {
+      cargar: ["Calentando el motor…", "Poniéndonos los guantes…", "Ajustando los espejos…", "Cargando las fotos del viaje…", "Limpiando la visera…"],
+      preparar: ["Buscando el relieve…", "Subiendo los puertos…", "Midiendo las curvas…", "Mirando el cielo…", "Repostando…"],
+      montar: ["Trazando la ruta…", "Colocando las paradas…", "Pasando por cada curva…", "Montando el vídeo…", "Dándole el último toque…"]
+    };
+    var fase = "cargar", nFrase = 0, con3D = false, tGrab0 = null;
+    var elFrase = document.getElementById("fraseVideo"), elBarra = document.getElementById("barraVideo"), elFase = document.getElementById("faseVideo");
+    function ponerFase(f) { if (fase !== f) { fase = f; nFrase = 0; elFrase.textContent = FRASES[f][0]; } }
+    var reloj = setInterval(function () {
+      nFrase = (nFrase + 1) % FRASES[fase].length;
+      elFrase.style.opacity = 0;
+      setTimeout(function () { elFrase.textContent = FRASES[fase][nFrase]; elFrase.style.opacity = 1; }, 350);
+    }, 3000);
+    function avance(pct, txt) { pct = Math.max(0, Math.min(100, Math.round(pct))); elBarra.style.width = pct + "%"; elFase.textContent = txt + " · " + pct + " %"; }
+    function quedan(seg) { return seg < 60 ? " · menos de 1 min" : " · faltan unos " + Math.round(seg / 60) + " min"; }
+    var cerrar = function () { cancelado = true; clearInterval(reloj); capa.remove(); };
     document.getElementById("xVideo").addEventListener("click", cerrar);
     puertosListos.then(function (ps) {
       return hacerVideoRuta(r, pts, paradas, ps, {
-        cargando: function (n, de) { estado.textContent = "Preparando el mapa… " + n + " de " + de + " · puede tardar un minuto, no cierres esta pantalla"; },
-        lienzo: function (cv) { vista.appendChild(cv); },
-        progreso: function (t, dur) { estado.textContent = "Grabando… " + Math.min(Math.round(t), Math.round(dur)) + " s de " + Math.round(dur); },
+        cargando: function (n, de) { ponerFase("cargar"); avance(15 * n / Math.max(1, de), "Preparando"); },
+        preparando: function (n, de) { con3D = true; ponerFase("preparar"); avance(15 + 30 * n / Math.max(1, de), "Cargando el mapa en 3D"); }, // VIDEO-3D-ESPERA-1
+        lienzo: function (cv) { cv.classList.add("detras"); vista.appendChild(cv); }, // VIDEO-ESPERA-1: debajo de la espera, no se ve
+        progreso: function (t, dur) {
+          ponerFase("montar");
+          if (tGrab0 === null) tGrab0 = performance.now();
+          var base = con3D ? 45 : 15, s = (performance.now() - tGrab0) / 1000;
+          avance(base + (100 - base) * Math.min(t, dur) / Math.max(1, dur), "Montando el vídeo" + (t >= 2 && s > 3 ? quedan((dur - t) * s / t) : ""));
+        },
         cancelado: function () { return cancelado; },
         // VIDEO-DESTACAR-1: si un tramo de «&destacar=» no se encuentra en la ruta, se dice (y el vídeo sale sin él)
         aviso: function (txt) { var pa = document.createElement("p"); pa.className = "aviso-video"; pa.style.cssText = "color:#FFC400;font-weight:700;margin:6px 0 0"; pa.textContent = txt; estado.parentNode.insertBefore(pa, estado.nextSibling); }
       });
     }).then(function (res) {
       if (cancelado) return;
+      clearInterval(reloj); // VIDEO-ESPERA-1: se quita la espera; el vídeo ya hecho la sustituye (vista.innerHTML)
       var urlV = URL.createObjectURL(res.blob);
       var nombre = (r.title || "ruta").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "." + res.ext;
       vista.innerHTML = '<video src="' + urlV + '" controls playsinline autoplay muted loop></video>';
@@ -675,6 +713,7 @@ function pintar(r) {
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     }).catch(function (err) {
       if (cancelado) return;
+      clearInterval(reloj); var esp = document.getElementById("esperaVideo"); if (esp) esp.remove(); // VIDEO-ESPERA-1
       estado.textContent = "No se ha podido hacer el vídeo: " + String((err && err.message) || err);
       acc.innerHTML = '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
@@ -767,7 +806,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=28" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=29" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>
