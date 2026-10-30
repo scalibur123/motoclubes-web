@@ -24,8 +24,10 @@
     // ATRÁS = lo de 0,25 s (0,5 km como poco). Así lo rodado entra por abajo y la carretera sigue hacia arriba, sin girar en
     // cada curva. Probado en una ruta de prueba muy revirada: la estela entra torcida ~16° de mediana (con una media fija
     // de 4 km por delante, ~24°).
-    DELANTE_S: 0.6, DELANTE_KM: 2, ATRAS_S: 0.25, ATRAS_KM: 0.5,
-    SUAVE_S: 0.5,     // …y suavizada en el tiempo (±0,5 s, dos pasadas) para que no dé tirones
+    DELANTE_S: 0.6, DELANTE_KM: 3, ATRAS_S: 0.25, ATRAS_KM: 0.5,
+    SUAVE_S: 1.2,     // …y suavizada en el tiempo (±1,2 s, dos pasadas) para que no dé tirones
+    // 🔄 VIDEO-3D-CAMARA-CALMA-1 (132.ª, Mario: «se va moviendo de derecha a izquierda en función de la dirección del casco, va
+    // entre los valles»): antes ±0,5 s y 2 km por delante; ahora mira 3 km por delante y suaviza ±1,2 s: no sigue cada curva
     // VIDEO-3D-ESPERA-1 (131.ª, Mario 09:56: «si está cargando… no puedes empezar con el vídeo»): antes, 2 s y se grababa lo que
     // hubiera (con datos del móvil, fotogramas a medio pintar). Ahora, primero se recorre la ruta entera SIN grabar para que
     // Mapbox tenga el mapa y el relieve (PRECARGA_*), y luego cada fotograma espera a estar pintado del todo (ESPERA_MS, solo
@@ -154,7 +156,7 @@
     function mezcla(tr, t) {
       if (tr.tipo === "zoom") return tramo(t, tr.a, tr.b);
       if (tr.tipo === "alejar") return 1 - tramo(t, tr.a, tr.b);
-      if (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada" || (tr.tipo === "foto" && tr.km != null)) return 1;
+      if (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada" || tr.tipo === "puerto" || (tr.tipo === "foto" && tr.km != null)) return 1; // VIDEO-PUERTOS-ARRIBA-1
       return 0;
     }
     function camara(t) {

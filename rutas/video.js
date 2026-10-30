@@ -130,6 +130,11 @@ var VIDEO = {
   T_PARADA: 1.6, T_FOTO_PARADA: 2.2, // FOTOS-PARADA-1: el rótulo de la parada en el mapa y cada foto de esa parada
   // 🔄 v5 (Mario: «va muy rápido y no te da tiempo a ver los nombres»): km/15 por segundo, entre 20 y 58 s de dibujo
   DIBUJO_MIN: 20, DIBUJO_MAX: 58, KM_POR_S: 15,
+  // 🆕 VIDEO-PUERTOS-ARRIBA-1 (132.ª, 30-oct · Mario con el primer 3D: «va tan rápido que no ves ningún puerto… si salieran
+  // para arriba y se viera el nombre»): en cada puerto el casco se para T_PUERTO s y el nombre sube en grande; con más de
+  // PUERTOS_PARA puertos solo paran los más altos (los demás enseñan el nombre arriba T_PUERTO_PASO s sin parar).
+  // VIDEO-3D-DESPACIO-1: en 3D la cámara va pegada al casco y la misma velocidad se siente el doble: un tercio más lento.
+  T_PUERTO: 2, T_PUERTO_PASO: 1.6, PUERTOS_PARA: 8, LENTO_3D: 1.5, DIBUJO_MIN_3D: 30, DIBUJO_MAX_3D: 75,
   ESTILO: "outdoors-v12"
 };
 // 🆕 MAPA-SATELITE-1 (15-oct, 109.ª). Mario, con un reel de referencia (vista de satélite, la curva señalada con una flecha
@@ -155,7 +160,7 @@ var VIDEO_3D = /[?&]video=3d(&|$)/.test(location.search) && !VIDEO_CORTO;
 function cargarVideo3D() {
   if (window.Video3D) return Promise.resolve();
   return new Promise(function (ok, mal) {
-    var s = document.createElement("script"); s.src = "video3d.js?v=4"; // el ?v= se sube con cada cambio de video3d.js
+    var s = document.createElement("script"); s.src = "video3d.js?v=5"; // el ?v= se sube con cada cambio de video3d.js
     s.onload = function () { ok(); }; s.onerror = function () { mal(new Error("video3d.js no carga")); };
     document.head.appendChild(s);
   });
@@ -231,7 +236,9 @@ function datosResumen(paradas, puertos) {
     // CENA-EN-PARADA-1, como la app (`contarComer`): el hotel o camping donde también se cena cuenta en «Restaurantes»
     if ((p.w.waypointType === "hotel" || p.w.waypointType === "camping") && p.w.cena === true) cuenta.restaurante = (cuenta.restaurante || 0) + 1;
   });
-  var cuentas = [["hotel", "Hoteles"], ["camping", "Campings"], ["restaurante", "Restaurantes"], ["gasolinera", "Gasolineras"]]
+  // 🆕 VIDEO-SIN-GASOLINERAS-1 (132.ª, Mario: «lo que importa de la ruta son los puertos, las carreteras y los puntos de comida y
+  // de cena… sacar la gasolinera no creo que tenga sentido»): ni en el resumen, ni en el mapa, ni en el letrero de abajo
+  var cuentas = [["hotel", "Hoteles"], ["camping", "Campings"], ["restaurante", "Restaurantes"]]
     .filter(function (c) { return cuenta[c[0]]; }).map(function (c) { return [c[1], String(cuenta[c[0]])]; });
   var lista = puertos.slice().sort(function (a, b) { return a.km - b.km; });
   var npag = Math.max(1, Math.ceil(lista.length / VIDEO_PUERTOS_PAGINA)), porPag = Math.ceil(lista.length / npag);
@@ -241,7 +248,7 @@ function datosResumen(paradas, puertos) {
   return { bajo: bajo, cuentas: cuentas, lista: lista, top: top, paginas: paginas };
 }
 
-function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
+function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
@@ -359,19 +366,30 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   grupos.sort(function (a, b) { return a.km - b.km; });
 
   // Tiempos.
-  var tDibujo = Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
+  var tDibujo = tresD ? Math.max(VIDEO.DIBUJO_MIN_3D, Math.min(VIDEO.DIBUJO_MAX_3D, total * VIDEO.LENTO_3D / VIDEO.KM_POR_S)) // VIDEO-3D-DESPACIO-1
+    : Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
+  // VIDEO-PUERTOS-ARRIBA-1: los puertos en los que se para el casco (todos o, si son muchos, los más altos)
+  var conKmP = VIDEO_SOLO === "linea" || (VIDEO_CORTO && dest.length > 0) ? [] : (puertos || []).filter(function (pu) { return pu.km != null && isFinite(pu.km); });
+  var paraEn = conKmP.length <= VIDEO.PUERTOS_PARA ? conKmP : conKmP.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO.PUERTOS_PARA);
+  var cortes = grupos.map(function (g) { return { km: g.km, g: g }; })
+    .concat(paraEn.map(function (pu) { return { km: Math.max(0, Math.min(total, kmF(pu.km))), pu: pu }; }))
+    .sort(function (a, b) { return a.km - b.km || (a.pu ? 1 : 0) - (b.pu ? 1 : 0); });
   var tramos = []; var t = 0;
   tramos.push({ tipo: "vista", a: t, b: t += VIDEO.T_VISTA });
   tramos.push({ tipo: "zoom", a: t, b: t += VIDEO.T_ZOOM });
   for (var d = 0; d < dias; d++) {
     tramos.push({ tipo: "tarjeta", dia: d, a: t, b: t += VIDEO.T_TARJETA });
     var ult = d === dias - 1, x0 = limites[d], x1 = ult ? total : limites[d + 1]; // revisión: el último día llega hasta el final
-    grupos.forEach(function (g) { // FOTOS-PARADA-1: el día se trocea en cada parada con fotos
-      if (g.km < x0 || (!ult && g.km >= x1)) return;
-      if (g.km > x0) tramos.push({ tipo: "dibujo", dia: d, x0: x0, x1: g.km, a: t, b: t += tDibujo * largoPesado(x0, g.km) / total });
-      tramos.push({ tipo: "parada", dia: d, km: g.km, g: g, a: t, b: t += VIDEO.T_PARADA });
-      g.idxs.forEach(function (i, n) { tramos.push({ tipo: "foto", i: i, km: g.km, dia: d, primera: n === 0, a: t, b: t += VIDEO.T_FOTO_PARADA }); });
-      x0 = g.km;
+    cortes.forEach(function (c) { // FOTOS-PARADA-1: el día se trocea en cada parada con fotos · VIDEO-PUERTOS-ARRIBA-1: y en cada puerto
+      if (c.km < x0 || (!ult && c.km >= x1)) return;
+      if (c.km > x0) tramos.push({ tipo: "dibujo", dia: d, x0: x0, x1: c.km, a: t, b: t += tDibujo * largoPesado(x0, c.km) / total });
+      if (c.pu) tramos.push({ tipo: "puerto", dia: d, km: c.km, pu: c.pu, a: t, b: t += VIDEO.T_PUERTO });
+      else {
+        var g = c.g;
+        tramos.push({ tipo: "parada", dia: d, km: g.km, g: g, a: t, b: t += VIDEO.T_PARADA });
+        g.idxs.forEach(function (i, n) { tramos.push({ tipo: "foto", i: i, km: g.km, dia: d, primera: n === 0, a: t, b: t += VIDEO.T_FOTO_PARADA }); });
+      }
+      x0 = c.km;
     });
     if (x1 > x0) tramos.push({ tipo: "dibujo", dia: d, x0: x0, x1: x1, a: t, b: t += tDibujo * largoPesado(x0, x1) / total }); // VIDEO-DESTACAR-1
   }
@@ -438,7 +456,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
     }
     if (tr.tipo === "vista" || tr.tipo === "zoom") return 0;
     if (tr.tipo === "tarjeta") return limites[tr.dia];
-    if (tr.km != null && (tr.tipo === "parada" || tr.tipo === "foto")) return tr.km; // FOTOS-PARADA-1: quieto en la parada
+    if (tr.km != null && (tr.tipo === "parada" || tr.tipo === "foto" || tr.tipo === "puerto")) return tr.km; // FOTOS-PARADA-1 · VIDEO-PUERTOS-ARRIBA-1: quieto
     if (tr.tipo === "dibujo") { // VIDEO-DESTACAR-1: más despacio en los tramos destacados
       var x0 = tr.x0 != null ? tr.x0 : limites[tr.dia], x1 = tr.x1 != null ? tr.x1 : limites[tr.dia + 1];
       return kmDePeso(x0, x1, largoPesado(x0, x1) * Math.min(1, (t - tr.a) / (tr.b - tr.a)));
@@ -478,17 +496,38 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados) {
   if (!VIDEO_SOLO) paradas.forEach(function (p) { // SOLO-LINEA-1
     if (p.w.waypointType === "puerto" || p.inicio || p.fin) return; // los puertos van aparte; salida y llegada, en las tarjetas
     // v5, Mario: «los puntos de pasada no, porque confunden»: solo paradas de verdad (y los puertos, arriba)
-    if (["gasolinera", "restaurante", "hotel", "camping", "lugar_interes", "mirador"].indexOf(p.w.waypointType) < 0) return;
+    if (["restaurante", "hotel", "camping", "lugar_interes", "mirador"].indexOf(p.w.waypointType) < 0) return; // VIDEO-SIN-GASOLINERAS-1
     var nom = String(p.nombre || "").trim(); if (!nom) return;
     var partes = nom.split(" · ");
     // «N-420a · Falset» → «Falset»: si delante va una carretera, se enseña el pueblo
     var txt = partes.length > 1 && (!p.w.waypointType || /^[A-Z]{1,3}-?\d/.test(partes[0])) ? partes[partes.length - 1] : nom;
     avisos.push({ km: kmF(p.km), txt: p.t.e + " " + txt });
   });
-  if (VIDEO_SOLO !== "linea") puertos.forEach(function (pu) { avisos.push({ km: kmF(pu.km), txt: "🏔️ " + pu.name + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "") }); });
+  // VIDEO-PUERTOS-ARRIBA-1: los puertos ya no van abajo; su nombre sube arriba en grande (cartelPuerto)
   avisos.sort(function (a, b) { return a.km - b.km; });
 
-  return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia,
+  // VIDEO-PUERTOS-ARRIBA-1: el momento en que el casco pasa por cada puerto que NO para (para enseñar su nombre arriba)
+  var pasos = [];
+  if (conKmP.length > paraEn.length) {
+    var resto = conKmP.filter(function (pu) { return paraEn.indexOf(pu) < 0; }).map(function (pu) { return { km: kmF(pu.km), pu: pu }; })
+      .sort(function (a, b) { return a.km - b.km; });
+    var kk = 0;
+    for (var ts = 0; ts <= DUR && kk < resto.length; ts += 1 / 30) {
+      var trs = tramoEn(ts); if (trs.tipo !== "dibujo") continue;
+      var kmA = kmCabeza(ts);
+      while (kk < resto.length && resto[kk].km <= kmA) { pasos.push({ t: ts, pu: resto[kk].pu }); kk++; }
+    }
+  }
+  function cartelPuerto(t) { // → { pu, a (de 0 a 1), sube (de 0 a 1) } o null
+    var tr = tramoEn(t);
+    if (tr.tipo === "puerto") return { pu: tr.pu, a: tramo(t, tr.a, tr.a + 0.3) * (1 - tramo(t, tr.b - 0.3, tr.b)), sube: tramo(t, tr.a, tr.a + 0.55) };
+    if (tr.tipo !== "dibujo") return null;
+    var r = null;
+    pasos.forEach(function (p) { if (t >= p.t && t < p.t + VIDEO.T_PUERTO_PASO) r = p; });
+    return r ? { pu: r.pu, a: tramo(t, r.t, r.t + 0.25) * (1 - tramo(t, r.t + VIDEO.T_PUERTO_PASO - 0.3, r.t + VIDEO.T_PUERTO_PASO)), sube: tramo(t, r.t, r.t + 0.45) } : null;
+  }
+
+  return { fino: fino, M: M, acum: acum, total: total, kmF: kmF, enKm: enKm, dias: dias, limites: limites, nombreDia: nombreDia, cartelPuerto: cartelPuerto,
     noche: noche, zFit: zFit, zDet: zDet, tramos: tramos, tramoEn: tramoEn, DUR: DUR, kmCabeza: kmCabeza, camara: camara, avisos: avisos, DR: DR, captura: captura || null,
     dest: dest, cercania: cercania, corto: corto };
 }
@@ -585,7 +624,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   var minutos = r.moving_time_minutes != null ? r.moving_time_minutes : r.duration_minutes;
   var conAlt = puertos.filter(function (p) { return p.ele != null; });
   var alto = conAlt.reduce(function (a, b) { return !a || b.ele > a.ele ? b : a; }, null);
-  var paradasVideo = paradas.filter(function (p) { return !p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto"; });
+  var paradasVideo = paradas.filter(function (p) { return !p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto" && p.w.waypointType !== "gasolinera"; }); // VIDEO-SIN-GASOLINERAS-1
 
   // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
   // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
@@ -622,12 +661,14 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
     });
   }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
-    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados);
+    var con3D = avisar.tresD != null ? !!avisar.tresD && !VIDEO_CORTO : VIDEO_3D;
+    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, con3D); // VIDEO-3D-DESPACIO-1
     // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
     // VIDEO-3D-ELEGIR-1 (132.ª): el 3D lo elige la persona en la pantalla del vídeo (avisar.tresD); «&video=3d» sigue valiendo
-    if ((avisar.tresD != null ? avisar.tresD && !VIDEO_CORTO : VIDEO_3D)) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H, avisar); }).then(function (v) { V3D = v; }, function (e) {
+    if (con3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H, avisar); }).then(function (v) { V3D = v; }, function (e) {
       if (avisar.cancelado && avisar.cancelado()) throw e; // VIDEO-3D-ESPERA-1: cerrado a media precarga → no seguir con el de siempre
       console.warn("[video] sin 3D: " + ((e && e.message) || e));
+      G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, false); // VIDEO-3D-DESPACIO-1: el de siempre, a su velocidad
       if (avisar.aviso) avisar.aviso("El vídeo en 3D no se puede hacer aquí: sale el de siempre.");
     });
   }).then(function () {
@@ -818,6 +859,27 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           ctx.globalAlpha = 1;
         }
 
+        // 🆕 VIDEO-PUERTOS-ARRIBA-1: el nombre del puerto sale del casco y SUBE hasta arriba, en grande, con su altura
+        var cPu = G.cartelPuerto ? G.cartelPuerto(t) : null;
+        if (cPu && cPu.a > 0.02) {
+          ctx.globalAlpha = cPu.a;
+          var txPu = "🏔️ " + recortar(cPu.pu.name, 30), fPu = 60;
+          do { ctx.font = "800 " + fPu + "px Manrope, system-ui, sans-serif"; fPu -= 2; } while (fPu >= 36 && ctx.measureText(txPu).width + 88 > W - 64);
+          var fPuOk = fPu + 2, wPu = ctx.measureText(txPu).width + 88, hPu = cPu.pu.ele != null ? 168 : 112;
+          var yFin = 440, yIni = Math.max(yFin, Math.min(H - 300, cab.y - 120 - hPu)); // desde encima del casco hasta arriba: debajo de los km, del letrero amarillo y de «Hecho con MOTOCLUBes» (336-406)
+          var yPu = yIni + (yFin - yIni) * cPu.sube, xPu = (W - wPu) / 2;
+          ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 20; ctx.shadowOffsetY = 5;
+          pildora(ctx, xPu, yPu, wPu, hPu, 40, "#7C3AED");
+          ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+          ctx.lineWidth = 6; ctx.strokeStyle = "#fff";
+          ctx.beginPath(); ctx.moveTo(xPu + 40, yPu); ctx.arcTo(xPu + wPu, yPu, xPu + wPu, yPu + hPu, 40); ctx.arcTo(xPu + wPu, yPu + hPu, xPu, yPu + hPu, 40);
+          ctx.arcTo(xPu, yPu + hPu, xPu, yPu, 40); ctx.arcTo(xPu, yPu, xPu + wPu, yPu, 40); ctx.closePath(); ctx.stroke();
+          ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; ctx.font = "800 " + fPuOk + "px Manrope, system-ui, sans-serif";
+          escribir(ctx, txPu, W / 2, yPu + 58, "center");
+          if (cPu.pu.ele != null) { ctx.font = "800 48px Manrope, system-ui, sans-serif"; ctx.fillStyle = "#FFC400"; escribir(ctx, fmtMiles(cPu.pu.ele) + " m", W / 2, yPu + 122, "center"); }
+          ctx.globalAlpha = 1;
+        }
+
         // VIDEO-DESTACAR-1: el letrero del tramo destacado por el que se pasa
         if ((tr.tipo === "dibujo" || tr.tipo === "tramo" || tr.tipo === "ver") && G.dest.length) {
           var dAct = null; G.dest.forEach(function (d) { if (km >= d.a - DESTACAR.BORDE_KM && km <= d.b + DESTACAR.BORDE_KM) dAct = d; });
@@ -855,7 +917,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
             pildora(ctx, 56, 150, wD, 80, 40, "rgba(14,14,14,.78)");
             ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txD, 84, 191);
           }
-        } else if (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada") {
+        } else if (tr.tipo === "tarjeta" || tr.tipo === "dibujo" || tr.tipo === "parada" || tr.tipo === "puerto") {
           var d = tr.dia;
           textoSombra(ctx, (G.dias > 1 ? "DÍA " + (d + 1) + " · " : "") + "km " + fmtMiles(km * kmRuta / G.total), W / 2, 150, "800 60px Manrope, system-ui, sans-serif", "#fff");
         }
