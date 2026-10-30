@@ -75,7 +75,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-hec">✅ Hecho</button></nav>
 <!-- PANEL-CONTESTAR-1 (29-oct, 130.ª · Mario: «tiene que haber un sitio… lo que hago normalmente, que es contestar. Y dentro, foro,
      correo… tengo 9 pestañas»). Una pestaña «Contestar» con tres apartados: el Foro, Te escuchamos y un correo a un rider. -->
 <nav class="pest oculto" id="sub-cont" style="background:#FBF8F4"><button type="button" id="s-for">Foro <span class="n" id="s-n-for">·</span></button><button type="button" id="s-inc">Te escuchamos <span class="n" id="s-n-inc">·</span></button><button type="button" id="s-cor">✉️ Correo a un rider</button></nav>
@@ -286,6 +286,17 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="u-aviso"></div>
   <div class="cifras" id="u-cifras"></div>
   <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
+</main>
+<!-- PANEL-HECHO-1 (30-oct, 131.ª). Mario: «echo de menos una visión general de todo lo hecho en el portal». Todo en una lista, de lo último a lo primero. -->
+<main id="v-hec" class="oculto">
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1" class="partir"><h1>Hecho</h1><div class="sub">Todo lo hecho desde el portal, de lo último a lo primero: correos y avisos, foro, quitados de la lista, invitaciones y llamadas a negocios y notas de contactos. Toca una línea para ir a su ficha.</div></div>
+    <label>CUÁNDO<select id="h-dias"><option value="1">Hoy</option><option value="7" selected>Últimos 7 días</option><option value="30">Últimos 30</option><option value="90">Últimos 90</option></select></label>
+    <label>QUIÉN<select id="h-quien"><option value="mio">Solo lo tuyo</option><option value="todo">También lo automático</option></select></label>
+  </div>
+  <div id="h-aviso"></div>
+  <div class="cifras" id="h-cifras"></div>
+  <div class="card tabla"><table><thead><tr><th>Cuándo</th><th>Qué</th><th>A quién</th><th>Detalle</th><th>Cómo fue</th></tr></thead><tbody id="h-filas"></tbody></table></div>
 </main>
 <!-- FORO-ADMIN-WEB-1 (29-oct, 130.ª). Mario: «desde el móvil ya puedo responder como MOTOCLUBes, pero debería poder hacerlo
      también desde Administración. Todo lo debo poder hacer desde allí». Abre hilos (General, Rutas, Mecánica, Equipamiento) y
@@ -534,7 +545,7 @@ async function entrar() {
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
-  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor', 'hec'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -643,6 +654,7 @@ function verPestana(cual) {
   $('v-gui').classList.toggle('oculto', cual !== 'gui'); $('v-not').classList.toggle('oculto', cual !== 'not') // CONTENIDO-WEB-1
   $('v-con').classList.toggle('oculto', cual !== 'con') // CONTACTOS-1
   $('v-uso').classList.toggle('oculto', cual !== 'uso') // USO-APP-1
+  $('v-hec').classList.toggle('oculto', cual !== 'hec'); $('p-hec').classList.toggle('sel', cual === 'hec') // PANEL-HECHO-1
   $('v-for').classList.toggle('oculto', cual !== 'for') // FORO-ADMIN-WEB-1
 }
 // ── MC-ADMIN-TESTERS-15OCT-2026 (109.ª, INVITAR-LISTA-1) ──
@@ -653,7 +665,7 @@ async function invitar(cuerpo) {
   if (error) { let m = error.message; try { m = (await error.context.json()).error || m } catch (e) {} ; throw new Error(m) }
   return data
 }
-let TESTERS = []
+let TESTERS = [], QUITADOS = []
 // ── TESTERS-AVISOS-1 (17-oct-2026, 112.ª) · Mario: «me cuesta bastante seguirlo […] cuántas solicitudes hay sin haber hecho nada,
 // cuántas ya están tramitadas […] y de esos cuántos han entrado». Cuatro números que se pulsan (Te toca a ti · Dentro · A medias ·
 // Sin pulsar), la fase la da la función (faseTester, la misma regla que el envío automático), «Recordar» y «Mandar ayuda» a uno o
@@ -666,7 +678,7 @@ async function cargarTesters() {
   let resp
   try { resp = await invitar({ modo: 'lista' }); TESTERS = resp.filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
   // QUITAR-LISTA-1: los quitados de la lista, aparte y plegados, con su motivo y su ficha (desde ahí se vuelven a poner)
-  const qs = resp.quitados || []
+  const qs = resp.quitados || []; QUITADOS = qs // PANEL-HECHO-1
   $('t-quitados').style.display = qs.length ? '' : 'none'
   $('t-quitados').innerHTML = qs.length ? `<details><summary style="cursor:pointer;font-weight:800">Quitados de la lista (${qs.length}) <span class="sub" style="font-weight:500">· no cuentan en las cifras</span></summary>
     <div style="margin-top:10px">${qs.map(q => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3">
@@ -1292,7 +1304,7 @@ $('r-filas').onclick = (ev) => {
   const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid')
 }
 let fichaVuelve = 'test'
-$('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else if (fichaVuelve === 'inc') cargarIncidencias(); else cargarRiders() }
+$('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else if (fichaVuelve === 'inc') cargarIncidencias(); else if (fichaVuelve === 'hec') cargarHecho(); else cargarRiders() }
 const dato = (k, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3"><span class="sub">${k}</span><b style="text-align:right">${v}</b></div>`
 const cifra = (n, t) => `<div class="card cifra" style="padding:16px"><b>${n}</b><span>${t}</span></div>`
 // INVITACION-SEGUIMIENTO-1 (15-oct): en qué quedó el correo de la invitación, según Resend (se pregunta al abrir la ficha).
@@ -1878,6 +1890,88 @@ function pintarUso() {
 $('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
 $('u-dias').onchange = () => cargarUso()
 $('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
+// ── PANEL-HECHO-1 (30-oct, 131.ª) · «Hecho»: todo lo hecho desde el portal en una lista ──
+// Sale de lo que ya se guarda: los envíos (mc_envios, por web-invitar-testers «hecho»), el foro (lo escrito como MOTOCLUBes o con tu
+// cuenta), los quitados de la lista, las invitaciones y llamadas de Negocios y las notas de Contactos. Sin SQL nuevo.
+let HECHO = [], hePet = 0
+const heDia = (iso) => String(iso || '').length === 10 ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : fechaHora(iso)
+function heNombre(email) {
+  const e = String(email || '').toLowerCase()
+  if (!e) return ''
+  const r = RIDERS.find(x => String(x.email || '').toLowerCase() === e && x.rider); if (r) return r.rider
+  const c = cands.find(x => String(x.correo || '').toLowerCase() === e); if (c) return c.nombre
+  const k = CONTACTOS.find(x => String(x.correo || '').toLowerCase() === e); if (k) return k.nombre
+  return e
+}
+async function cargarHecho() {
+  const n = ++hePet, dias = Number($('h-dias').value) || 7
+  $('h-aviso').innerHTML = ''; $('h-filas').innerHTML = '<tr><td colspan="5" class="sub">Cargando…</td></tr>'
+  const desde = new Date(Date.now() - dias * 86400000)
+  if (dias === 1) desde.setTime(new Date(new Date().toDateString()).getTime()) // «Hoy» = desde las 00:00
+  const desdeIso = desde.toISOString(), avisos = []
+  if (!RIDERS.length) { try { RIDERS = (await invitar({ modo: 'riders' })).filas || [] } catch (e) { /* sin apodos: sale el correo */ } }
+  if (!foOficial) { const { data } = await sb.rpc('mc_cuenta_oficial'); foOficial = data || null }
+  if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null
+  const yoyos = [foOficial, foYo].filter(Boolean)
+  const [env, hilos, posts] = await Promise.all([
+    invitar({ modo: 'hecho', dias: Math.ceil(dias) }).catch(e => { avisos.push('Los correos y avisos no se han podido cargar: ' + esc(e.message)); return { envios: [] } }),
+    yoyos.length ? sb.from('threads').select('id, user_id, category, title, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(500) : { data: [] },
+    yoyos.length ? sb.from('posts').select('id, user_id, thread_id, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(1000) : { data: [] },
+  ])
+  if (n !== hePet) return
+  if (hilos.error || posts.error) avisos.push('El foro no se ha podido cargar: ' + esc((hilos.error || posts.error).message))
+  // Los títulos de los hilos donde contestaste
+  const tit = {}
+  for (const h of hilos.data || []) tit[h.id] = h.title
+  const faltan = [...new Set((posts.data || []).map(p => p.thread_id))].filter(id => !(id in tit))
+  for (let i = 0; i < faltan.length; i += 100) {
+    const { data } = await sb.from('threads').select('id, title').in('id', faltan.slice(i, i + 100))
+    for (const h of data || []) tit[h.id] = h.title
+  }
+  if (n !== hePet) return
+  const L = [], quien = (uid) => uid === foOficial ? 'como MOTOCLUBes' : 'con tu cuenta'
+  for (const x of env.envios || []) {
+    const neg = x.destino === 'negocio', fuera = x.fuera === 'true'
+    const res = fuera ? '<span class="chip gris">Apuntado (lo mandaste por fuera)</span>'
+      : [x.push ? `<span class="chip verde">📱 ${x.push}</span>` : '', x.correo === 'enviado' ? '<span class="chip verde">✅ Correo enviado</span>' : x.correo === 'fallo' ? '<span class="chip rojo">No salió</span>' : x.correo === 'baja' ? '<span class="chip rojo">Se dio de baja</span>' : ''].filter(Boolean).join(' ') || '<span class="sub">—</span>'
+    const c = neg ? cands.find(y => String(y.correo || '').toLowerCase() === String(x.email).toLowerCase()) : null
+    L.push({ en: x.creado, auto: x.por === 'auto', que: (ENVIO_TXT[x.que] || x.que) + (neg ? ' a negocio' : ''), aQuien: heNombre(x.email), detalle: x.titulo ? '«' + x.titulo + '»' : '', res,
+      abrir: c ? { t: 'neg', id: c.id } : { t: 'ficha', email: x.email } })
+  }
+  for (const h of hilos.data || []) L.push({ en: h.created_at, que: h.category === 'noticias' ? 'Noticia publicada' : 'Hilo nuevo en el foro', aQuien: 'Foro', detalle: '«' + h.title + '» · ' + quien(h.user_id), abrir: { t: 'hilo', id: h.id } })
+  for (const p of posts.data || []) L.push({ en: p.created_at, que: 'Respuesta en el foro', aQuien: 'Foro', detalle: '«' + (tit[p.thread_id] || 'Hilo') + '» · ' + quien(p.user_id), abrir: { t: 'hilo', id: p.thread_id } })
+  for (const q of QUITADOS) L.push({ en: q.quitado_at, que: 'Quitado de la lista', aQuien: heNombre(q.email), detalle: q.quitado_motivo ? '«' + q.quitado_motivo + '»' : '', abrir: { t: 'ficha', email: q.email } })
+  for (const a of ALTAS) if (a.clase === 'invitacion' && a.enviada_en) L.push({ en: a.enviada_en, que: 'Invitación a Rider Friendly', aQuien: a.nombre || '', detalle: a.abierta ? 'Abrió el enlace' : '', res: a.envio_error ? '<span class="chip rojo">No se pudo enviar</span>' : '<span class="chip verde">✅ Enviada</span>', abrir: { t: 'altas' } })
+  for (const c of cands) for (const x of c.historial || []) if (x.en) L.push({ en: x.en, que: 'Llamada a negocio', aQuien: c.nombre, detalle: (EST_TXT[x.estado] || x.estado || '') + (x.notas ? ' · «' + x.notas + '»' : ''), abrir: { t: 'neg', id: c.id } })
+  for (const c of CONTACTOS) for (const x of c.notas || []) if (x.fecha) L.push({ en: x.fecha, que: 'Nota de contacto', aQuien: c.nombre, detalle: x.texto || '', abrir: { t: 'con', id: c.id } })
+  const desdeDia = desdeIso.slice(0, 10)
+  HECHO = L.filter(x => x.en && (String(x.en).length === 10 ? x.en >= desdeDia : new Date(x.en) >= desde))
+    .sort((a, b) => { const fa = String(a.en).length === 10 ? a.en + 'T12:00:00' : a.en, fb = String(b.en).length === 10 ? b.en + 'T12:00:00' : b.en; return new Date(fb) - new Date(fa) })
+  if (avisos.length) $('h-aviso').innerHTML = `<div class="aviso mal">${avisos.join('<br>')}</div>`
+  pintarHecho()
+}
+function pintarHecho() {
+  const todo = $('h-quien').value === 'todo', lista = HECHO.filter(x => todo || !x.auto)
+  const cuenta = (f) => lista.filter(f).length
+  $('h-cifras').innerHTML = [[lista.length, 'En total'], [cuenta(x => /Correo|Aviso|Recordatorio|Ayuda|Invitación|Enlace/.test(x.que) && !/Rider Friendly/.test(x.que)), 'Correos y avisos'], [cuenta(x => /foro|Noticia/i.test(x.que)), 'En el foro'], [cuenta(x => /negocio|Rider Friendly/.test(x.que)), 'Con negocios']]
+    .map(([v, l]) => `<div class="card cifra" style="padding:16px"><b>${v}</b><span>${l}</span></div>`).join('')
+  $('h-filas').innerHTML = lista.slice(0, 1000).map(x => `<tr class="org-fila" data-he="${HECHO.indexOf(x)}"><td class="sub" style="white-space:nowrap">${heDia(x.en)}</td>
+    <td><b>${esc(x.que)}</b>${x.auto ? ' <span class="chip gris">Automático</span>' : ''}</td><td class="partir"><button class="nombre-c">${esc(x.aQuien || '—')}</button></td>
+    <td class="partir sub" style="max-width:380px">${esc(x.detalle || '')}</td><td>${x.res || ''}</td></tr>`).join('')
+    || `<tr><td colspan="5" class="sub">Nada en estos días${todo ? '' : ' (prueba «También lo automático»)'}.</td></tr>`
+}
+$('h-filas').onclick = (ev) => {
+  const tr = ev.target.closest('[data-he]'); if (!tr) return
+  const a = HECHO[Number(tr.dataset.he)]?.abrir; if (!a) return
+  if (a.t === 'ficha') verFicha(a.email, 'hec')
+  else if (a.t === 'neg') { verPestana('cand'); abrirFicha(a.id) }
+  else if (a.t === 'con') { const c = CONTACTOS.find(x => x.id === a.id); verPestana('con'); if (c) abrirContacto(c) }
+  else if (a.t === 'hilo') { verPestana('for'); foAviso(''); abrirHilo(a.id); void cargarForo() }
+  else if (a.t === 'altas') $('p-altas').click()
+}
+$('p-hec').onclick = () => { verPestana('hec'); cargarHecho() }
+$('h-dias').onchange = () => cargarHecho()
+$('h-quien').onchange = () => pintarHecho()
 
 // ── FORO-ADMIN-WEB-1 (29-oct, 130.ª) · hilos y respuestas como MOTOCLUBes ──
 const FO_CAT = { general: 'General', rutas: 'Rutas', mecanica: 'Mecánica', equipamiento: 'Equipamiento', noticias: 'Noticias' }
