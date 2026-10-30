@@ -712,11 +712,38 @@ function pintar(r) {
     };
     var fase = "cargar", nFrase = 0, con3D = false, tGrab0 = null, pctMax = 0, marcas = [];
     var elFrase = document.getElementById("fraseVideo"), elBarra = document.getElementById("barraVideo"), elFase = document.getElementById("faseVideo");
-    function ponerFase(f) { if (fase !== f) { fase = f; nFrase = 0; elFrase.textContent = FRASES[f][0]; } }
+    /* 🆕 VIDEO-FRASES-PISAN-1 (132.ª, Mario 17:51, montando el 3D en el iPhone: «no desaparecen unas y están apareciendo las
+       otras… se pisan»). Antes la nueva entraba a los 0,35 s fijos; con el móvil ocupado pintando, el apagado iba con retraso y
+       la vieja aún se veía. Ahora la nueva entra solo cuando la vieja se ha apagado DEL TODO (fin de la transición, o 1,5 s de
+       tope), tras 0,15 s en blanco; y la siguiente se cuenta desde que la nueva está puesta (nunca dos cambios a la vez). */
+    var cambiando = false, pendiente = null;
+    function cambiarFrase(txt) {
+      if (cambiando) { pendiente = txt; return; }
+      cambiando = true;
+      var hecho = false, tope = null;
+      function visible() { return +getComputedStyle(elFrase).opacity > 0.02; }
+      function apagada(ev) {
+        if (hecho || (ev && ev.propertyName !== "opacity")) return;
+        if (ev && visible()) return; // el final del ENCENDIDO anterior también avisa: ese no vale (prueba 132.ª)
+        if (!ev && visible()) { // tope de 1,5 s y aún se ve: se quita de golpe, nunca dos frases a la vez
+          elFrase.style.transition = "none"; elFrase.style.opacity = 0; void elFrase.offsetWidth; elFrase.style.transition = "";
+        }
+        hecho = true;
+        clearTimeout(tope); elFrase.removeEventListener("transitionend", apagada);
+        setTimeout(function () {
+          elFrase.textContent = txt; elFrase.style.opacity = 1; cambiando = false;
+          if (pendiente !== null) { var p = pendiente; pendiente = null; cambiarFrase(p); }
+        }, 150);
+      }
+      elFrase.addEventListener("transitionend", apagada);
+      tope = setTimeout(apagada, 1500);
+      if (getComputedStyle(elFrase).opacity === "0") apagada(); else elFrase.style.opacity = 0;
+    }
+    function ponerFase(f) { if (fase !== f) { fase = f; nFrase = 0; cambiarFrase(FRASES[f][0]); } }
     var reloj = setInterval(function () {
+      if (cambiando) return; // VIDEO-FRASES-PISAN-1: si aún está cambiando, se salta esta vuelta
       nFrase = (nFrase + 1) % FRASES[fase].length;
-      elFrase.style.opacity = 0;
-      setTimeout(function () { elFrase.textContent = FRASES[fase][nFrase]; elFrase.style.opacity = 1; }, 350);
+      cambiarFrase(FRASES[fase][nFrase]);
     }, 3000);
     function avance(pct, txt) { // la barra nunca va hacia atrás (revisión 131.ª)
       pct = Math.max(pctMax, Math.min(100, Math.round(pct))); pctMax = pct;
