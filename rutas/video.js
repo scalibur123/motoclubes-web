@@ -587,7 +587,10 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       .catch(function () {}).then(function () { hechas++; if (avisar.cargando) avisar.cargando(hechas, lista.length); });
   }
   var cola = null;
-  function trabajador() { var k = cola.shift(); return k ? bajar(k).then(trabajador) : Promise.resolve(); }
+  function trabajador() { // revisión 131.ª: si se cierra la capa, no se sigue bajando mapa (datos del móvil)
+    if (avisar.cancelado && avisar.cancelado()) return Promise.resolve();
+    var k = cola.shift(); return k ? bajar(k).then(trabajador) : Promise.resolve();
+  }
   var bajando = fotosListas.then(function () {
     cola = lista.slice();
     return Promise.all([trabajador(), trabajador(), trabajador(), trabajador(), trabajador(), trabajador()]);
@@ -1014,5 +1017,5 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       }).then(function () { return hecho; }).then(function (blob) {
         return { blob: blob, ext: tipo.indexOf("mp4") >= 0 ? "mp4" : "webm", segundos: Math.round(G.DUR) };
       });
-    });
+    }).catch(function (e) { if (V3D) V3D.limpiar(); throw e; }); // revisión 131.ª: si algo falla, que no quede vivo el mapa 3D escondido
 }

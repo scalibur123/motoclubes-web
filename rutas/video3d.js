@@ -31,6 +31,9 @@
     // Mapbox tenga el mapa y el relieve (PRECARGA_*), y luego cada fotograma espera a estar pintado del todo (ESPERA_MS, solo
     // un tope de seguridad para no quedarse colgado si se va la red).
     ESPERA_MS: 20000, // lo más que se espera a que Mapbox acabe un fotograma (después de la precarga casi siempre es al momento)
+    AGOTADAS_MAX: 3,  // revisión 131.ª: tantas esperas agotadas SEGUIDAS → el mapa no responde y se para (no horas «montando»)
+    NO_RESPONDE: "el mapa 3D no responde (sin conexión o la tarjeta gráfica no da más)",
+    SIN_GRAFICA: "la tarjeta gráfica ha dejado de pintar el mapa 3D",
     PRECARGA_PASO_S: 0.5, // cada cuánto (en segundos de vídeo) se pone la cámara al recorrer la ruta antes de grabar
     PRECARGA_MS: 20000,   // lo más que se espera a cada vista de la precarga
     ARRANQUE_MS: 25000, // lo más que se espera a que cargue el mapa al principio (si no, el vídeo de siempre)
@@ -54,12 +57,21 @@
   /* Mapbox 2.15 no deja elegir la densidad de píxeles del mapa (usa la de la pantalla: 3 en el iPhone, 1 en muchos
      ordenadores). Para que el lienzo de Mapbox mida justo 1080×1920 se le hace creer, mientras dura el vídeo, que la
      pantalla es de 2×; al acabar se deja como estaba y se avisa al mapa de la página para que se vuelva a ajustar. */
+  // Revisión 131.ª: si se cerraba y se volvía a abrir antes de acabar, la segunda guardaba como «de antes» la densidad falsa
+  // de la primera y la página se quedaba a 2× para siempre. Ahora lo de verdad se guarda UNA vez y se cuenta quién lo usa.
+  var dprOriginal = null, dprUsos = 0;
   function forzarDensidad(v) {
     try {
-      var antes = Object.getOwnPropertyDescriptor(window, "devicePixelRatio");
+      if (dprUsos === 0) dprOriginal = { d: Object.getOwnPropertyDescriptor(window, "devicePixelRatio") };
       Object.defineProperty(window, "devicePixelRatio", { get: function () { return v; }, configurable: true });
+      dprUsos++;
+      var hecho = false;
       return function () {
-        try { if (antes) Object.defineProperty(window, "devicePixelRatio", antes); else delete window.devicePixelRatio; } catch (e) {}
+        if (hecho) return; hecho = true;
+        dprUsos = Math.max(0, dprUsos - 1);
+        if (dprUsos > 0) return; // otro vídeo sigue usándolo
+        try { if (dprOriginal && dprOriginal.d) Object.defineProperty(window, "devicePixelRatio", dprOriginal.d); else delete window.devicePixelRatio; } catch (e) {}
+        dprOriginal = null;
         try { window.dispatchEvent(new Event("resize")); } catch (e) {}
       };
     } catch (e) { return function () {}; } // si el navegador no deja, Mapbox pinta a su densidad y se escala al copiarlo
@@ -70,6 +82,8 @@
     if (!window.mapboxgl) return Promise.reject(new Error("sin Mapbox"));
     if (typeof mapboxgl.supported === "function" && !mapboxgl.supported()) return Promise.reject(new Error("sin WebGL"));
     if (G.corto) return Promise.reject(new Error("reel corto"));
+    function cancelado() { return !!(avisar.cancelado && avisar.cancelado()); }
+    if (cancelado()) return Promise.reject(new Error("cancelado"));
     var FPS = VIDEO.FPS, ANCHO = 540, ALTO = 960, esc = W / ANCHO;
     var plano = G.camara(0); // la vista entera del principio (cFit, zFit)
     var vacio = { type: "FeatureCollection", features: [] };
@@ -143,13 +157,30 @@
     var devolver = forzarDensidad(esc), map = null;
     function limpiar() { try { if (map) map.remove(); } catch (e) {} map = null; caja.remove(); devolver(); devolver = function () {}; }
 
+    // Revisión 131.ª: con el tope de 20 s, si el mapa deja de responder (red caída, una tesela atascada o la gráfica colgada,
+    // como en el MacBook Intel) el vídeo podía quedarse «montando» horas. Ahora se corta: gráfica perdida → error al momento;
+    // 3 esperas agotadas SEGUIDAS → error; y cerrar la capa corta también la espera en curso (mira cada 250 ms).
+    var graficaPerdida = false, agotadasSeguidas = 0;
     function esperar(ms) { // a que Mapbox acabe de pintar lo pedido (teselas, relieve, línea) o, como mucho, ms
-      return new Promise(function (ok) {
-        var listo = false, to = null;
-        function fin(porTiempo) { if (listo) return; listo = true; clearTimeout(to); if (map) map.off("idle", alIdle); if (porTiempo) lentos++; ok(); }
+      if (!map) return Promise.reject(new Error("el mapa 3D se ha cerrado"));
+      if (graficaPerdida) return Promise.reject(new Error(V3.SIN_GRAFICA));
+      if (cancelado()) return Promise.reject(new Error("cancelado"));
+      return new Promise(function (ok, mal) {
+        var listo = false, to = null, mira = null;
+        function fin(porTiempo, error) {
+          if (listo) return; listo = true; clearTimeout(to); clearInterval(mira); if (map) map.off("idle", alIdle);
+          if (error) { mal(error); return; }
+          if (porTiempo) { lentos++; agotadasSeguidas++; } else agotadasSeguidas = 0;
+          if (agotadasSeguidas >= V3.AGOTADAS_MAX) { mal(new Error(V3.NO_RESPONDE)); return; }
+          ok();
+        }
         function alIdle() { fin(false); }
         map.on("idle", alIdle);
         to = setTimeout(function () { fin(true); }, ms);
+        mira = setInterval(function () {
+          if (cancelado()) fin(false, new Error("cancelado"));
+          else if (graficaPerdida) fin(false, new Error(V3.SIN_GRAFICA));
+        }, 250);
         map.triggerRepaint();
       });
     }
@@ -191,7 +222,7 @@
       var k = 0, t0 = performance.now(), lentosAntes = lentos;
       function sig() {
         if (!map) return Promise.reject(new Error("el mapa 3D se ha cerrado"));
-        if (avisar.cancelado && avisar.cancelado()) { limpiar(); return Promise.reject(new Error("cancelado")); }
+        if (cancelado()) { limpiar(); return Promise.reject(new Error("cancelado")); }
         if (k >= ts.length) {
           console.log("[video3d] precarga: " + ts.length + " vistas en " + Math.round((performance.now() - t0) / 1000) + " s; sin acabar: " + (lentos - lentosAntes));
           ultCam = ""; ultKm = ""; // que el primer fotograma de la grabación vuelva a poner la cámara
@@ -269,6 +300,7 @@
       if (!codec) { limpiar(); throw new Error("este navegador no graba H.264 con WebCodecs"); }
       codecElegido = codec;
       return new Promise(function (ok, mal) {
+        if (cancelado()) { limpiar(); mal(new Error("cancelado")); return; } // revisión 131.ª: cerrado mientras cargaban las fotos
         var tiempo = setTimeout(function () { limpiar(); mal(new Error("el mapa 3D no carga")); }, V3.ARRANQUE_MS);
         try {
           mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -279,6 +311,7 @@
           });
         } catch (e) { clearTimeout(tiempo); limpiar(); mal(e); return; }
         map.on("error", function (e) { console.warn("[video3d] mapa:", e && e.error ? e.error.message || e.error : e); });
+        map.on("webglcontextlost", function () { graficaPerdida = true; console.warn("[video3d] la tarjeta gráfica ha perdido el mapa"); }); // revisión 131.ª
         map.once("load", function () {
           try {
             map.addSource("mc-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
@@ -294,15 +327,17 @@
             map.addLayer({ id: "mc-dest-borde", type: "line", source: "mc-dest", layout: redondo, paint: { "line-color": "#ffffff", "line-width": 13 } });
             map.addLayer({ id: "mc-dest", type: "line", source: "mc-dest", layout: redondo, paint: { "line-color": "#FFC400", "line-width": 8 } });
           } catch (e) { clearTimeout(tiempo); limpiar(); mal(e); return; }
+          var lentosAntes0 = lentos;
           ponerFotograma(0, V3.ARRANQUE_MS - 5000).then(function () { // VIDEO-3D-ESPERA-1: una sola espera al arrancar (antes 2 s + 20 s)
             if (!map) return; // ya se rindió por tiempo (y se avisó)
             clearTimeout(tiempo);
+            if (lentos > lentosAntes0) throw new Error("el mapa 3D no carga"); // revisión 131.ª: la primera vista no llegó a pintarse
             return precargar();
           }).then(function () {
             if (!map) return;
             console.log("[video3d] mapa listo, lienzo " + map.getCanvas().width + "×" + map.getCanvas().height + ", " + N + " fotogramas");
             ok({ proy: proy, pintar: pintar, grabar: grabar, limpiar: limpiar });
-          }).catch(function (e) { limpiar(); mal(e); }); // VIDEO-3D-ESPERA-1: cancelado o fallo en la precarga
+          }).catch(function (e) { clearTimeout(tiempo); limpiar(); mal(e); }); // VIDEO-3D-ESPERA-1: cancelado o fallo en el arranque o la precarga
         });
       });
     });

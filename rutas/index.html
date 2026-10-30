@@ -80,7 +80,7 @@
   /* VIDEO-ESPERA-1 (131.ª, Mario 09:56): mientras se prepara y se graba no se enseña el vídeo a medias; una pantalla de espera
      con mensajes de motero y, al acabar, el vídeo ya hecho. El lienzo sigue en la página (lo necesita la grabación), debajo. */
   .caja-video .vista{position:relative}
-  .caja-video .vista canvas.detras{position:absolute;left:50%;top:0;height:100%;width:auto;aspect-ratio:9/16;transform:translateX(-50%);z-index:0;opacity:0}
+  .caja-video .vista canvas.detras{position:absolute;left:50%;top:0;height:100%;width:auto;aspect-ratio:9/16;transform:translateX(-50%);z-index:0}
   .espera-video{position:relative;z-index:1;aspect-ratio:9/16;max-height:48vh;max-height:48dvh;margin:0 auto;border-radius:12px;
     background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px}
   .espera-video .casco{font-size:46px;animation:latir 1.4s ease-in-out infinite}
@@ -667,7 +667,7 @@ function pintar(r) {
       preparar: ["Buscando el relieve…", "Subiendo los puertos…", "Midiendo las curvas…", "Mirando el cielo…", "Repostando…"],
       montar: ["Trazando la ruta…", "Colocando las paradas…", "Pasando por cada curva…", "Montando el vídeo…", "Dándole el último toque…"]
     };
-    var fase = "cargar", nFrase = 0, con3D = false, tGrab0 = null;
+    var fase = "cargar", nFrase = 0, con3D = false, tGrab0 = null, pctMax = 0, marcas = [];
     var elFrase = document.getElementById("fraseVideo"), elBarra = document.getElementById("barraVideo"), elFase = document.getElementById("faseVideo");
     function ponerFase(f) { if (fase !== f) { fase = f; nFrase = 0; elFrase.textContent = FRASES[f][0]; } }
     var reloj = setInterval(function () {
@@ -675,8 +675,11 @@ function pintar(r) {
       elFrase.style.opacity = 0;
       setTimeout(function () { elFrase.textContent = FRASES[fase][nFrase]; elFrase.style.opacity = 1; }, 350);
     }, 3000);
-    function avance(pct, txt) { pct = Math.max(0, Math.min(100, Math.round(pct))); elBarra.style.width = pct + "%"; elFase.textContent = txt + " · " + pct + " %"; }
-    function quedan(seg) { return seg < 60 ? " · menos de 1 min" : " · faltan unos " + Math.round(seg / 60) + " min"; }
+    function avance(pct, txt) { // la barra nunca va hacia atrás (revisión 131.ª)
+      pct = Math.max(pctMax, Math.min(100, Math.round(pct))); pctMax = pct;
+      elBarra.style.width = pct + "%"; elFase.textContent = txt + " · " + pct + "\u00a0%";
+    }
+    function quedan(seg) { var m = Math.round(seg / 60); return m < 1 ? " · menos de 1 min" : m === 1 ? " · falta 1 min" : " · faltan unos " + m + " min"; }
     var cerrar = function () { cancelado = true; clearInterval(reloj); capa.remove(); };
     document.getElementById("xVideo").addEventListener("click", cerrar);
     puertosListos.then(function (ps) {
@@ -686,9 +689,13 @@ function pintar(r) {
         lienzo: function (cv) { cv.classList.add("detras"); vista.appendChild(cv); }, // VIDEO-ESPERA-1: debajo de la espera, no se ve
         progreso: function (t, dur) {
           ponerFase("montar");
-          if (tGrab0 === null) tGrab0 = performance.now();
-          var base = con3D ? 45 : 15, s = (performance.now() - tGrab0) / 1000;
-          avance(base + (100 - base) * Math.min(t, dur) / Math.max(1, dur), "Montando el vídeo" + (t >= 2 && s > 3 ? quedan((dur - t) * s / t) : ""));
+          var ahora = performance.now();
+          if (tGrab0 === null) tGrab0 = ahora;
+          // «faltan…» con el ritmo de los últimos ~20 s de reloj (revisión 131.ª: la media desde el principio saltaba mucho)
+          marcas.push([ahora, t]); while (marcas.length > 2 && ahora - marcas[0][0] > 20000) marcas.shift();
+          var dS = (ahora - marcas[0][0]) / 1000, dT = t - marcas[0][1];
+          var base = con3D ? 45 : 15;
+          avance(base + (100 - base) * Math.min(t, dur) / Math.max(1, dur), "Montando el vídeo" + ((ahora - tGrab0) > 5000 && dT > 0 && dS > 3 ? quedan((dur - t) * dS / dT) : ""));
         },
         cancelado: function () { return cancelado; },
         // VIDEO-DESTACAR-1: si un tramo de «&destacar=» no se encuentra en la ruta, se dice (y el vídeo sale sin él)
