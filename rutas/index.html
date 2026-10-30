@@ -92,6 +92,15 @@
   /* VIDEO-GRANDE-1 (131.ª, Mario 10:54 «¿cómo puedo verlo en grande? también se ve pequeño en el ordenador»): ya hecho, el vídeo
      ocupa casi todo el alto de la pantalla (en el ordenador y en el móvil) y hay un botón para verlo a pantalla completa. */
   .caja-video.terminado{max-width:min(96vw,620px)}
+  /* VIDEO-3D-ELEGIR-1 (132.ª): plano o 3D, a la vista antes de empezar */
+  .elige-video{display:grid;gap:12px;margin-top:14px}
+  .elige-video button{display:flex;gap:14px;align-items:center;text-align:left;width:100%;padding:16px;border-radius:14px;cursor:pointer;
+    background:rgba(255,255,255,.04);border:2px solid var(--borde);color:var(--texto);font:inherit}
+  .elige-video button:hover,.elige-video button:focus-visible{border-color:#FF7A1A}
+  .elige-video .ico{font-size:34px;line-height:1}
+  .elige-video b{display:block;font-size:17px;margin-bottom:3px}
+  .elige-video small{display:block;color:var(--texto-2);font-size:13px;line-height:1.35}
+  .elige-video .ligero{color:#FFC400;margin-top:4px}
   .caja-video.terminado .vista video{max-height:68vh;max-height:68dvh}
 </style>
 </head>
@@ -651,9 +660,39 @@ function pintar(r) {
   // 🆕 VIDEO-RUTA-1: el vídeo vertical para Instagram (video.js). Se ve el lienzo mientras se graba y al acabar se descarga
   // o, en el iPhone, se comparte directamente (menú del sistema → Instagram).
   var hv = document.getElementById("hacerVideo");
+  // 🆕 VIDEO-3D-ELEGIR-1 (132.ª, 30-oct). Mario: «quiero el vídeo en 2D y 3D, a elegir». Al pulsar, dos opciones a la vista:
+  // en plano (el de siempre) o en 3D. Con «&video=3d» en el enlace va directo al 3D; con «&corto=1» o «&video=6», al plano.
   if (hv) hv.addEventListener("click", function (e) {
     e.preventDefault();
     if (typeof hacerVideoRuta !== "function") return;
+    var q = location.search;
+    if (/[?&]video=3d(&|$)/.test(q)) arrancarVideo(true);
+    else if (/[?&](corto=1|video=6)(&|$)/.test(q)) arrancarVideo(false);
+    else elegirVideo();
+  });
+  function elegirVideo() {
+    var capa = document.createElement("div");
+    capa.className = "capa-video";
+    capa.innerHTML = '<button type="button" class="cerrar-x" aria-label="Cerrar">✕</button>' +
+      '<div class="caja-video"><h2 style="margin:4px 0 2px;font-size:20px">¿Cómo quieres el vídeo?</h2>' +
+      '<div class="elige-video">' +
+        '<button type="button" data-tresd="0"><span class="ico">🗺️</span><span><b>En plano</b>' +
+          '<small>El mapa desde arriba, la ruta dibujándose con tus paradas y fotos. Sale en un momento.</small></span></button>' +
+        '<button type="button" data-tresd="1"><span class="ico">⛰️</span><span><b>En 3D, con relieve</b>' +
+          '<small>La cámara detrás del casco, subiendo los puertos con las montañas de verdad. Tarda unos minutos.</small>' +
+          '<small class="ligero" hidden>En este ordenador va en modo ligero, para no forzar la tarjeta gráfica: tarda más.</small></span></button>' +
+      '</div></div>';
+    document.body.appendChild(capa);
+    capa.querySelector(".cerrar-x").addEventListener("click", function () { capa.remove(); });
+    Array.prototype.forEach.call(capa.querySelectorAll(".elige-video button"), function (b) {
+      b.addEventListener("click", function () { capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1"); });
+    });
+    // VIDEO-3D-LIGERO-1: si la gráfica es floja (o no se sabe), se avisa ANTES de elegir
+    if (typeof cargarVideo3D === "function") cargarVideo3D().then(function () {
+      if (window.Video3D && Video3D.graficaFloja && Video3D.graficaFloja()) { var l = capa.querySelector(".ligero"); if (l) l.hidden = false; }
+    }).catch(function () {});
+  }
+  function arrancarVideo(tresD) {
     var capa = document.createElement("div");
     capa.className = "capa-video";
     capa.innerHTML = '<button type="button" class="cerrar-x" id="xVideo" aria-label="Cerrar">✕</button>' +
@@ -702,6 +741,7 @@ function pintar(r) {
           avance(base + (100 - base) * Math.min(t, dur) / Math.max(1, dur), "Montando el vídeo" + ((ahora - tGrab0) > 5000 && dT > 0 && dS > 3 ? quedan((dur - t) * dS / dT) : ""));
         },
         cancelado: function () { return cancelado; },
+        tresD: tresD, // VIDEO-3D-ELEGIR-1
         // VIDEO-DESTACAR-1: si un tramo de «&destacar=» no se encuentra en la ruta, se dice (y el vídeo sale sin él)
         aviso: function (txt) { var pa = document.createElement("p"); pa.className = "aviso-video"; pa.style.cssText = "color:#FFC400;font-weight:700;margin:6px 0 0"; pa.textContent = txt; estado.parentNode.insertBefore(pa, estado.nextSibling); }
       });
@@ -737,10 +777,13 @@ function pintar(r) {
       if (cancelado) return;
       clearInterval(reloj); var esp = document.getElementById("esperaVideo"); if (esp) esp.remove(); // VIDEO-ESPERA-1
       estado.textContent = "No se ha podido hacer el vídeo: " + String((err && err.message) || err);
-      acc.innerHTML = '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
+      acc.innerHTML = (tresD ? '<a class="boton boton-principal" href="#" id="enPlano">🗺️ Hacerlo en plano</a>' : "") + // VIDEO-3D-LIGERO-1
+        '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
+      var ep = document.getElementById("enPlano");
+      if (ep) ep.addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); arrancarVideo(false); });
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     });
-  });
+  }
 
   // 🆕 VIDEO-DESDE-APP-1 (18-oct, 115.ª · RUTAS-COMUNIDAD-1): la app abre esta página con «&hacer=video» desde el botón
   // «🎬 Vídeo para publicar» de la ficha; el vídeo empieza solo (el «Compartir» del final sí lo pulsa la persona).
@@ -828,7 +871,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=31" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=32" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>

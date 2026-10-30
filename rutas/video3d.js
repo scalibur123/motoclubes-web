@@ -39,8 +39,41 @@
     ARRANQUE_MS: 25000, // lo más que se espera a que cargue el mapa al principio (si no, el vídeo de siempre)
     MUXER: "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js", // global Mp4Muxer
     CODECS: ["avc1.640028", "avc1.4d0028", "avc1.42e028"], // H.264 (High, Main, Baseline · nivel 4: 1080×1920 cabe)
-    BITRATE: 8000000
+    BITRATE: 8000000,
+    /* 🆕 VIDEO-3D-LIGERO-1 (132.ª, 30-oct). El 30-oct el 3D colgó el MacBook Pro de Mario (Intel UHD Graphics 630: «toda la
+       pantalla parecía Matrix, tuve que apagar»). El mapa 3D se pintaba a 1080×1920 con bordes suavizados (antialias), cielo,
+       inclinación de 65° (mucho horizonte = muchas teselas) y un fotograma detrás de otro sin parar: la gráfica integrada
+       no descansaba nunca. MODO LIGERO, solo donde la gráfica es floja o no se sabe (graficaFloja()):
+       · el mapa se pinta a 720×1280 (44 % de los píxeles) y se estira a 1080×1920; lo de encima (casco, letreros, km,
+         fotos) lo sigue pintando video.js a tamaño completo, nítido;
+       · sin antialias, sin cielo, inclinación de 55° (menos horizonte que cargar) y caché de teselas limitada;
+       · RESPIRO_MS de descanso entre fotograma y fotograma (y entre vista y vista de la precarga);
+       · si un fotograma tarda más de LENTO_MS, LENTOS_MAX veces seguidas, se para con aviso (antes de que se cuelgue). */
+    LIGERO: { DENSIDAD: 4 / 3, PITCH: 55, RESPIRO_MS: 120, CACHE: 120, LENTO_MS: 6000, LENTOS_MAX: 4 },
+    PESADO: "la gráfica de este ordenador va muy justa con el 3D: hazlo en plano o desde el móvil"
   };
+  /* VIDEO-3D-LIGERO-1: ¿gráfica floja (o desconocida)? Con «&ligero=1» o «&ligero=0» en el enlace se fuerza (para probar).
+     · Chrome/Edge/Firefox dicen el modelo: Intel (UHD, HD, Iris), por software (SwiftShader, llvmpipe) o móviles viejos → floja.
+     · Safari en el Mac dice siempre «Apple GPU», sea un M1 o un Intel UHD 630: no se puede saber → ligero (lo seguro).
+     · iPhone y iPad («Apple GPU» con pantalla táctil), Apple M, NVIDIA, AMD → completo. */
+  function graficaFloja() {
+    var m = location.search.match(/[?&]ligero=(0|1)(?:&|$)/);
+    if (m) return m[1] === "1";
+    var rend = "";
+    try {
+      var c = document.createElement("canvas"), gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+      if (!gl) return true;
+      var dbg = gl.getExtension("WEBGL_debug_renderer_info");
+      rend = String(dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || "");
+      var lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext(); // no dejar el contexto de la prueba abierto
+    } catch (e) { return true; }
+    var ordenadorMac = /Macintosh/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1);
+    console.log("[video3d] gráfica: " + (rend || "¿?") + (ordenadorMac ? " (Mac)" : ""));
+    if (/Intel|SwiftShader|llvmpipe|Software|Mesa|Mali-[4T]|Adreno \(TM\) [2-5]\d\d/i.test(rend)) return true;
+    if (/Apple M\d|NVIDIA|GeForce|Radeon|AMD/i.test(rend)) return false;
+    if (/^Apple GPU$/i.test(rend.trim())) return ordenadorMac; // Safari: en el Mac no se sabe cuál es → ligero
+    return true; // lo que no se conoce, ligero
+  }
   var FUERA = { x: -99999, y: -99999 }; // lo que queda detrás de la cámara (no se pinta)
 
   function cargarScript(src) {
@@ -85,6 +118,9 @@
     function cancelado() { return !!(avisar.cancelado && avisar.cancelado()); }
     if (cancelado()) return Promise.reject(new Error("cancelado"));
     var FPS = VIDEO.FPS, ANCHO = 540, ALTO = 960, esc = W / ANCHO;
+    var LIG = avisar.ligero != null ? (avisar.ligero ? V3.LIGERO : null) : (graficaFloja() ? V3.LIGERO : null); // VIDEO-3D-LIGERO-1
+    var PITCH = LIG ? LIG.PITCH : V3.PITCH, RESPIRO = LIG ? LIG.RESPIRO_MS : 0;
+    console.log("[video3d] modo " + (LIG ? "LIGERO" : "completo"));
     var plano = G.camara(0); // la vista entera del principio (cFit, zFit)
     var vacio = { type: "FeatureCollection", features: [] };
     function linea(coords) { return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } }; }
@@ -129,7 +165,7 @@
       return {
         c: { x: plano.c.x + (cab.x - plano.c.x) * m, y: plano.c.y + (cab.y - plano.c.y) * m },
         zoom: plano.z + (z3 - plano.z) * m,
-        pitch: V3.PITCH * m * m, // se inclina tarde al acercarse (y pronto al alejarse): de lejos no hace falta cargar el horizonte
+        pitch: PITCH * m * m, // se inclina tarde al acercarse (y pronto al alejarse): de lejos no hace falta cargar el horizonte
         bearing: rb * m, pad: V3.PAD * m
       };
     }
@@ -154,7 +190,7 @@
     var caja = document.createElement("div");
     caja.style.cssText = "position:fixed;left:-20000px;top:0;width:" + ANCHO + "px;height:" + ALTO + "px;pointer-events:none";
     document.body.appendChild(caja);
-    var devolver = forzarDensidad(esc), map = null;
+    var devolver = forzarDensidad(LIG ? LIG.DENSIDAD : esc), map = null; // VIDEO-3D-LIGERO-1: ligero, 720×1280
     function limpiar() { try { if (map) map.remove(); } catch (e) {} map = null; caja.remove(); devolver(); devolver = function () {}; }
 
     // Revisión 131.ª: con el tope de 20 s, si el mapa deja de responder (red caída, una tesela atascada o la gráfica colgada,
@@ -230,7 +266,7 @@
         }
         var cam = camara(ts[k]);
         map.jumpTo({ center: aLngLat(cam.c), zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing, padding: { top: cam.pad, bottom: 0, left: 0, right: 0 } });
-        return esperar(V3.PRECARGA_MS).then(function () {
+        return esperar(V3.PRECARGA_MS).then(function () { return RESPIRO ? dormir(RESPIRO) : null; }).then(function () { // VIDEO-3D-LIGERO-1
           k++;
           if (avisar.preparando) avisar.preparando(k, ts.length);
           return sig();
@@ -254,7 +290,16 @@
     function grabar(cv, cuadro, avisar) {
       var total = Math.ceil(G.DUR * FPS), t0 = performance.now();
       function cancelado() { return avisar.cancelado && avisar.cancelado(); }
-      function fotograma(i) { var t = Math.min(i / FPS, G.DUR); return ponerFotograma(t).then(function () { cuadro(t); return t; }); }
+      var lentosSeg = 0; // VIDEO-3D-LIGERO-1: fotogramas muy lentos seguidos (la gráfica no da más) → se para con aviso
+      function fotograma(i) {
+        var t = Math.min(i / FPS, G.DUR), a = performance.now();
+        return ponerFotograma(t).then(function () {
+          if (LIG) {
+            if (performance.now() - a > LIG.LENTO_MS) { if (++lentosSeg >= LIG.LENTOS_MAX) throw new Error(V3.PESADO); } else lentosSeg = 0;
+          }
+          cuadro(t); return t;
+        });
+      }
       var fin = function (r) {
         console.log("[video3d] " + (total + 1) + " fotogramas en " + Math.round((performance.now() - t0) / 1000) + " s; sin acabar de pintar: " + lentos);
         limpiar(); return r;
@@ -284,7 +329,8 @@
           });
         }
         function libre() { // deja respirar a la página (el aviso de progreso) y no amontona fotogramas en el codificador
-          return dormir(0).then(function () { return enc.encodeQueueSize > 4 ? dormir(15).then(libre) : null; });
+          return dormir(RESPIRO).then(function () { // VIDEO-3D-LIGERO-1: RESPIRO en ligero, también para la gráfica
+            return enc.encodeQueueSize > 4 ? dormir(15).then(libre) : null; });
         }
         return paso().catch(function (e) { try { if (enc.state !== "closed") enc.close(); } catch (x) {} throw e; }) // revisión 131.ª: no dejar el codificador abierto
           .then(function () { return enc.flush(); }).then(function () {
@@ -308,7 +354,9 @@
           map = new mapboxgl.Map({
             container: caja, style: "mapbox://styles/mapbox/" + VIDEO.ESTILO, // MAPA-SATELITE-1 también vale aquí
             center: aLngLat(plano.c), zoom: plano.z, pitch: 0, bearing: 0,
-            interactive: false, attributionControl: false, preserveDrawingBuffer: true, fadeDuration: 0, antialias: true, trackResize: false
+            interactive: false, attributionControl: false, preserveDrawingBuffer: true, fadeDuration: 0, trackResize: false,
+            antialias: !LIG, renderWorldCopies: false, // VIDEO-3D-LIGERO-1: sin suavizado de bordes en ligero
+            maxTileCacheSize: LIG ? LIG.CACHE : null
           });
         } catch (e) { clearTimeout(tiempo); limpiar(); mal(e); return; }
         map.on("error", function (e) { console.warn("[video3d] mapa:", e && e.error ? e.error.message || e.error : e); });
@@ -317,7 +365,9 @@
           try {
             map.addSource("mc-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
             map.setTerrain({ source: "mc-dem", exaggeration: V3.EXAGERA });
-            map.addLayer({ id: "mc-cielo", type: "sky", paint: { "sky-type": "atmosphere", "sky-atmosphere-sun": [0, 75], "sky-atmosphere-sun-intensity": 12 } });
+            // VIDEO-3D-LIGERO-1: en ligero, el cielo en degradado (más barato que la atmósfera); que nunca quede hueco transparente
+            map.addLayer({ id: "mc-cielo", type: "sky", paint: LIG ? { "sky-type": "gradient", "sky-gradient": ["interpolate", ["linear"], ["sky-radial-progress"], 0.8, "#8ec5ff", 1, "#dcecff"] }
+              : { "sky-type": "atmosphere", "sky-atmosphere-sun": [0, 75], "sky-atmosphere-sun-intensity": 12 } });
             map.addSource("mc-ruta", { type: "geojson", data: linea(todo) });
             map.addSource("mc-hecho", { type: "geojson", data: vacio });
             map.addSource("mc-dest", { type: "geojson", data: vacio });
@@ -344,5 +394,5 @@
     });
   }
 
-  window.Video3D = { preparar: preparar, V3: V3 };
+  window.Video3D = { preparar: preparar, V3: V3, graficaFloja: graficaFloja };
 })();
