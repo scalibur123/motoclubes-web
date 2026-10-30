@@ -155,7 +155,7 @@ var VIDEO_3D = /[?&]video=3d(&|$)/.test(location.search) && !VIDEO_CORTO;
 function cargarVideo3D() {
   if (window.Video3D) return Promise.resolve();
   return new Promise(function (ok, mal) {
-    var s = document.createElement("script"); s.src = "video3d.js?v=2"; // el ?v= se sube con cada cambio de video3d.js
+    var s = document.createElement("script"); s.src = "video3d.js?v=3"; // el ?v= se sube con cada cambio de video3d.js
     s.onload = function () { ok(); }; s.onerror = function () { mal(new Error("video3d.js no carga")); };
     document.head.appendChild(s);
   });
