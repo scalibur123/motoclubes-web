@@ -1306,7 +1306,14 @@ async function verFicha(email, vuelve) {
       (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
       (w.plataforma === 'android' ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
         (!c && w.confirmado_at && w.quiere_probar && !w.baja_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
-      dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '')
+      dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '') +
+      // QUITAR-LISTA-1 (131.ª, Mario 11:15): quitarlo de la lista con un motivo (no se borra, no cuenta en las cifras, se puede volver a poner)
+      (w.quitado_at
+        ? dato('Quitado de la lista', fechaHora(w.quitado_at) + (w.quitado_motivo ? ' · «' + esc(w.quitado_motivo) + '»' : '')) +
+          `<div style="text-align:right;margin-top:10px"><button class="btn3" id="fq-volver">Volver a ponerlo en la lista</button></div>`
+        : `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #EFEAE3"><label class="sub" style="display:block;margin-bottom:6px">Quitarlo de la lista (no se borra y deja de contar en las cifras)</label>
+          <input type="text" id="fq-motivo" maxlength="200" placeholder="Por qué: entró con otro correo, se cansó de esperar…" style="width:100%;box-sizing:border-box">
+          <div style="text-align:right;margin-top:8px"><button class="btn3" id="fq-quitar">Quitar de la lista</button></div></div>`)
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
       dato('Versión', esc(verApp(p?.app_version, p?.app_build))) +
@@ -1367,6 +1374,15 @@ $('f-cuerpo').onclick = (ev) => {
   if (ev.target.closest('#f-play') && FICHA) {
     ev.target.disabled = true
     mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
+    return
+  }
+  // QUITAR-LISTA-1: quitar (con el motivo escrito a la vista) o volver a poner
+  if ((ev.target.closest('#fq-quitar') || ev.target.closest('#fq-volver')) && FICHA?.web) {
+    const quitar = !!ev.target.closest('#fq-quitar'), motivo = quitar ? ($('fq-motivo')?.value || '').trim() : ''
+    ev.target.disabled = true
+    invitar({ modo: 'quitar', email: FICHA.web.email, quitar, motivo })
+      .then(async () => { await verFicha(FICHA.email, fichaVuelve); tAviso(quitar ? '✅ Quitado de la lista. Ya no cuenta en las cifras ni se le escribe.' : '✅ Vuelve a estar en la lista.', true) })
+      .catch((e) => { ev.target.disabled = false; tAviso('No se ha podido: ' + esc(e.message)) })
     return
   }
   if (ev.target.closest('#f-correo-rider') && FICHA) return abrirCorreo(FICHA.perfil?.nickname || FICHA.email, FICHA.email, null, 'rider') // CORREO-SOPORTE-1: también desde la ficha
