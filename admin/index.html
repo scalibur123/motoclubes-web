@@ -1881,7 +1881,7 @@ $('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
 
 // ── FORO-ADMIN-WEB-1 (29-oct, 130.ª) · hilos y respuestas como MOTOCLUBes ──
 const FO_CAT = { general: 'General', rutas: 'Rutas', mecanica: 'Mecánica', equipamiento: 'Equipamiento', noticias: 'Noticias' }
-let FO = [], foYo = null, foOficial = null, foNombres = {}, foAbierto = null, foPet = 0
+let FO = [], foYo = null, foOficial = null, foNombres = {}, foAbierto = null, foPet = 0, foAtendidos = {} // FORO-ATENDIDO-1: hilo → cuándo lo marcaste «No hace falta contestar»
 const foAviso = (t, bien) => { $('fo-aviso').innerHTML = t ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${t}</div>` : '' }
 const foQuien = (id) => id && id === foOficial ? '<b style="color:var(--od)">MOTOCLUBes</b>' : esc(foNombres[id] || 'Rider')
 const foTexto = (t) => `<div style="white-space:pre-wrap;line-height:1.5;font-size:14px">${esc(t || '')}</div>`
@@ -1918,12 +1918,17 @@ async function cargarForo(soloCifra) {
     if ((data || []).length >= 1000) cortado = true
     posts.push(...(data || []))
   }
+  // FORO-ATENDIDO-1: los que marcaste «No hace falta contestar». Si falla (o aún no está en la base), se sigue como antes.
+  const { data: ats } = await sb.rpc('mc_admin_hilos_atendidos')
   if (n !== foPet) return
+  foAtendidos = Object.fromEntries((ats || []).map(a => [a.thread_id, a.atendido_at]))
   FO = hilos.map(h => {
     const suyos = posts.filter(p => p.thread_id === h.id).sort((a, b) => a.created_at < b.created_at ? -1 : 1)
     const ult = suyos[suyos.length - 1] || { user_id: h.user_id, created_at: h.created_at }
     // Una noticia sin comentarios no está «por contestar»: la escribió MOTOCLUBes.
-    return Object.assign({}, h, { ultimoDe: ult.user_id, ultimoEn: ult.created_at, respuestas: suyos.length, pend: ult.user_id !== foOficial && ult.user_id !== foYo })
+    const sinContestar = ult.user_id !== foOficial && ult.user_id !== foYo
+    const at = foAtendidos[h.id], atendido = !!at && sinContestar && new Date(at) >= new Date(ult.created_at) // vuelve a «Por contestar» si alguien escribe después
+    return Object.assign({}, h, { ultimoDe: ult.user_id, ultimoEn: ult.created_at, respuestas: suyos.length, atendido, pend: sinContestar && !atendido })
   }).sort((a, b) => a.ultimoEn < b.ultimoEn ? 1 : -1)
   $('n-for').textContent = String(FO.filter(h => h.pend).length)
   if (soloCifra) return
@@ -1935,7 +1940,7 @@ async function cargarForo(soloCifra) {
 function pintarForo() {
   const cat = $('fo-cat').value
   const lista = FO.filter(h => cat === 'pend' ? h.pend : !cat || h.category === cat)
-  $('fo-filas').innerHTML = lista.map(h => `<tr class="org-fila" data-hilo="${esc(h.id)}"><td class="partir"><button class="nombre-c">${esc(h.title)}</button>${h.pend ? ' <span class="chip amar">Por contestar</span>' : ''}</td>
+  $('fo-filas').innerHTML = lista.map(h => `<tr class="org-fila" data-hilo="${esc(h.id)}"><td class="partir"><button class="nombre-c">${esc(h.title)}</button>${h.pend ? ' <span class="chip amar">Por contestar</span> <button type="button" class="btn2" data-atendido="1" style="padding:3px 9px;font-size:12px">✓ No hace falta contestar</button>' : h.atendido ? ' <span class="chip gris">✓ No hacía falta contestar</span>' : ''}</td>
     <td><span class="chip gris">${esc(FO_CAT[h.category] || h.category)}</span></td><td>${foQuien(h.user_id)}</td>
     <td class="sub" data-v="${esc(h.ultimoEn)}">${fechaHora(h.ultimoEn)} · ${foQuien(h.ultimoDe)}</td><td>${h.respuestas}</td></tr>`).join('')
     || `<tr><td colspan="5" class="sub">${cat === 'pend' ? 'Nada por contestar. 👍' : 'No hay hilos.'}</td></tr>`
@@ -1959,9 +1964,21 @@ async function abrirHilo(id) {
     ${(ps || []).map(p => msg(p.user_id, p.created_at, p.body)).join('') || '<div class="sub">Aún no hay respuestas.</div>'}
     <div class="card" style="display:flex;flex-direction:column;gap:10px"><label>TU RESPUESTA<textarea id="fo-resp" rows="6"></textarea></label>
     <label class="check"><input type="checkbox" id="fo-como" checked> Contestar como MOTOCLUBes <span class="sub" style="font-weight:500">(si la quitas, sale con tu cuenta)</span></label>
-    <div style="display:flex;justify-content:flex-end"><button class="btn" id="fo-enviar">Contestar</button></div></div>`
+    <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><span id="fo-at-sitio"></span><button class="btn" id="fo-enviar">Contestar</button></div></div>`
   $('fo-volver').onclick = () => { if (foPuedeSalir()) verForoLista() }
   $('fo-enviar').onclick = () => contestarHilo(id)
+  pintarBotonAtendido(id)
+}
+function pintarBotonAtendido(id) { // FORO-ATENDIDO-1: solo el botón, sin tocar la respuesta que estás escribiendo
+  if (foAbierto !== id || !$('fo-at-sitio')) return
+  $('fo-at-sitio').innerHTML = foBotonAtendido(id)
+  if ($('fo-atendido')) $('fo-atendido').onclick = () => marcarAtendido(id, $('fo-atendido').dataset.si === '1')
+}
+function foBotonAtendido(id) { // FORO-ATENDIDO-1
+  const h = FO.find(x => x.id === id)
+  if (h?.pend) return '<button type="button" class="btn2" id="fo-atendido" data-si="1">✓ No hace falta contestar</button>'
+  if (h?.atendido) return '<button type="button" class="btn2" id="fo-atendido" data-si="0">↩ Ponerlo otra vez en «Por contestar»</button>'
+  return ''
 }
 function verForoLista() { foAbierto = null; $('fo-hilo').classList.add('oculto'); $('fo-hilo').innerHTML = ''; $('fo-lista').classList.remove('oculto'); pintarForo() }
 // Una respuesta a medio escribir no se tira sin preguntar (revisión 130.ª)
@@ -1995,7 +2012,25 @@ $('fo-f-publicar').onclick = async () => {
   await cargarForo(); if (data?.id) await abrirHilo(data.id)
   foAviso(`✅ Publicado en ${FO_CAT[cat]}, ${como ? 'firmado por MOTOCLUBes' : 'con tu cuenta'}.`, true)
 }
-$('fo-filas').onclick = (ev) => { const tr = ev.target.closest('[data-hilo]'); if (tr) abrirHilo(tr.dataset.hilo) }
+$('fo-filas').onclick = (ev) => { const tr = ev.target.closest('[data-hilo]'); if (!tr) return; if (ev.target.closest('[data-atendido]')) return marcarAtendido(tr.dataset.hilo, true); abrirHilo(tr.dataset.hilo) }
+// FORO-ATENDIDO-1: «✓ No hace falta contestar» lo saca de «Por contestar» hasta que alguien escriba algo nuevo. Se puede deshacer.
+async function marcarAtendido(id, si) {
+  const h = FO.find(x => x.id === id), titulo = h ? esc(h.title) : 'El hilo'
+  // Se marca hasta el último mensaje que tenías delante: si llega otro mientras lo lees, sigue «Por contestar».
+  const { error } = await sb.rpc('mc_admin_hilo_atendido', { p_hilo: id, p_atendido: si, p_visto: h?.ultimoEn || null })
+  if (error) return foAviso('No se ha podido guardar: ' + esc(error.message))
+  if (h) { // al momento, sin volver a pintar el hilo abierto (no se toca lo que estás escribiendo)
+    const sinContestar = h.ultimoDe !== foOficial && h.ultimoDe !== foYo
+    if (si) foAtendidos[id] = h.ultimoEn; else delete foAtendidos[id]
+    h.atendido = si && sinContestar; h.pend = sinContestar && !h.atendido
+    $('n-for').textContent = String(FO.filter(x => x.pend).length)
+  }
+  if (!foAbierto) pintarForo()
+  pintarBotonAtendido(id)
+  foAviso(si ? `«${titulo}» ya no sale en «Por contestar». Si alguien escribe algo nuevo, vuelve a salir. <button type="button" class="btn2" id="fo-deshacer" style="padding:3px 9px;font-size:12px">Deshacer</button>` : `«${titulo}» vuelve a estar en «Por contestar».`, true)
+  if (si && $('fo-deshacer')) $('fo-deshacer').onclick = () => marcarAtendido(id, false)
+  cargarForo(!!foAbierto).then(() => pintarBotonAtendido(id)) // y se pide de nuevo a la base, por si alguien ha escrito
+}
 $('fo-cat').onchange = () => { if (foAbierto && !foPuedeSalir()) return; verForoLista() }
 $('p-for').onclick = () => { if (foAbierto && !foPuedeSalir()) return verPestana('for'); verPestana('for'); foAviso(''); verForoLista(); $('fo-filas').innerHTML = '<tr><td colspan="5" class="sub">Cargando…</td></tr>'; cargarForo() }
 
