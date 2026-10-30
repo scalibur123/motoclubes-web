@@ -213,6 +213,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="t-filtro"></div><!-- TESTERS-AVISOS-1: qué se está viendo y quitar el filtro -->
   <div class="card" id="t-grupo" style="padding:16px 22px;display:none"></div><!-- TESTERS-AVISOS-1: «Recordar a los N» / «Mandar ayuda a los N», encima de esas filas -->
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
+  <div class="card" id="t-quitados" style="padding:16px 22px;display:none"></div><!-- QUITAR-LISTA-1: los quitados, aparte, para abrir su ficha y volver a ponerlos -->
 </main>
 <main id="v-rid" class="oculto">
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
@@ -662,7 +663,15 @@ const ORDEN_FASE = { te_toca: 0, a_medias: 1, sin_pulsar: 2, dentro: 3 }
 let filtroFase = null, filtroOrigen = null
 try { const g = JSON.parse(sessionStorage.getItem('mc_filtro_sol') || '{}'); filtroFase = g.f || null; filtroOrigen = g.o || null } catch (e) {} // SIGUE-DONDE-ESTABAS-1
 async function cargarTesters() {
-  try { TESTERS = (await invitar({ modo: 'lista' })).filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
+  let resp
+  try { resp = await invitar({ modo: 'lista' }); TESTERS = resp.filas || [] } catch (e) { return tAviso('No se ha podido cargar la lista: ' + esc(e.message)) }
+  // QUITAR-LISTA-1: los quitados de la lista, aparte y plegados, con su motivo y su ficha (desde ahí se vuelven a poner)
+  const qs = resp.quitados || []
+  $('t-quitados').style.display = qs.length ? '' : 'none'
+  $('t-quitados').innerHTML = qs.length ? `<details><summary style="cursor:pointer;font-weight:800">Quitados de la lista (${qs.length}) <span class="sub" style="font-weight:500">· no cuentan en las cifras</span></summary>
+    <div style="margin-top:10px">${qs.map(q => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3">
+      <button class="nombre-c t-ficha" data-email="${esc(q.email)}">${esc(q.email)}</button>
+      <span class="sub" style="text-align:right">${q.quitado_motivo ? '«' + esc(q.quitado_motivo) + '» · ' : ''}${fecha(q.quitado_at)}</span></div>`).join('')}</div></details>` : ''
   if (TESTERS.length && !('fase' in TESTERS[0])) tAviso('Falta desplegar la función nueva (web-invitar-testers): los números no se pueden calcular.')
   pintarTesters()
 }
@@ -1005,6 +1014,7 @@ async function pintarInvitan() {
 // descargado la app»): el estado de cada invitado con la misma regla que Solicitudes; «Te toca» solo cuando de verdad te toca.
 function estadoInvitado(i) {
   if (i.tiene_app) return '<span class="chip verde">Ya tiene la app</span>'
+  if (i.quitado_at) return `<span class="chip gris">Quitado de la lista${i.quitado_motivo ? ' · ' + esc(i.quitado_motivo) : ''}</span>` // QUITAR-LISTA-1
   if (i.baja_at) return '<span class="chip rojo">Se dio de baja</span>'
   if (!i.confirmado_at) return '<span class="chip amar">Sin la app · no confirmó su correo</span>'
   if (i.fase === 'te_toca' && i.motivo === 'play') return '<span class="chip amar" style="white-space:normal">Sin la app · te toca: alta en Play</span>'
@@ -1305,14 +1315,16 @@ async function verFicha(email, vuelve) {
       (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
       (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
       (w.plataforma === 'android' ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
-        (!c && w.confirmado_at && w.quiere_probar && !w.baja_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
+        (!c && w.confirmado_at && w.quiere_probar && !w.baja_at && !w.quitado_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '') +
       // QUITAR-LISTA-1 (131.ª, Mario 11:15): quitarlo de la lista con un motivo (no se borra, no cuenta en las cifras, se puede volver a poner)
       (w.quitado_at
         ? dato('Quitado de la lista', fechaHora(w.quitado_at) + (w.quitado_motivo ? ' · «' + esc(w.quitado_motivo) + '»' : '')) +
           `<div style="text-align:right;margin-top:10px"><button class="btn3" id="fq-volver">Volver a ponerlo en la lista</button></div>`
         : `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #EFEAE3"><label class="sub" style="display:block;margin-bottom:6px">Quitarlo de la lista (no se borra y deja de contar en las cifras)</label>
-          <input type="text" id="fq-motivo" maxlength="200" placeholder="Por qué: entró con otro correo, se cansó de esperar…" style="width:100%;box-sizing:border-box">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${['Entró con otro correo', 'Se cansó de esperar', 'Está repetido', 'No contesta', 'Ya no quiere probarla'].map(m =>
+            `<button type="button" class="btn3 fq-sug" data-m="${esc(m)}" style="padding:4px 10px;font-size:12px">${esc(m)}</button>`).join('')}</div>
+          <input type="text" id="fq-motivo" maxlength="200" placeholder="Escribe el motivo o toca uno de arriba y cámbialo" style="width:100%;box-sizing:border-box">
           <div style="text-align:right;margin-top:8px"><button class="btn3" id="fq-quitar">Quitar de la lista</button></div></div>`)
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', movilTxt(p?.app_platform)) +
@@ -1376,6 +1388,7 @@ $('f-cuerpo').onclick = (ev) => {
     mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
     return
   }
+  const sug = ev.target.closest('.fq-sug'); if (sug && $('fq-motivo')) { $('fq-motivo').value = sug.dataset.m; $('fq-motivo').focus(); return } // QUITAR-LISTA-1: rellena; se puede cambiar
   // QUITAR-LISTA-1: quitar (con el motivo escrito a la vista) o volver a poner
   if ((ev.target.closest('#fq-quitar') || ev.target.closest('#fq-volver')) && FICHA?.web) {
     const quitar = !!ev.target.closest('#fq-quitar'), motivo = quitar ? ($('fq-motivo')?.value || '').trim() : ''
@@ -1403,6 +1416,7 @@ $('a-anadir').onclick = async () => {
   await cargarTesters()
 }
 // INVITAR-UNO-1 (15-oct, Mario): «al lado se pone un botón de invitar, lo pulso y voy viendo cómo funciona»
+$('t-quitados').onclick = (ev) => { const fi = ev.target.closest('.t-ficha'); if (fi) verFicha(fi.dataset.email, 'test') } // QUITAR-LISTA-1
 $('t-filas').onclick = async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'test')
   const pl = ev.target.closest('.t-play'); if (pl) { pl.disabled = true; await mandarPlay(pl.dataset.email); return cargarTesters() }
