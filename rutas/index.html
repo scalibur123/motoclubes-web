@@ -89,6 +89,10 @@
   .espera-video .barra{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
   .espera-video .barra i{display:block;height:100%;width:0;background:#FF7A1A;transition:width .4s}
   .espera-video .fase{color:var(--texto-2);font-size:13px}
+  /* VIDEO-GRANDE-1 (131.ª, Mario 10:54 «¿cómo puedo verlo en grande? también se ve pequeño en el ordenador»): ya hecho, el vídeo
+     ocupa casi todo el alto de la pantalla (en el ordenador y en el móvil) y hay un botón para verlo a pantalla completa. */
+  .caja-video.terminado{max-width:min(96vw,620px)}
+  .caja-video.terminado .vista video{max-height:68vh;max-height:68dvh}
 </style>
 </head>
 <body>
@@ -707,10 +711,21 @@ function pintar(r) {
       var urlV = URL.createObjectURL(res.blob);
       var nombre = (r.title || "ruta").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "." + res.ext;
       vista.innerHTML = '<video src="' + urlV + '" controls playsinline autoplay muted loop></video>';
+      var cajaV = vista.closest(".caja-video"); if (cajaV) cajaV.classList.add("terminado"); // VIDEO-GRANDE-1
       estado.textContent = res.ext === "mp4" ? "Listo. Súbelo a tus redes (Instagram, TikTok…) y ponle música allí." :
         "Listo, pero este navegador lo guarda en WebM y las redes lo quieren en MP4: hazlo desde Safari.";
       acc.innerHTML = '<a class="boton boton-principal" href="' + urlV + '" download="' + nombre + '">⬇ Descargar vídeo</a>' +
+        '<a class="boton boton-suave" href="#" id="grandeVideo">⛶ Verlo en grande</a>' + // VIDEO-GRANDE-1
         '<a class="boton boton-suave" href="#" id="compVideo" hidden>Compartir</a><a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
+      document.getElementById("grandeVideo").addEventListener("click", function (ev) { // VIDEO-GRANDE-1: pantalla completa (iPhone: la suya)
+        ev.preventDefault();
+        var v = vista.querySelector("video"); if (!v) return;
+        try {
+          if (v.requestFullscreen) v.requestFullscreen().catch(function () { if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); });
+          else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+          else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+        } catch (e) {}
+      });
       var fich = new File([res.blob], nombre, { type: res.blob.type });
       var comp = document.getElementById("compVideo");
       if (navigator.canShare && navigator.canShare({ files: [fich] })) {
