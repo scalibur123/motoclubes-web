@@ -516,6 +516,65 @@ function urlTesela(k) {
 }
 
 /* ------------------------------------------------------------------ el vídeo */
+// VIDEO-SIN-SALTOS-1 (131.ª): graba el lienzo fotograma a fotograma con WebCodecs (H.264) + mp4-muxer, cada uno con su hora exacta.
+// Devuelve null si este navegador no puede (y entonces se graba como antes). `cuadro(t)` pinta el fotograma del segundo t.
+var MP4_MUXER = "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js"; // el mismo que el 3D (global Mp4Muxer)
+function cargarMuxer() {
+  if (window.Mp4Muxer) return Promise.resolve(true);
+  return new Promise(function (ok) {
+    var s = document.createElement("script"); s.src = MP4_MUXER; s.async = true;
+    s.onload = function () { ok(!!window.Mp4Muxer); }; s.onerror = function () { ok(false); };
+    document.head.appendChild(s);
+  });
+}
+function codecH264(W, H, FPS) {
+  if (!window.VideoEncoder || !window.VideoFrame) return Promise.resolve(null);
+  var lista = ["avc1.640028", "avc1.4d0028", "avc1.42e028"], k = 0; // High, Main, Baseline · nivel 4 (cabe 1080×1920)
+  function sig() {
+    if (k >= lista.length) return Promise.resolve(null);
+    var c = lista[k++];
+    return VideoEncoder.isConfigSupported({ codec: c, width: W, height: H, bitrate: 8000000, framerate: FPS })
+      .then(function (r) { return r && r.supported ? c : sig(); }, sig);
+  }
+  return sig();
+}
+function grabarExacto(cv, cuadro, avisar, DUR) {
+  var W = cv.width, H = cv.height, FPS = VIDEO.FPS;
+  return codecH264(W, H, FPS).then(function (codec) {
+    if (!codec) return null;
+    return cargarMuxer().then(function (hay) {
+      if (!hay) return null;
+      var muxer, enc, fallo = null;
+      try {
+        muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: "avc", width: W, height: H, frameRate: FPS }, fastStart: "in-memory" });
+        enc = new VideoEncoder({ output: function (ch, meta) { muxer.addVideoChunk(ch, meta); }, error: function (e) { fallo = e; } });
+        enc.configure({ codec: codec, width: W, height: H, bitrate: 8000000, framerate: FPS, avc: { format: "avc" } });
+      } catch (e) { console.warn("[video] WebCodecs no arranca, se graba como antes:", e); return null; }
+      console.log("[video] grabación exacta " + codec);
+      var total = Math.ceil(DUR * FPS), i = 0, primero = true;
+      function libre() { return new Promise(function (ok) { setTimeout(ok, 0); }).then(function () { return enc.encodeQueueSize > 4 ? new Promise(function (ok) { setTimeout(ok, 15); }).then(libre) : null; }); }
+      function cerrar() { try { if (enc.state !== "closed") enc.close(); } catch (e) {} }
+      function paso() {
+        if (avisar.cancelado && avisar.cancelado()) { cerrar(); return Promise.reject(new Error("cancelado")); }
+        if (fallo) { cerrar(); return Promise.reject(fallo); }
+        var t = Math.min(i / FPS, DUR);
+        cuadro(t);
+        if (primero) { primero = false; if (avisar.lienzo) avisar.lienzo(cv); }
+        var fr = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+        enc.encode(fr, { keyFrame: i % (FPS * 2) === 0 }); fr.close();
+        if (avisar.progreso) avisar.progreso(t, DUR);
+        i++;
+        if (i > total) return Promise.resolve();
+        return libre().then(paso);
+      }
+      return paso().then(function () { return enc.flush(); }).then(function () {
+        if (fallo) throw fallo;
+        cerrar(); muxer.finalize();
+        return { blob: new Blob([muxer.target.buffer], { type: "video/mp4" }), ext: "mp4", segundos: Math.round(DUR) };
+      });
+    });
+  });
+}
 function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   avisar = avisar || {};
   var W = VIDEO.W, H = VIDEO.H;
@@ -983,6 +1042,17 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
       // VIDEO-3D-1: en 3D cada fotograma espera a que Mapbox lo acabe y se graba con su hora exacta (video3d.js)
       if (V3D) return V3D.grabar(cv, cuadro, avisar);
+      // 🆕 VIDEO-SIN-SALTOS-1 (131.ª, Mario 11:16 con un vídeo: «va a saltos al principio, no me gusta, pasa siempre»). Con
+      // MediaRecorder cada fotograma lleva la HORA DEL RELOJ en que se entrega: si uno tarda en pintarse (el acercamiento del
+      // principio pinta muchas teselas de dos niveles), el vídeo se queda quieto y luego salta. Ahora, donde se puede (Chrome,
+      // Edge, Safari 16.4+ en Mac y iPhone), cada fotograma se codifica con su hora EXACTA (i/30 s) con WebCodecs, como el 3D:
+      // tarde lo que tarde en pintarse, el vídeo sale fluido. Donde no, como antes. La pantalla de espera tapa la grabación.
+      return grabarExacto(cv, cuadro, avisar, G.DUR).then(function (r) { return r || alReloj(); }, function (e) {
+        if (avisar.cancelado && avisar.cancelado()) throw e;
+        console.warn("[video] la grabación exacta ha fallado, se graba como antes:", e); // que nunca se quede sin vídeo
+        return alReloj();
+      });
+      function alReloj() {
       var tipo = tipoGrabacion();
       if (!tipo || !cv.captureStream) throw new Error("Este navegador no sabe grabar vídeo. Prueba con Safari.");
       // v5 · «va a trompicones»: antes el tiempo del vídeo era el del reloj, y si un fotograma tardaba, el siguiente saltaba.
@@ -1017,5 +1087,6 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
       }).then(function () { return hecho; }).then(function (blob) {
         return { blob: blob, ext: tipo.indexOf("mp4") >= 0 ? "mp4" : "webm", segundos: Math.round(G.DUR) };
       });
+      } // alReloj
     }).catch(function (e) { if (V3D) V3D.limpiar(); throw e; }); // revisión 131.ª: si algo falla, que no quede vivo el mapa 3D escondido
 }
