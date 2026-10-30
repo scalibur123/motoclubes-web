@@ -134,7 +134,10 @@ var VIDEO = {
   // para arriba y se viera el nombre»): en cada puerto el casco se para T_PUERTO s y el nombre sube en grande; con más de
   // PUERTOS_PARA puertos solo paran los más altos (los demás enseñan el nombre arriba T_PUERTO_PASO s sin parar).
   // VIDEO-3D-DESPACIO-1: en 3D la cámara va pegada al casco y la misma velocidad se siente el doble: un tercio más lento.
-  T_PUERTO: 2, T_PUERTO_PASO: 1.6, PUERTOS_PARA: 8, LENTO_3D: 1.5, DIBUJO_MIN_3D: 30, DIBUJO_MAX_3D: 75,
+  T_PUERTO: 2, T_PUERTO_PASO: 1.6, PUERTOS_PARA: 8,
+  // 🔄 VIDEO-3D-RAPIDO-1 (132.ª, Mario 19:40: «queda fantástico… ¿podría ir un poquito más rápida la moto para que no se haga tan
+  // largo?»): de un tercio más lento (×1,5, 30-75 s) a un 20 % (×1,2, 25-65 s). Y parar en los puertos se elige (casilla).
+  LENTO_3D: 1.2, DIBUJO_MIN_3D: 25, DIBUJO_MAX_3D: 65,
   ESTILO: "outdoors-v12"
 };
 // 🆕 MAPA-SATELITE-1 (15-oct, 109.ª). Mario, con un reel de referencia (vista de satélite, la curva señalada con una flecha
@@ -248,7 +251,7 @@ function datosResumen(paradas, puertos) {
   return { bajo: bajo, cuentas: cuentas, lista: lista, top: top, paginas: paginas };
 }
 
-function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD) {
+function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, pararPuertos) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
@@ -370,7 +373,7 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD) {
     : Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
   // VIDEO-PUERTOS-ARRIBA-1: los puertos en los que se para el casco (todos o, si son muchos, los más altos)
   var conKmP = VIDEO_SOLO === "linea" || (VIDEO_CORTO && dest.length > 0) ? [] : (puertos || []).filter(function (pu) { return pu.km != null && isFinite(pu.km); });
-  var paraEn = conKmP.length <= VIDEO.PUERTOS_PARA ? conKmP : conKmP.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO.PUERTOS_PARA);
+  var paraEn = pararPuertos === false ? [] /* VIDEO-PUERTOS-ELEGIR-1: sin parar, todos suben sin detenerse */ : conKmP.length <= VIDEO.PUERTOS_PARA ? conKmP : conKmP.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO.PUERTOS_PARA);
   var cortes = grupos.map(function (g) { return { km: g.km, g: g }; })
     .concat(paraEn.map(function (pu) { return { km: Math.max(0, Math.min(total, kmF(pu.km))), pu: pu }; }))
     .sort(function (a, b) { return a.km - b.km || (a.pu ? 1 : 0) - (b.pu ? 1 : 0); });
@@ -662,13 +665,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
     var con3D = avisar.tresD != null ? !!avisar.tresD && !VIDEO_CORTO : VIDEO_3D;
-    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, con3D); // VIDEO-3D-DESPACIO-1
+    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, con3D, avisar.pararPuertos); // VIDEO-3D-DESPACIO-1 · VIDEO-PUERTOS-ELEGIR-1
     // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
     // VIDEO-3D-ELEGIR-1 (132.ª): el 3D lo elige la persona en la pantalla del vídeo (avisar.tresD); «&video=3d» sigue valiendo
     if (con3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H, avisar); }).then(function (v) { V3D = v; }, function (e) {
       if (avisar.cancelado && avisar.cancelado()) throw e; // VIDEO-3D-ESPERA-1: cerrado a media precarga → no seguir con el de siempre
       console.warn("[video] sin 3D: " + ((e && e.message) || e));
-      G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, false); // VIDEO-3D-DESPACIO-1: el de siempre, a su velocidad
+      G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, false, avisar.pararPuertos); // VIDEO-3D-DESPACIO-1: el de siempre, a su velocidad
       if (avisar.aviso) avisar.aviso("El vídeo en 3D no se puede hacer aquí: sale el de siempre.");
     });
   }).then(function () {

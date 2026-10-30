@@ -106,6 +106,9 @@
   .elige-video b{display:block;font-size:17px;margin-bottom:3px}
   .elige-video small{display:block;color:var(--texto-2);font-size:13px;line-height:1.35}
   .elige-video .ligero{color:#FFC400;margin-top:4px}
+  /* VIDEO-PUERTOS-ELEGIR-1 (132.ª): la casilla de parar en los puertos, a la vista antes de elegir */
+  .elige-puertos{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;font-size:15px;color:var(--texto);cursor:pointer}
+  .elige-puertos input{width:22px;height:22px;accent-color:#FF7A1A}
   .caja-video.terminado .vista video{max-height:68vh;max-height:68dvh}
 </style>
 </head>
@@ -686,18 +689,25 @@ function pintar(r) {
         '<button type="button" data-tresd="1"><span class="ico">⛰️</span><span><b>En 3D, con relieve</b>' +
           '<small>La cámara detrás del casco, subiendo los puertos con las montañas de verdad. Tarda unos minutos.</small>' +
           '<small class="ligero" hidden>En este ordenador va en modo ligero, para no forzar la tarjeta gráfica: tarda más.</small></span></button>' +
-      '</div></div>';
+      '</div>' +
+      '<label class="elige-puertos" hidden><input type="checkbox" id="paraPuertos" checked> 🏔️ Parar en cada puerto</label>' + // VIDEO-PUERTOS-ELEGIR-1
+      '</div>';
     document.body.appendChild(capa);
     capa.querySelector(".cerrar-x").addEventListener("click", function () { capa.remove(); });
+    // VIDEO-PUERTOS-ELEGIR-1: la casilla solo si la ruta tiene puertos
+    puertosListos.then(function (ps) { var lb = capa.querySelector(".elige-puertos"); if (lb && ps && ps.length) lb.hidden = false; });
     Array.prototype.forEach.call(capa.querySelectorAll(".elige-video button"), function (b) {
-      b.addEventListener("click", function () { capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1"); });
+      b.addEventListener("click", function () {
+        var cb = document.getElementById("paraPuertos"), parar = cb ? cb.checked : true; // VIDEO-PUERTOS-ELEGIR-1
+        capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1", parar);
+      });
     });
     // VIDEO-3D-LIGERO-1: si la gráfica es floja (o no se sabe), se avisa ANTES de elegir
     if (typeof cargarVideo3D === "function") cargarVideo3D().then(function () {
       if (window.Video3D && Video3D.graficaFloja && Video3D.graficaFloja()) { var l = capa.querySelector(".ligero"); if (l) l.hidden = false; }
     }).catch(function () {});
   }
-  function arrancarVideo(tresD) {
+  function arrancarVideo(tresD, pararPuertos) {
     var capa = document.createElement("div");
     capa.className = "capa-video";
     capa.innerHTML = '<button type="button" class="cerrar-x" id="xVideo" aria-label="Cerrar">✕</button>' +
@@ -774,6 +784,7 @@ function pintar(r) {
         },
         cancelado: function () { return cancelado; },
         tresD: tresD, // VIDEO-3D-ELEGIR-1
+        pararPuertos: pararPuertos !== false, // VIDEO-PUERTOS-ELEGIR-1 (por defecto, sí)
         // VIDEO-DESTACAR-1: si un tramo de «&destacar=» no se encuentra en la ruta, se dice (y el vídeo sale sin él)
         aviso: function (txt) { var pa = document.createElement("p"); pa.className = "aviso-video"; pa.style.cssText = "color:#FFC400;font-weight:700;margin:6px 0 0"; pa.textContent = txt; estado.parentNode.insertBefore(pa, estado.nextSibling); }
       });
@@ -812,7 +823,7 @@ function pintar(r) {
       acc.innerHTML = (tresD ? '<a class="boton boton-principal" href="#" id="enPlano">🗺️ Hacerlo en plano</a>' : "") + // VIDEO-3D-LIGERO-1
         '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
       var ep = document.getElementById("enPlano");
-      if (ep) ep.addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); arrancarVideo(false); });
+      if (ep) ep.addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); arrancarVideo(false, pararPuertos); });
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     });
   }
@@ -903,7 +914,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=33" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=34" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>
