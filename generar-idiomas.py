@@ -305,6 +305,10 @@ def generar(destino, dic, codigo, locale):
     s = s.replace('<meta property="og:locale" content="es">', f'<meta property="og:locale" content="{locale}">')
     s = s.replace('href="https://www.motoclubes.es/"><link rel="alternate" hreflang="x-default"',
                   'href="https://www.motoclubes.es/"><link rel="alternate" hreflang="x-default"')
+    # SEO-1 (133.ª, 31-oct): cada idioma es su propia página canónica. Antes /fr/ y /pt/ decían a Google que eran copia de
+    # la portada en castellano (canonical a «/») y Google no las guardaba.
+    s = s.replace('<link rel="canonical" href="https://www.motoclubes.es/">',
+                  f'<link rel="canonical" href="https://www.motoclubes.es/{codigo}/">')
     s = s.replace('<meta property="og:url" content="https://www.motoclubes.es/">',
                   f'<meta property="og:url" content="https://www.motoclubes.es/{codigo}/">')
     # Enlaces relativos: desde /fr/ y /pt/ hay que subir un nivel.

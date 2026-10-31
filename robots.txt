@@ -1,0 +1,12 @@
+# MOTOCLUBes · SEO-1 (31-oct-2026)
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /negocio/
+Disallow: /planificar/
+Disallow: /reset-password/
+Disallow: /baja/
+Disallow: /confirm/
+Disallow: /invitacion/
+
+Sitemap: https://www.motoclubes.es/sitemap.xml
