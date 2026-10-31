@@ -52,14 +52,14 @@ PAGINAS = [
                       "por el intercomunicador y sigue guiándote con el móvil en el bolsillo.",
         "tarjetas": [
             ("brujula", "Elige cómo quieres rodar", "Rápida, por curvas o por pista, con o sin peajes. Y a mitad de camino, «desde aquí, rápida» si se te hace tarde."),
-            ("voz", "La voz, en el casco", "Indicaciones cortas y claras por tu intercomunicador o tus auriculares, sin cortarte la música."),
+            ("voz", "La voz, en el casco", "Indicaciones cortas y claras por tu intercomunicador o tus auriculares, también mientras escuchas música."),
             ("vivo", "Con el móvil bloqueado", "La navegación sigue con el GPS activo aunque el teléfono vaya en el bolsillo o con la pantalla apagada."),
             ("pin", "Radares y límite de velocidad", "Te avisa de los radares fijos y de tramo de tu ruta, y del límite antes de que baje. En Francia, las zonas de peligro, como marca su ley."),
             ("gasolina", "Gasolineras con precio", "Más de 24.000 en España, Francia, Portugal y Andorra, con el precio de cada mañana. Las baratas, en verde."),
             ("mapa", "Recalcula al momento", "Si te sales de la ruta, vuelve a calcular en un par de segundos y te devuelve a tu carretera."),
             ("lugar", "Sin cobertura, también", "La ruta se queda guardada en el móvil y la navegación sigue aunque te quedes sin señal, que en la montaña pasa."),
             ("coche", "En la pantalla de la moto", "Con CarPlay, la ruta, las paradas y los avisos salen en la pantalla de la moto o del coche. Android Auto, muy pronto."),
-            ("retos", "Todo lo que ruedas, guardado", "Cada salida queda grabada con su recorrido real, los kilómetros y la media en marcha."),
+            ("retos", "Todo lo que ruedas, guardado", "Cada salida queda grabada con su recorrido real, sus kilómetros y su tiempo."),
         ],
         "faq": [
             ("¿Me sirve como GPS de moto sin comprar un navegador?",
@@ -147,7 +147,7 @@ PAGINAS = [
         "entradilla": "Da igual que seáis un club con chaleco y parches o cuatro amigos que salen a desayunar: un grupo en MOTOCLUBes "
                       "es la gente con la que ruedas, y todo lo de rodar juntos está ahí.",
         "tarjetas": [
-            ("candado", "Público o privado", "Un grupo público se encuentra en la comunidad y cualquiera puede pedir entrar; uno privado, solo con invitación."),
+            ("candado", "Público o privado", "Un grupo público lo encuentra cualquiera en la comunidad y se une al momento. En uno privado, decides tú quién entra."),
             ("grupo", "Invita por WhatsApp", "Mandas un enlace y entran. Tú decides si es para una persona o para varias."),
             ("foro", "El chat del grupo", "Las conversaciones del club, dentro de la app y junto a vuestras salidas."),
             ("mapa", "Salidas con su ruta", "Publicas la salida con día, hora, punto de encuentro y ruta, y ves quién va."),
@@ -158,13 +158,13 @@ PAGINAS = [
         ],
         "faq": [
             ("¿Puedo encontrar grupos de moteros por mi zona?",
-             "Sí. En la comunidad de la app están los grupos públicos y puedes pedir entrar en el que te encaje. Y si no hay ninguno por tu zona, creas el tuyo en un minuto."),
+             "Sí. En la comunidad de la app están los grupos públicos y puedes unirte al que te encaje. Y si no hay ninguno por tu zona, creas el tuyo en un minuto."),
             ("¿Es solo para clubes con chaleco y parches?",
              "No. Vale igual para un club con su estructura que para cuatro amigos que salen a desayunar el domingo. Un grupo es simplemente la gente con la que ruedas."),
             ("¿Y si en el club unos llevan iPhone y otros Android?",
              "Da igual. La app es nativa en las dos plataformas y todo funciona entre ellas: el grupo, la salida, el mapa y la voz."),
             ("¿Qué pasa con los datos de los socios?",
-             "Cada rider decide qué comparte: su posición solo se ve durante una salida y la puede apagar en su perfil. Un grupo privado solo lo ven sus miembros."),
+             "Cada rider decide qué comparte: su posición solo se ve durante una salida y la puede apagar en su perfil. Y en un grupo privado decides tú quién entra."),
             PREGUNTA_DESCARGA,
         ],
     },
