@@ -77,6 +77,26 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 @media (max-width:900px){.ficha{grid-template-columns:1fr}}
 @media (max-width:760px){.cifras5{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila,.fila.nota{grid-template-columns:1fr}}
+/* PANEL-MOVIL-1 (31-oct, 133.ª · Mario, desde el móvil: «de responsive, nada»). En el móvil: la cabecera se dobla, las pestañas
+   se deslizan dentro de su barra (no estiran la página) y cada fila de una tabla es una tarjeta con el nombre de cada dato encima
+   (el nombre lo pone etiquetarTablas() con el texto de la cabecera). En el ordenador no cambia nada. */
+@media (max-width:760px){
+  html,body{overflow-x:hidden}
+  header{padding:10px 12px;flex-wrap:wrap;gap:8px}header .s{display:none}
+  #g-caja{order:5;flex:1 1 100%}#g-buscar{width:100%}#g-res{width:calc(100vw - 24px);left:0;right:auto}
+  nav.pest{padding:0 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}nav.pest::-webkit-scrollbar{display:none}
+  nav.pest button{flex:0 0 auto;padding:12px 10px;white-space:nowrap}
+  main{padding:14px 12px;gap:14px}h1{font-size:22px}.card{padding:14px}
+  input[type=text],input[type=email],input[type=password],input[type=date],input[type=search],select,textarea{font-size:16px;max-width:100%}
+  .card.tabla{background:none;border:0;padding:0;overflow:visible}
+  .tabla table,.tabla tbody,.tabla tr,.tabla td{display:block;width:100%}
+  .tabla thead{display:none}
+  .tabla tr{background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 0;margin:0 0 10px}
+  .tabla td{border:0;padding:5px 14px;overflow-wrap:anywhere}
+  .tabla td:empty{display:none}
+  .tabla td[data-l]::before{content:attr(data-l);display:block;font-size:11px;font-weight:700;color:var(--gl);letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px}
+  .tcambios{display:block;overflow-x:auto}
+}
 </style>
 </head>
 <body>
@@ -2267,6 +2287,30 @@ async function mirarVersionPanel() {
 mirarVersionPanel(); setInterval(mirarVersionPanel, 60000)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) mirarVersionPanel() })
 entrar()
+</script>
+<script>
+/* PANEL-MOVIL-1: a cada celda de una tabla le pone el nombre de su columna (data-l), para que en el móvil la fila-tarjeta diga
+   qué es cada dato. Las tablas se pintan con JS a cada rato: se vuelve a etiquetar cuando cambia algo (una vez por fotograma). */
+(function () {
+  function etiquetarTablas() {
+    document.querySelectorAll('.tabla table').forEach(function (t) {
+      var cab = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent.replace(/[▲▼↑↓]/g, '').trim(); });
+      if (!cab.length) return;
+      t.querySelectorAll('tbody tr').forEach(function (tr) {
+        var col = 0;
+        Array.prototype.forEach.call(tr.children, function (td) {
+          var n = parseInt(td.getAttribute('colspan') || '1', 10);
+          if (n === 1 && cab[col] && td.getAttribute('data-l') !== cab[col]) td.setAttribute('data-l', cab[col]);
+          col += n;
+        });
+      });
+    });
+  }
+  var pendiente = false;
+  function pronto() { if (pendiente) return; pendiente = true; requestAnimationFrame(function () { pendiente = false; try { etiquetarTablas(); } catch (e) {} }); }
+  try { new MutationObserver(pronto).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  pronto();
+})();
 </script>
 </body>
 </html>
