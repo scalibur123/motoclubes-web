@@ -2221,7 +2221,7 @@ function gResultados(texto) {
 // Revisión: solo cuentan los campos que se VEN (el correo y la clave del inicio, o una pantalla ya cerrada, no bloquean el buscador).
 function gOcupado() {
   const capa = ['push-capa', 'res-capa', 'mail-capa', 'ver-capa', 'co-capa', 'form'].some(id => $(id) && !$(id).classList.contains('oculto'))
-  const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !/^l-/.test(e.id || '') && e.offsetParent !== null && !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
+  const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !/^l-/.test(e.id || '') && (e.offsetParent !== null || /^f2-/.test(e.id || '')) && !e.disabled /* la ficha de un negocio escrita y sin guardar cuenta aunque te hayas ido a otra pestaña: abrir otra la machacaría */ && e.value.trim() !== '' && e.value !== e.defaultValue)
   return capa || tecleado
 }
 function gPintar() {
