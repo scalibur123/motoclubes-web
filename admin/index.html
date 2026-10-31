@@ -15,6 +15,14 @@
 body{font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
 header{background:#0E0E0E;padding:14px 28px;display:flex;align-items:center;gap:12px}
 header img{width:30px;height:30px;border-radius:8px}header .m{color:#fff;font-weight:800}header .s{color:#E7E1D9;font-weight:600;flex-grow:1}
+/* PANEL-BUSCAR-1 (31-oct): el buscador de todo el panel, arriba */
+#g-buscar{border:none;border-radius:50px;padding:8px 14px;font:500 13px Manrope,sans-serif;width:330px;background:rgba(255,255,255,.12);color:#fff;outline:none}
+#g-buscar::placeholder{color:#B3B3B3}#g-buscar:focus{background:rgba(255,255,255,.2)}
+#g-res{position:absolute;right:0;top:calc(100% + 8px);width:440px;max-height:440px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.2);z-index:60;padding:6px}
+.g-item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:none;padding:9px 10px;border-radius:10px;cursor:pointer;font:600 14px Manrope,sans-serif;color:var(--tx)}
+.g-item:hover,.g-item.sel{background:#FBF3EA}.g-item .g-t{min-width:0;flex:1}.g-item .g-sub{display:block;color:var(--g);font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-tipo{font-size:11px;font-weight:700;border-radius:50px;padding:2px 8px;background:#EFEAE3;color:var(--g);white-space:nowrap}.g-nada{padding:12px;color:var(--g);font-size:13px}
+@media (max-width:760px){#g-buscar{width:150px}#g-res{width:300px}}
 header .u{color:#B3B3B3;font-size:13px}header button{background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:50px;padding:8px 14px;font:600 12px Manrope,sans-serif;cursor:pointer}
 main{max-width:1180px;margin:0 auto;padding:28px;display:flex;flex-direction:column;gap:20px}
 h1{font-size:26px}.sub{color:var(--g);font-size:14px}
@@ -72,7 +80,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 </style>
 </head>
 <body>
-<header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
+<header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><div id="g-caja" class="oculto" style="position:relative"><input type="search" id="g-buscar" placeholder="🔍 Buscar en todo: apodo, correo, negocio, contacto" autocomplete="off" spellcheck="false" aria-label="Buscar en todo el panel"><div id="g-res" class="oculto"></div></div><!-- PANEL-BUSCAR-1 --><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
 <nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-hec">✅ Hecho</button></nav>
@@ -538,11 +546,11 @@ function reinvitar(id) {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('v-cor').classList.add('oculto'); $('sub-cont').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('v-cor').classList.add('oculto'); $('sub-cont').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('g-caja').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
-  $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto')
+  $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto'); $('g-caja').classList.remove('oculto') // PANEL-BUSCAR-1
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
   const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor', 'hec'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
@@ -1913,17 +1921,20 @@ async function cargarHecho() {
   if (!foOficial) { const { data } = await sb.rpc('mc_cuenta_oficial'); foOficial = data || null }
   if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null
   const yoyos = [foOficial, foYo].filter(Boolean)
-  const [env, hilos, posts] = await Promise.all([
+  const [env, hilos, posts, marcas] = await Promise.all([
     invitar({ modo: 'hecho', dias: Math.ceil(dias) }).catch(e => { avisos.push('Los correos y avisos no se han podido cargar: ' + esc(e.message)); return { envios: [] } }),
     yoyos.length ? sb.from('threads').select('id, user_id, category, title, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(500) : { data: [] },
     yoyos.length ? sb.from('posts').select('id, user_id, thread_id, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(1000) : { data: [] },
+    sb.rpc('mc_admin_hilos_atendidos'), // FORO-ATENDIDO-HECHO-1: «No hace falta contestar», con la hora del clic (marcado_at)
   ])
   if (n !== hePet) return
   if (hilos.error || posts.error) avisos.push('El foro no se ha podido cargar: ' + esc((hilos.error || posts.error).message))
   // Los títulos de los hilos donde contestaste
   const tit = {}
   for (const h of hilos.data || []) tit[h.id] = h.title
-  const faltan = [...new Set((posts.data || []).map(p => p.thread_id))].filter(id => !(id in tit))
+  // FORO-ATENDIDO-HECHO-1: solo las marcas con hora del clic (desde la 133.ª) y dentro de los días elegidos. Sin la columna, nada.
+  const marcadas = (marcas.data || []).filter(m => m.marcado_at && new Date(m.marcado_at) >= desde)
+  const faltan = [...new Set([...(posts.data || []).map(p => p.thread_id), ...marcadas.map(m => m.thread_id)])].filter(id => !(id in tit))
   for (let i = 0; i < faltan.length; i += 100) {
     const { data } = await sb.from('threads').select('id, title').in('id', faltan.slice(i, i + 100))
     for (const h of data || []) tit[h.id] = h.title
@@ -1940,6 +1951,7 @@ async function cargarHecho() {
   }
   for (const h of hilos.data || []) L.push({ en: h.created_at, que: h.category === 'noticias' ? 'Noticia publicada' : 'Hilo nuevo en el foro', aQuien: 'Foro', detalle: '«' + h.title + '» · ' + quien(h.user_id), abrir: { t: 'hilo', id: h.id } })
   for (const p of posts.data || []) L.push({ en: p.created_at, que: 'Respuesta en el foro', aQuien: 'Foro', detalle: '«' + (tit[p.thread_id] || 'Hilo') + '» · ' + quien(p.user_id), abrir: { t: 'hilo', id: p.thread_id } })
+  for (const m of marcadas) L.push({ en: m.marcado_at, que: 'Foro: no hace falta contestar', aQuien: 'Foro', detalle: '«' + (tit[m.thread_id] || 'Hilo') + '»', abrir: { t: 'hilo', id: m.thread_id } }) // FORO-ATENDIDO-HECHO-1
   for (const q of QUITADOS) L.push({ en: q.quitado_at, que: 'Quitado de la lista', aQuien: heNombre(q.email), detalle: q.quitado_motivo ? '«' + q.quitado_motivo + '»' : '', abrir: { t: 'ficha', email: q.email } })
   for (const a of ALTAS) if (a.clase === 'invitacion' && a.enviada_en) L.push({ en: a.enviada_en, que: 'Invitación a Rider Friendly', aQuien: a.nombre || '', detalle: a.abierta ? 'Abrió el enlace' : '', res: a.envio_error ? '<span class="chip rojo">No se pudo enviar</span>' : '<span class="chip verde">✅ Enviada</span>', abrir: { t: 'altas' } })
   for (const c of cands) for (const x of c.historial || []) if (x.en) L.push({ en: x.en, que: 'Llamada a negocio', aQuien: c.nombre, detalle: (EST_TXT[x.estado] || x.estado || '') + (x.notas ? ' · «' + x.notas + '»' : ''), abrir: { t: 'neg', id: c.id } })
@@ -2186,6 +2198,57 @@ const ocupado = () => {
   if (enCamino > 0 || escrito()) return true
   return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('co-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
+// ── PANEL-BUSCAR-1 (31-oct-2026, 133.ª) · Mario (30-oct): «el panel cuesta» → un buscador arriba: escribes parte de un apodo, un
+// correo, un negocio o un contacto y te lleva a su ficha, esté en la pestaña que esté. Busca en lo que el panel ya tiene cargado
+// (Riders, Solicitudes y sus quitados, Negocios, Contactos), sin tildes ni mayúsculas. No salta si tienes una ventana abierta o algo
+// escrito sin guardar: te lo dice (así no se pierde nada).
+let gLista = [], gSel = 0
+function gResultados(texto) {
+  const q = sinTildes(texto.trim()); if (q.length < 2) return []
+  const tiene = (...v) => v.some(x => sinTildes(x).includes(q))
+  const out = [], vistos = new Set(), correo = (e) => String(e || '').toLowerCase()
+  for (const r of RIDERS) if (tiene(r.rider, r.email)) { const k = correo(r.email); if (k && vistos.has(k)) continue; if (k) vistos.add(k)
+    out.push({ tipo: 'Rider', titulo: r.rider || r.email, sub: r.rider ? r.email : '', ir: () => r.email ? verFicha(r.email, 'rid') : verPestana('rid') }) }
+  for (const t of [...TESTERS, ...QUITADOS]) if (tiene(t.rider, t.email)) { const k = correo(t.email); if (!k || vistos.has(k)) continue; vistos.add(k)
+    out.push({ tipo: QUITADOS.includes(t) ? 'Quitado' : 'Solicitud', titulo: t.rider || t.email, sub: t.rider ? t.email : 'Se apuntó en la web', ir: () => verFicha(t.email, 'test') }) }
+  for (const c of cands) if (tiene(c.nombre, c.contacto, c.correo, c.municipio, c.telefono)) {
+    out.push({ tipo: 'Negocio', titulo: c.nombre, sub: [c.municipio, c.contacto, c.correo].filter(Boolean).join(' · '), ir: () => { verPestana('cand'); abrirFicha(c.id) } }) }
+  for (const c of CONTACTOS) if (tiene(c.nombre, c.quien, c.correo, c.enlace)) {
+    out.push({ tipo: 'Contacto', titulo: c.nombre, sub: [c.quien, c.correo].filter(Boolean).join(' · '), ir: () => { verPestana('con'); abrirContacto(c) } }) }
+  return out.slice(0, 15)
+}
+// Lo mismo que mira la recarga sola (`ocupado`), sin contar los buscadores: una ventana abierta o algo escrito sin guardar.
+function gOcupado() {
+  const capa = ['push-capa', 'res-capa', 'mail-capa', 'ver-capa', 'co-capa', 'form'].some(id => $(id) && !$(id).classList.contains('oculto'))
+  const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
+  return capa || tecleado
+}
+function gPintar() {
+  const q = $('g-buscar').value
+  gLista = gResultados(q); gSel = 0
+  if (q.trim().length < 2) { $('g-res').classList.add('oculto'); return }
+  $('g-res').innerHTML = gLista.length
+    ? gLista.map((r, i) => `<button type="button" class="g-item${i === gSel ? ' sel' : ''}" data-i="${i}"><span class="g-tipo">${esc(r.tipo)}</span><span class="g-t">${esc(r.titulo)}${r.sub ? `<span class="g-sub">${esc(r.sub)}</span>` : ''}</span></button>`).join('')
+    : `<div class="g-nada">Nada con «${esc(q.trim())}» en riders, solicitudes, negocios ni contactos.</div>`
+  $('g-res').classList.remove('oculto')
+}
+function gIr(i) {
+  const r = gLista[i]; if (!r) return
+  if (gOcupado()) { $('g-res').innerHTML = '<div class="g-nada">⚠️ Tienes una ventana abierta o algo escrito sin guardar. Guárdalo o ciérralo y vuelve a buscar: así no se pierde.</div>'; return }
+  $('g-buscar').value = ''; delete $('g-buscar').dataset.tecleado; $('g-res').classList.add('oculto'); $('g-buscar').blur()
+  window.scrollTo(0, 0); r.ir()
+}
+$('g-buscar').addEventListener('input', gPintar)
+$('g-buscar').addEventListener('focus', () => { if ($('g-buscar').value.trim().length >= 2) gPintar() })
+$('g-buscar').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') { $('g-buscar').value = ''; $('g-res').classList.add('oculto'); return }
+  if (!gLista.length) return
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); gSel = (gSel + (ev.key === 'ArrowDown' ? 1 : gLista.length - 1)) % gLista.length; $('g-res').querySelectorAll('.g-item').forEach((b, i) => b.classList.toggle('sel', i === gSel)) }
+  if (ev.key === 'Enter') { ev.preventDefault(); gIr(gSel) }
+})
+$('g-res').addEventListener('mousedown', (ev) => ev.preventDefault()) // que el clic no se pierda al quitar el foco del buscador
+$('g-res').addEventListener('click', (ev) => { const b = ev.target.closest('.g-item'); if (b) gIr(+b.dataset.i) })
+document.addEventListener('click', (ev) => { if (!ev.target.closest('#g-caja')) $('g-res').classList.add('oculto') })
 async function mirarVersionPanel() {
   const f = await firmaDelPanel()
   if (!f) return
