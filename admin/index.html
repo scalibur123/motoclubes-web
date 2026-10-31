@@ -1568,7 +1568,7 @@ function pintarFicha(c) {
   $('f2-titulo').innerHTML = c.id ? esc(c.nombre) + (c.app?.fundador ? ' <span class="corona" title="Socio fundador">👑</span>' : '') : 'Nuevo negocio'
   $('f2-estado').innerHTML = c.id ? chipEstado(estadoEf(c)) : ''
   $('f2-sub').textContent = c.id ? [tipoTxt(c.tipo, c.categoria), c.municipio, c.zona].filter(Boolean).join(' · ') : ''
-  CAMPOS.forEach(k => { $('f2-' + k).value = c[k] || '' })
+  CAMPOS.forEach(k => { $('f2-' + k).value = c[k] || ''; delete $('f2-' + k).dataset.tecleado }) // PANEL-BUSCAR-1 (revisión): recién pintada de la base, no hay nada «sin guardar»
   $('f2-prioridad').checked = !!c.prioridad
   f2Tipo = tipoUi(c); opciones($('f2-tipo'), TIPOS, f2Tipo, v => f2Tipo = v)
   marcarVacios()
@@ -2218,9 +2218,10 @@ function gResultados(texto) {
   return out.slice(0, 15)
 }
 // Lo mismo que mira la recarga sola (`ocupado`), sin contar los buscadores: una ventana abierta o algo escrito sin guardar.
+// Revisión: solo cuentan los campos que se VEN (el correo y la clave del inicio, o una pantalla ya cerrada, no bloquean el buscador).
 function gOcupado() {
   const capa = ['push-capa', 'res-capa', 'mail-capa', 'ver-capa', 'co-capa', 'form'].some(id => $(id) && !$(id).classList.contains('oculto'))
-  const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
+  const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !/^l-/.test(e.id || '') && e.offsetParent !== null && !e.disabled && e.value.trim() !== '' && e.value !== e.defaultValue)
   return capa || tecleado
 }
 function gPintar() {
@@ -2235,6 +2236,7 @@ function gPintar() {
 function gIr(i) {
   const r = gLista[i]; if (!r) return
   if (gOcupado()) { $('g-res').innerHTML = '<div class="g-nada">⚠️ Tienes una ventana abierta o algo escrito sin guardar. Guárdalo o ciérralo y vuelve a buscar: así no se pierde.</div>'; return }
+  pestanaTocada = true // revisión: si el panel aún está cargando, no te mueve de donde te ha llevado el buscador
   $('g-buscar').value = ''; delete $('g-buscar').dataset.tecleado; $('g-res').classList.add('oculto'); $('g-buscar').blur()
   window.scrollTo(0, 0); r.ir()
 }
