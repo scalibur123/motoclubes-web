@@ -177,8 +177,6 @@ def datos(f):
         filas.append(("Curvas", miles(f["curvas"])))
     if f["desnivel_subida_m"] not in ("", "null"):
         filas.append(("Desnivel de subida", f"{miles(f['desnivel_subida_m'])} m"))
-    if f["altitud_max_m"] not in ("", "null"):
-        filas.append(("Altitud máxima", f"{miles(f['altitud_max_m'])} m"))
     if f["puertos_l"]:
         filas.append(("Puertos y collados", str(len(f["puertos_l"]))))
     return filas
@@ -264,8 +262,8 @@ def pagina_ruta(f, todas, cab, pie):
     puertos_html = ""
     if f["puertos_l"]:
         lis = "".join(f"<li>{e(n)}<small>{miles(m) + ' m' if m != '?' else ''}</small></li>" for n, m in f["puertos_l"])
-        puertos_html = (f'<h2>Puertos y collados por los que pasa</h2><p class="entradilla">En el orden en que se pasan, '
-                        f'sacados del trazado de la ruta.</p><ul class="ruta-puertos">{lis}</ul>')
+        puertos_html = (f'<h2>Puertos y collados de la ruta</h2><p class="entradilla">Los que quedan junto al trazado, en el orden '
+                        f'en que aparecen.</p><ul class="ruta-puertos">{lis}</ul>')
     # días (si es ruta madre) o vuelta a la madre y días hermanos
     hijos = sorted([t for t in todas.values() if t.get("madre") == f["id"]], key=lambda t: t["dia"])
     rel = ""
