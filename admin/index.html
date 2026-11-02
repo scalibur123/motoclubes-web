@@ -368,7 +368,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="sub">Le llega como notificación al móvil, como los avisos de la app. Si no tiene la app o las notificaciones, le llega por correo.</div>
     <label>TÍTULO<input type="text" id="push-titulo" maxlength="80" placeholder="Hasta 80 letras"></label>
     <label>TEXTO<textarea id="push-texto" rows="5" maxlength="3000" placeholder="El móvil enseña el principio; entero en la campanita y en el correo"></textarea></label><!-- CORREO-SOPORTE-1: sin el tope de 240 -->
-    <label class="check"><input type="checkbox" id="push-correo" checked> Mandarlo también por correo</label><!-- AVISO-CORREO-1 -->
+    <label class="check"><input type="checkbox" id="push-correo"> Mandarlo también por correo</label><!-- AVISO-CORREO-1 · AVISO-CORREO-2 (135.ª, Mario 20:35): desmarcada de serie; el correo solo si Mario la marca -->
     <div id="push-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
   </div>
@@ -906,6 +906,7 @@ function abrirAviso(email, quien, abrio, movil, version) {
   // se abre sin texto de ejemplo; la gris de dentro es solo una pista y no se manda.
   $('push-titulo').value = ''
   $('push-texto').value = ''
+  $('push-correo').checked = false // AVISO-CORREO-2: cada aviso empieza sin correo (Joca lo recibió por correo sin quererlo)
   $('push-capa').classList.remove('oculto')
 }
 $('push-cancelar').onclick = () => { $('push-capa').classList.add('oculto'); if ($('push-cancelar').textContent === 'Salir') { if (!$('v-rid').classList.contains('oculto')) cargarRiders(); if (!$('v-ficha').classList.contains('oculto') && FICHA) verFicha(FICHA.email, fichaVuelve) } } // AVISO-SALIR-1: al salir, se ve al día
