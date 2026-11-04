@@ -1,8 +1,9 @@
 # MOTOCLUBes · SEO-1 (31-oct-2026)
+# SEO-NEGOCIO-1 (4-nov-2026, Mario «toca negocio»): /negocio/ ya no se cierra aquí. Cerrada, Google no podía leer su «noindex»
+# y la seguía enseñando (Search Console, 26-oct a 1-nov: 2 impresiones). Todas sus páginas llevan «noindex».
 User-agent: *
 Allow: /
 Disallow: /admin/
-Disallow: /negocio/
 Disallow: /planificar/
 Disallow: /reset-password/
 Disallow: /baja/
