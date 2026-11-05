@@ -1294,20 +1294,37 @@ $('g-guardar').onclick = async () => {
   $('g-guardar').disabled = false; $('g-guardar').textContent = 'Guardar'
 }
 $('p-gui').onclick = () => { verPestana('gui'); gAviso(''); cargarGuias() }
+// 🆕 NOTICIAS-ORDEN-1 (138.ª, Mario 12:35): «siempre por fecha de publicación de la noticia, salvo que haya alguno con un comentario
+// no leído, en cuyo caso el comentario pasa por encima de la fecha de publicación. Una vez leído, vuelve a la regla de última fecha
+// publicada». No leído = el último comentario es de un rider (no tuyo ni de MOTOCLUBes), y es posterior a la última vez que abriste
+// esa noticia desde el panel (se guarda en este navegador) y a «No hace falta contestar».
+const NO_VISTO_CLAVE = 'mc_admin_hilo_visto'
+function hiloVisto(id) { try { const m = JSON.parse(localStorage.getItem(NO_VISTO_CLAVE) || '{}'); m[id] = new Date().toISOString(); localStorage.setItem(NO_VISTO_CLAVE, JSON.stringify(m)) } catch (e) { /* sin memoria del navegador: solo cuenta contestar */ } }
+function vistoEn(id) { try { return JSON.parse(localStorage.getItem(NO_VISTO_CLAVE) || '{}')[id] || null } catch (e) { return null } }
 async function cargarNoticias() {
+  if (!foOficial) { const { data } = await sb.rpc('mc_cuenta_oficial'); foOficial = data || null }
+  if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null
+  const { data: ats } = await sb.rpc('mc_admin_hilos_atendidos') // si falla, solo cuentan «abierta» y «contestada»
+  const atendida = Object.fromEntries((ats || []).map(a => [a.thread_id, a.atendido_at]))
   const { data, error } = await sb.from('threads').select('id, title, created_at, reply_count, video_url').eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
   if (error) return nAviso('No se han podido cargar las noticias: ' + esc(error.message))
   // PANEL-CONTESTAR-1 (Mario: «las opiniones a cero es mentira»): `reply_count` no se actualiza; se cuentan los comentarios de verdad.
   // Lo último arriba (publicada o comentada) y cada noticia se pincha para leerla y contestar en el Foro.
   const ids = (data || []).map(t => t.id), coms = []
   for (let i = 0; i < ids.length; i += 10) {
-    const { data: ps, error: ec } = await sb.from('posts').select('thread_id, created_at').in('thread_id', ids.slice(i, i + 10)).is('hidden_at', null)
+    const { data: ps, error: ec } = await sb.from('posts').select('thread_id, user_id, created_at').in('thread_id', ids.slice(i, i + 10)).is('hidden_at', null)
     if (ec) return nAviso('No se han podido contar los comentarios: ' + esc(ec.message)) // mejor nada que una cifra falsa
     coms.push(...(ps || []))
   }
-  const filas = (data || []).map(t => { const c = coms.filter(p => p.thread_id === t.id).map(p => p.created_at).sort(); return { ...t, n: c.length, ult: c.length ? c[c.length - 1] : t.created_at } })
-    .sort((a, b) => a.ult < b.ult ? 1 : -1)
-  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button></td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
+  const filas = (data || []).map(t => {
+    const cs = coms.filter(p => p.thread_id === t.id).sort((a, b) => a.created_at < b.created_at ? -1 : 1)
+    const u = cs[cs.length - 1] || null
+    const yo = !u || u.user_id === foOficial || u.user_id === foYo
+    const hasta = [vistoEn(t.id), atendida[t.id]].filter(Boolean).sort().pop()
+    const nuevo = !yo && (!hasta || new Date(u.created_at) > new Date(hasta))
+    return { ...t, n: cs.length, ult: u ? u.created_at : t.created_at, nuevo }
+  }).sort((a, b) => (b.nuevo - a.nuevo) || (a.nuevo ? (a.ult < b.ult ? 1 : -1) : (a.created_at < b.created_at ? 1 : -1)))
+  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button>${t.nuevo ? ' <span class="sub" style="font-size:12px;color:var(--od);font-weight:700">💬 comentario nuevo</span>' : ''}</td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
 }
 $('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
 $('n-publicar').onclick = async () => {
@@ -2108,7 +2125,7 @@ function pintarForo() {
     || `<tr><td colspan="5" class="sub">${cat === 'pend' ? 'Nada por contestar. 👍' : 'No hay hilos.'}</td></tr>`
 }
 async function abrirHilo(id) {
-  foAbierto = id; foAviso('')
+  foAbierto = id; foAviso(''); hiloVisto(id) // NOTICIAS-ORDEN-1: abierta = leída
   $('fo-lista').classList.add('oculto'); $('fo-form').classList.add('oculto'); $('fo-hilo').classList.remove('oculto')
   $('fo-hilo').innerHTML = '<div class="sub">Cargando…</div>'
   const [{ data: h, error }, { data: ps, error: e2 }] = await Promise.all([
