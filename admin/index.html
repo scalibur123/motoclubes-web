@@ -1423,7 +1423,10 @@ async function verFicha(email, vuelve) {
     : '<div class="sub" style="padding:16px">Todavía no le hemos mandado nada.</div>'
   await cargarUltima()
   $('f-cuerpo').innerHTML = `<div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap"><div style="flex-grow:1"><h1>${esc(p?.nickname || f.email)}</h1><div class="sub">${esc(f.email)}</div></div>
-    ${c ? '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="f-avisar">Mandarle un aviso</button><button class="btn2" id="f-correo-rider">✉️ Mandarle un correo</button></div>' : ''}</div>
+    ${c ? '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="f-avisar">Mandarle un aviso</button><button class="btn2" id="f-correo-rider">✉️ Mandarle un correo</button></div>'
+      // CORREO-TESTER-SIN-CUENTA-1 (138.ª, Mario: «si no estoy utilizando mi cuenta»): también a quien aún no tiene cuenta, de Soporte;
+      // y a un Android con un correo que no es de Gmail, el correo para pedirle su cuenta de Google, ya escrito.
+      : `<div style="display:flex;gap:10px;flex-wrap:wrap">${w && w.plataforma === 'android' && !esGmail(f.email) ? '<button class="btn" id="f-pedir-google">Pedirle su cuenta de Google</button>' : ''}<button class="btn2" id="f-correo-rider">✉️ Mandarle un correo</button></div>`}</div>
     <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Lo que le hemos mandado</div>${env}</div>
     <div class="ficha"><div class="col">${c ? `<div class="card"><div style="font-weight:800;margin-bottom:10px">Lo que ha hecho en la app</div>${uso}</div>` : ''}
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Últimas sesiones</div>${c ? ses : '<div class="sub" style="padding:16px">—</div>'}</div>
@@ -1450,6 +1453,11 @@ $('f-cuerpo').onclick = (ev) => {
     return
   }
   if (ev.target.closest('#f-correo-rider') && FICHA) return abrirCorreo(FICHA.perfil?.nickname || FICHA.email, FICHA.email, null, 'rider') // CORREO-SOPORTE-1: también desde la ficha
+  if (ev.target.closest('#f-pedir-google') && FICHA) { // CORREO-TESTER-SIN-CUENTA-1: el correo ya escrito; Mario solo pulsa Enviar
+    abrirCorreo(FICHA.email, FICHA.email, null, 'rider')
+    $('mail-asunto').value = PEDIR_GOOGLE.asunto; $('mail-texto').value = PEDIR_GOOGLE.texto
+    return
+  }
   if (ev.target.closest('#f-avisar') && FICHA) return abrirAviso(FICHA.email, FICHA.perfil?.nickname || FICHA.email, FICHA.perfil?.app_version_at, FICHA.perfil?.app_platform, FICHA.perfil?.app_version)
   const b = ev.target.closest('.f-ficha'); if (b) verFicha(b.dataset.email, fichaVuelve)
 }
@@ -1684,6 +1692,12 @@ function mailListo(listo) {
 let correoDesdeFicha = null // CORREO-NEGOCIO-1: si se abrió desde una ficha de Negocios, al salir se repinta su lista
 $('f2-escribir').onclick = () => { const c = cands.find(x => x.id === fichaId); if (c && c.correo) abrirCorreo(c.nombre, c.correo, c.id) }
 let mailDestino = 'negocio' // CORREO-SOPORTE-1: 'rider' | 'negocio' (a dónde contestan: soporte@ o negocios@)
+// CORREO-TESTER-SIN-CUENTA-1 (138.ª): Play solo deja dar de alta la cuenta de Google con la que el tester entra en Play Store.
+const esGmail = (e) => /@(gmail|googlemail)\.com$/i.test(String(e || '').trim())
+const PEDIR_GOOGLE = {
+  asunto: 'Un paso más para probar MOTOCLUBes en Android',
+  texto: 'Hola:\n\n¡Gracias por apuntarte para probar MOTOCLUBes en Android!\n\nPara darte acceso, Google Play nos pide el correo de la cuenta de Google con la que entras en Play Store. Lo ves en Play Store tocando tu foto, arriba a la derecha: es el correo que sale debajo de tu nombre.\n\nContesta a este correo con esa dirección (o dinos «es este mismo» si coincide) y en cuanto la tengamos te mandamos el enlace para instalar la app.\n\nUn saludo,\nEl equipo de MOTOCLUBes',
+}
 function abrirCorreo(nombre, correo, desdeFicha, destino) {
   correoDesdeFicha = desdeFicha; mailDestino = destino === 'rider' ? 'rider' : 'negocio'
   // NEGOCIOS-MARIO-1 (130.ª, Mario 20:03): a un negocio sale de Mario (fundador) de entrada; a un rider, la opción ni aparece
