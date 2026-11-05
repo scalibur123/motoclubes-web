@@ -25,6 +25,7 @@
   .inv h1 { margin: 2px 0 0; font-size: 28px; line-height: 1.15; }
   .inv .datos { font-size: 13px; color: #6b5a4a; margin-top: 4px; }
   .inv .boton { display: block; margin-top: 20px; text-align: center; background: #F97316; color: #fff; font-weight: 700; padding: 14px; border-radius: 999px; text-decoration: none; }
+  .inv .boton2 { display: block; margin-top: 12px; text-align: center; background: #fff; color: #EA580C; border: 2px solid #F97316; font-weight: 700; padding: 12px; border-radius: 999px; text-decoration: none; } /* INVITAR-SIN-APP-1 */
   .inv .nota { margin-top: 16px; font-size: 13px; color: #5b4a3a; line-height: 1.45; }
   .inv .aviso { margin-top: 12px; font-size: 14px; color: #b45309; }
 </style>
@@ -82,6 +83,7 @@ function fallo(msg) {
 function pintar(v) {
   var foto = v.foto ? ' style="background-image:url(' + esc(v.foto) + ')"' : '';
   var abrir = "motoclubes://invitacion/" + encodeURIComponent(id);
+  var alta = "/probar/" + (v.invita ? "?de=" + encodeURIComponent(v.invita) : ""); // INVITAR-SIN-APP-1
   var estado = v.estado === "requested"
     ? '<p class="aviso">Pendiente de que el líder te deje entrar.</p>'
     : v.estado !== "pending" ? '<p class="aviso">Esta invitación ya se ha usado.</p>' : '';
@@ -93,8 +95,13 @@ function pintar(v) {
       '<div class="datos">' + esc(v.miembros || 0) + ' miembros · ' + (v.visibilidad === "public" ? "Público" : "Privado") + '</div>' +
       estado +
       '<a class="boton" href="' + abrir + '">Abrir en MOTOCLUBes</a>' +
-      '<p class="nota">Si no se abre, es que aún no tienes la app. MOTOCLUBes está en pruebas con riders reales: ' +
-      'pide a ' + (v.invita ? esc(v.invita) : 'quien te invitó') + ' que te dé acceso y, cuando la instales, vuelve a tocar el enlace del mensaje.</p>' +
+      /* INVITAR-SIN-APP-1 (138.ª, 5-nov-2026 · MC-0025, Mario 21:49 «haz el arreglo de verdad»): antes decía «pide a X que te dé
+         acceso», y X no sabe cómo (Cherokee mandó 4 invitaciones al grupo y nadie pudo entrar). Ahora se apunta aquí mismo, en la
+         página de alta de los compañeros (/probar/?de=<quien invita>), y luego vuelve a tocar el enlace del grupo. */
+      '<p class="nota">¿No se abre? Es que aún no tienes la app. MOTOCLUBes está en pruebas con riders reales: apúntate en un minuto ' +
+      'y te mandamos la invitación para instalarla, en iPhone o en Android. Cuando la tengas, vuelve a tocar el enlace del mensaje ' +
+      'y entras directo al grupo.</p>' +
+      '<a class="boton2" href="' + alta + '">🏍️ Apúntate para probarla</a>' +
     '</div>';
 }
 
