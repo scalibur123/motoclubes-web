@@ -1910,7 +1910,7 @@ const USO_PANTALLA = { '/app': 'Inicio', '/app/notificaciones': 'Avisos (campani
   '/app/grupos/:id/salidas/:id/detalle': 'Salida · detalle', '/app/grupos/:id/salidas/:id/resumen': 'Salida · resumen', '/app/planificar-grupo': 'Planificar en grupo',
   '/app/grabar': 'Grabar', '/app/mis-usos': 'Mis usos', '/app/mis-qr': 'Mis QR', '/app/navegar-resumen': 'Resumen de navegar', '/app/gasolineras': 'Gasolineras',
   '/app/aceptar-terminos': 'Aceptar condiciones', '/app/completar-perfil': 'Completar perfil', '/app/actividad': 'Actividad', '/app/market/:id': 'Market · anuncio' }
-let USO = null, usoAbierta = null, usoPet = 0 // usoPet: si cambias los días rápido, solo vale la última respuesta (revisión)
+let USO = null, usoAbierta = null, usoPet = 0, USO_FECHA = {} // USO_FECHA: hilo → cuándo se colgó (USO-ULTIMO-ARRIBA-1) // usoPet: si cambias los días rápido, solo vale la última respuesta (revisión)
 const usoAviso = (t, bien) => { $('u-aviso').innerHTML = t ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${t}</div>` : '' }
 const usoSeg = (s) => s == null ? '' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 async function cargarUso() {
@@ -1920,6 +1920,15 @@ async function cargarUso() {
   if (n !== usoPet) return
   if (error) { $('u-bloques').innerHTML = ''; return usoAviso(/mc_admin_uso|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Aún no está creada la función en la base: falta ejecutar <b>db/uso_app_2_crear.sql</b> en Supabase.' : 'No se ha podido cargar el uso: ' + esc(error.message)) }
   USO = data || { activos: 0, filas: [] }; usoAbierta = null
+  // 🆕 USO-ULTIMO-ARRIBA-1 (138.ª, Mario: «la primera noticia tiene que ser la última que cuelgas, no las más leídas… y en hilos lo
+  // mismo… lo último hecho aparece al principio»). Noticias e hilos, por la fecha en que se colgaron: la más nueva arriba.
+  const ids = [...new Set((USO.filas || []).filter(f => f.bloque === 'noticias' || f.bloque === 'hilos').map(f => f.clave).filter(Boolean))]
+  USO_FECHA = {}
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data: ts } = await sb.from('threads').select('id, created_at').in('id', ids.slice(i, i + 100))
+    for (const t of ts || []) USO_FECHA[t.id] = t.created_at
+  }
+  if (n !== usoPet) return
   pintarUso()
 }
 function pintarUso() {
@@ -1929,10 +1938,12 @@ function pintarUso() {
   $('u-cifras').innerHTML = [[USO?.activos ?? 0, 'Riders con la app abierta'], [suma('noticias'), 'Han leído alguna noticia'], [suma('videos'), 'Han visto algún vídeo'], [new Set([...de('guia'), ...de('guia_otros')].flatMap(f => f.quienes || [])).size, 'Han tocado algo en la guía']]
     .map(([n, t]) => `<div class="card cifra"><b>${n}</b><span>${t}</span></div>`).join('')
   $('u-bloques').innerHTML = USO_BLOQUES.map(([b, titulo, ayuda]) => {
-    const lista = de(b), conSeg = b === 'videos'
+    const porFecha = b === 'noticias' || b === 'hilos' // USO-ULTIMO-ARRIBA-1: lo último colgado arriba (sin fecha, al final)
+    const lista = porFecha ? de(b).slice().sort((x, y) => String(USO_FECHA[y.clave] || '').localeCompare(String(USO_FECHA[x.clave] || ''))) : de(b), conSeg = b === 'videos'
     const cuerpo = lista.map((f, i) => {
       const k = b + '|' + i, abierta = usoAbierta === k
-      const nombre = b === 'pantallas' ? (USO_PANTALLA[f.que] ? `${esc(USO_PANTALLA[f.que])} <span class="sub" style="font-size:12px">${esc(f.que)}</span>` : esc(f.que)) : esc(f.que)
+      const nombre = b === 'pantallas' ? (USO_PANTALLA[f.que] ? `${esc(USO_PANTALLA[f.que])} <span class="sub" style="font-size:12px">${esc(f.que)}</span>` : esc(f.que))
+        : porFecha && USO_FECHA[f.clave] ? `${esc(f.que)} <span class="sub" style="font-size:12px">${fecha(USO_FECHA[f.clave])}</span>` : esc(f.que)
       return `<tr class="org-fila" data-uso="${k}"><td class="partir"><button class="nombre-c">${nombre}</button>${abierta ? `<div class="sub partir" style="font-size:13px;margin-top:6px">${esc((f.quienes || []).join(', '))}</div>` : ''}</td>
         <td><b>${f.riders}</b></td><td>${f.veces}</td>${conSeg ? `<td>${f.seg != null ? usoSeg(f.seg) + (f.dura ? ` de ${usoSeg(f.dura)}` : '') : '—'}</td>` : ''}</tr>`
     }).join('') || `<tr><td colspan="${conSeg ? 4 : 3}" class="sub">Nada en estos días.</td></tr>`
