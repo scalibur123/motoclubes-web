@@ -691,6 +691,9 @@ function pintar(r) {
           '<small class="ligero" hidden>En este ordenador va en modo ligero, para no forzar la tarjeta gráfica: tarda más.</small></span></button>' +
       '</div>' +
       '<label class="elige-puertos" hidden><input type="checkbox" id="paraPuertos" checked> 🏔️ Parar en cada puerto</label>' + // VIDEO-PUERTOS-ELEGIR-1
+      // 🆕 VIDEO-SATELITE-1 (139.ª, 6-nov · Cherokee: «me refiero a la vista satélite», como el «Vuela» de la app). Antes solo con
+      // «&mapa=satelite» en el enlace (MAPA-SATELITE-1); ahora, una casilla a la vista. Marcada si el enlace ya lo pedía.
+      '<label class="elige-puertos"><input type="checkbox" id="enSatelite"' + (/[?&]mapa=satelite(&|$)/.test(location.search) ? " checked" : "") + '> 🛰️ Vista satélite</label>' +
       '</div>';
     document.body.appendChild(capa);
     capa.querySelector(".cerrar-x").addEventListener("click", function () { capa.remove(); });
@@ -699,6 +702,8 @@ function pintar(r) {
     Array.prototype.forEach.call(capa.querySelectorAll(".elige-video button"), function (b) {
       b.addEventListener("click", function () {
         var cb = document.getElementById("paraPuertos"), parar = cb ? cb.checked : true; // VIDEO-PUERTOS-ELEGIR-1
+        var sat = document.getElementById("enSatelite"); // VIDEO-SATELITE-1
+        if (sat && typeof VIDEO === "object") VIDEO.ESTILO = sat.checked ? "satellite-streets-v12" : "outdoors-v12";
         capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1", parar);
       });
     });

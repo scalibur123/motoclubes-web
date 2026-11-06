@@ -1382,8 +1382,10 @@ async function verFicha(email, vuelve) {
       dato('Quiere probar la app', w.quiere_probar ? 'Sí · ' + movilTxt(w.plataforma) : 'No') + dato('Invitación', w.invitado_at ? 'Enviada el ' + fechaHora(w.invitado_at) : 'Sin enviar') +
       (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
       (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
-      (w.plataforma === 'android' ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
-        (!c && w.confirmado_at && w.quiere_probar && !w.baja_at && !w.quitado_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
+      // 🆕 PLAY-RIDER-IPHONE-1 (139.ª, 6-nov · Mario con Ramón: se apuntó con iPhone, ya tiene la app y quiere también Android, y
+      // el panel no le daba el botón). Ahora también a quien ya tiene cuenta o se apuntó con iPhone (el correo es el mismo).
+      (w.plataforma === 'android' || c || w.play_enviado_at ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
+        (w.confirmado_at && w.quiere_probar && !w.baja_at && !w.quitado_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '') +
       // QUITAR-LISTA-1 (131.ª, Mario 11:15): quitarlo de la lista con un motivo (no se borra, no cuenta en las cifras, se puede volver a poner)
       (w.quitado_at
