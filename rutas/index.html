@@ -872,13 +872,14 @@ function pintar(r) {
   var b = document.getElementById("bajar");
   if (b) b.addEventListener("click", function (e) {
     e.preventDefault();
+    // WEB-RUTAS-GPX-1: se cuenta ANTES de descargar (en el iPhone la descarga puede sacar la página antes de seguir)
+    try { if (window.mcVisitaGpx) window.mcVisitaGpx(); } catch (e2) {}
     var blob = new Blob([construirGpx(r, pts)], { type: "application/gpx+xml" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = (r.title || "ruta").replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, "").trim().replace(/\s+/g, "_") + ".gpx";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-    try { if (window.mcVisitaGpx) window.mcVisitaGpx(); } catch (e2) {} // WEB-RUTAS-GPX-1: cuenta la descarga
   });
 }
 
