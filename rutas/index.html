@@ -878,6 +878,7 @@ function pintar(r) {
     a.download = (r.title || "ruta").replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, "").trim().replace(/\s+/g, "_") + ".gpx";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    try { if (window.mcVisitaGpx) window.mcVisitaGpx(); } catch (e2) {} // WEB-RUTAS-GPX-1: cuenta la descarga
   });
 }
 

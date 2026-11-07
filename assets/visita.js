@@ -4,7 +4,9 @@
    que la página ha estado VISIBLE al salir. País y ciudad los deduce el servidor y no
    guarda la IP. Política: /legal/cookies/
    Excepción única: ?yo en la URL marca ESTE navegador para no contarlo (lo usa el dueño
-   de la web para que sus pruebas no inflen las cifras). ?yo=no lo desmarca. */
+   de la web para que sus pruebas no inflen las cifras). ?yo=no lo desmarca.
+   🆕 WEB-RUTAS-GPX-1 (7-nov-2026, 140.ª): en /rutas/?id=… manda también la ruta (ru), y la página llama a
+   window.mcVisitaGpx() al pulsar «Descargar GPX» para apuntarlo en esa misma visita. Sin nada personal nuevo. */
 (function () {
   try {
     var U = 'https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-visita';
@@ -38,7 +40,10 @@
       try { fetch(U, { method: 'POST', body: cuerpo, keepalive: true, mode: 'no-cors', headers: { 'Content-Type': 'text/plain' } }); } catch (e) {}
     };
 
-    enviar({ t: 'v', id: id, p: location.pathname, r: document.referrer || '', o: o, d: d, i: i });
+    var ru = '';
+    try { if (/^\/rutas\/?$/.test(location.pathname)) ru = new URLSearchParams(location.search).get('id') || ''; } catch (e) {}
+    enviar({ t: 'v', id: id, p: location.pathname, r: document.referrer || '', o: o, d: d, i: i, ru: ru });
+    window.mcVisitaGpx = function () { enviar({ t: 'g', id: id }); };
 
     // Tiempo VISIBLE: solo corre mientras la pestaña se ve. Se manda cada vez que se oculta
     // (el servidor se queda con el mayor), porque en el móvil no hay garantía de otro aviso.
