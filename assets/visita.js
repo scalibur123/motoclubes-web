@@ -28,7 +28,7 @@
     var d = /iPad|Tablet/i.test(ua) || (/Macintosh/.test(ua) && tactil) || (/Android/.test(ua) && !/Mobile/.test(ua))
       ? 'tablet' : (/Mobi|iPhone|iPod|Android/i.test(ua) ? 'movil' : 'ordenador');
     var seg = location.pathname.split('/')[1];
-    var i = ['en', 'ca', 'fr', 'pt'].indexOf(seg) >= 0 ? seg : 'es';
+    var i = ['en', 'ca', 'fr', 'pt', 'it'].indexOf(seg) >= 0 ? seg : 'es'; // it: IDIOMAS-PT-IT-1
     var o = '';
     try { o = new URLSearchParams(location.search).get('o') || ''; } catch (e) {}
 
