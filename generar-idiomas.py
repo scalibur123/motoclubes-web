@@ -152,6 +152,61 @@ FR = {
  "Aviso legal":"Mentions légales", "Privacidad":"Confidentialité", "Cookies":"Cookies",
  "Términos":"Conditions", "Normas del foro":"Règles du forum",
  "Contacto":"Contact", "Soporte y dudas:":"Support et questions :",
+ # WEB-REPASO-142 (9-nov-2026): Android Auto, radio del grupo, preguntas nuevas, 1.26.1108
+ "CarPlay y Android Auto":
+   "CarPlay et Android Auto",
+ "La ruta, los giros, las paradas, los radares y tus compañeros en la pantalla de la moto o del coche. Y sin ruta, el mapa con los radares.":
+   "L'itinéraire, les directions, les arrêts, les alertes et vos compagnons sur l'écran de la moto ou de la voiture. Et sans itinéraire, la carte avec les alertes de la zone.",
+ "Radio del grupo":
+   "Radio du groupe",
+ "Habláis todos por el intercomunicador que ya lleváis, de la marca que sea, por los datos del móvil. Sin intercomunicador, oyes al grupo.":
+   "Tout le monde parle par l'intercom qu'il porte déjà, quelle que soit la marque, via les données du téléphone. Sans intercom, vous entendez le groupe.",
+ "Crea el grupo, publica la salida, y en ruta todos se ven en el mapa y hablan por la radio del grupo.":
+   "Créez le groupe, publiez la sortie, et sur la route chacun voit les autres sur la carte et parle par la radio du groupe.",
+ "MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con mapa y radio y comparte tus rutas con la comunidad.":
+   "MOTOCLUBes est l'app des motards : préparez vos itinéraires, naviguez avec un GPS pensé pour la moto, roulez en groupe avec carte et radio et partagez vos parcours avec la communauté.",
+ "Te avisa de los radares fijos y de tramo y del límite antes de que baje, con ruta o sin ella. En Francia, las zonas de peligro, como marca su ley.":
+   "Vous prévient des radars fixes et de tronçon et de la limite avant qu'elle ne baisse, avec ou sans itinéraire. En France, les zones de danger, comme le veut la loi.",
+ "Ranking, logros y retos":
+   "Classement, trophées et défis",
+ "Kilómetros, curvas, provincias, puertos, motos y grupos: el ranking del mes y el de siempre, con sus hitos.":
+   "Kilomètres, virages, provinces, cols, motos et groupes : le classement du mois et celui de toujours, avec leurs paliers.",
+ "No. Vale cualquier intercomunicador Bluetooth que ya lleves en el casco, sea de la marca que sea. La voz del grupo va por los datos del móvil, así que no depende del alcance del aparato: mientras haya cobertura, seguís hablando. Sin intercomunicador oyes al grupo, pero para hablar hace falta.":
+   "Non. N'importe quel intercom Bluetooth que vous avez déjà dans le casque fait l'affaire, quelle que soit la marque. La voix du groupe passe par les données du téléphone : elle ne dépend pas de la portée de l'appareil, tant qu'il y a du réseau vous continuez à parler. Sans intercom vous entendez le groupe, mais pour parler il en faut un.",
+ "No. Solo te ven los compañeros de tu salida, y solo mientras dura. Y si no quieres compartir tu posición, lo apagas en tu perfil.":
+   "Non. Seuls les membres de votre sortie vous voient, et seulement pendant qu’elle dure. Et si vous ne voulez pas partager votre position, vous la désactivez dans votre profil.",
+ "¿Funciona fuera de España?":
+   "Ça marche en dehors de l'Espagne ?",
+ "Sí. Los mapas, el planificador y la navegación valen en toda Europa, y el tiempo de tu salida también. Las gasolineras con su precio, en España, Francia, Portugal y Andorra. Los radares, en España, y en Francia las zonas de peligro, como marca su ley.":
+   "Oui. Les cartes, le planificateur et la navigation fonctionnent dans toute l'Europe, tout comme la météo de votre sortie. Les stations-service avec leurs prix en Espagne, en France, au Portugal et en Andorre. Les radars en Espagne, et en France les zones de danger, comme le veut la loi.",
+ "¿Tienes una duda o un problema?":
+   "Une question ou un problème ?",
+ "Escríbenos por WhatsApp al 653 835 720 o a soporte@motoclubes.es. Te contestamos lo antes posible.":
+   "Écrivez-nous sur WhatsApp au +34 653 835 720 ou à soporte@motoclubes.es. Nous vous répondons au plus vite.",
+ "💬 Escríbenos por WhatsApp":
+   "💬 Écrivez-nous sur WhatsApp",
+ "¿Cuándo sales? El tiempo por el camino":
+   "Vous partez quand ? La météo sur la route",
+ "Pon el día y la hora de tu salida: el día antes y esa misma mañana te avisamos del tiempo que te espera por la ruta.":
+   "Indiquez le jour et l'heure de votre sortie : la veille et le matin même, on vous prévient de la météo qui vous attend sur l'itinéraire.",
+ "Curvas, con autopista donde quieras":
+   "Des virages, et l'autoroute où vous voulez",
+ "En una ruta de curvas o de pista, marca los tramos que prefieres hacer por autopista para llegar antes a lo bueno.":
+   "Sur un itinéraire sinueux ou tout-terrain, marquez les tronçons que vous préférez faire par l'autoroute pour arriver plus vite au meilleur.",
+ "Cuentas del viaje":
+   "Les comptes du voyage",
+ "Cada uno apunta lo que paga (gasolina, comidas, hotel…) y la app dice quién debe a quién.":
+   "Chacun note ce qu'il paie (essence, repas, hôtel…) et l'app dit qui doit combien à qui.",
+ "Graba con el mapa delante":
+   "Enregistrez avec la carte sous les yeux",
+ "Graba tu salida viendo tu línea y los radares. Y si sales de la pantalla para usar la app, la grabación sigue.":
+   "Enregistrez votre sortie en voyant votre tracé et les alertes. Et si vous quittez l'écran pour utiliser l'app, l'enregistrement continue.",
+ "¿Llegas tarde? Únete por el camino":
+   "En retard ? Rejoignez en route",
+ "Si arrancas lejos del punto de encuentro, eliges dónde te unes al grupo y, mientras, te llevamos hasta allí.":
+   "Si vous partez loin du point de rendez-vous, vous choisissez où rejoindre le groupe et, en attendant, on vous y guide.",
+ "Radares y límite de velocidad":
+   "Radars et limitation de vitesse",
 }
 
 PT = {
@@ -294,6 +349,61 @@ PT = {
  "Aviso legal":"Aviso legal", "Privacidad":"Privacidade", "Cookies":"Cookies",
  "Términos":"Termos", "Normas del foro":"Regras do fórum",
  "Contacto":"Contacto", "Soporte y dudas:":"Apoio e dúvidas:",
+ # WEB-REPASO-142 (9-nov-2026): Android Auto, radio del grupo, preguntas nuevas, 1.26.1108
+ "CarPlay y Android Auto":
+   "CarPlay e Android Auto",
+ "La ruta, los giros, las paradas, los radares y tus compañeros en la pantalla de la moto o del coche. Y sin ruta, el mapa con los radares.":
+   "A rota, as mudanças de direção, as paragens, os radares e os teus companheiros no ecrã da mota ou do carro. E sem rota, o mapa com os radares.",
+ "Radio del grupo":
+   "Rádio do grupo",
+ "Habláis todos por el intercomunicador que ya lleváis, de la marca que sea, por los datos del móvil. Sin intercomunicador, oyes al grupo.":
+   "Falam todos pelo intercomunicador que já usam, seja de que marca for, através dos dados do telemóvel. Sem intercomunicador, ouves o grupo.",
+ "Crea el grupo, publica la salida, y en ruta todos se ven en el mapa y hablan por la radio del grupo.":
+   "Cria o grupo, publica a saída, e na estrada todos se veem no mapa e falam pelo rádio do grupo.",
+ "MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con mapa y radio y comparte tus rutas con la comunidad.":
+   "MOTOCLUBes é a app para motociclistas: planeia rotas, navega com GPS pensado para a mota, anda em grupo com mapa e rádio e partilha as tuas rotas com a comunidade.",
+ "Te avisa de los radares fijos y de tramo y del límite antes de que baje, con ruta o sin ella. En Francia, las zonas de peligro, como marca su ley.":
+   "Avisa-te dos radares fixos e de troço e do limite antes de baixar, com ou sem rota. Em França, as zonas de perigo, como manda a lei.",
+ "Ranking, logros y retos":
+   "Ranking, conquistas e desafios",
+ "Kilómetros, curvas, provincias, puertos, motos y grupos: el ranking del mes y el de siempre, con sus hitos.":
+   "Quilómetros, curvas, províncias, passos de montanha, motas e grupos: o ranking do mês e o de sempre, com as suas metas.",
+ "No. Vale cualquier intercomunicador Bluetooth que ya lleves en el casco, sea de la marca que sea. La voz del grupo va por los datos del móvil, así que no depende del alcance del aparato: mientras haya cobertura, seguís hablando. Sin intercomunicador oyes al grupo, pero para hablar hace falta.":
+   "Não. Serve qualquer intercomunicador Bluetooth que já tenhas no capacete, seja de que marca for. A voz do grupo vai pelos dados do telemóvel, por isso não depende do alcance do aparelho: enquanto houver rede, continuam a falar. Sem intercomunicador ouves o grupo, mas para falar precisas de um.",
+ "No. Solo te ven los compañeros de tu salida, y solo mientras dura. Y si no quieres compartir tu posición, lo apagas en tu perfil.":
+   "Não. Só te veem os companheiros da tua saída, e só enquanto dura. E se não quiseres partilhar a tua posição, desligas no teu perfil.",
+ "¿Funciona fuera de España?":
+   "Funciona fora de Espanha?",
+ "Sí. Los mapas, el planificador y la navegación valen en toda Europa, y el tiempo de tu salida también. Las gasolineras con su precio, en España, Francia, Portugal y Andorra. Los radares, en España, y en Francia las zonas de peligro, como marca su ley.":
+   "Sim. Os mapas, o planeador e a navegação funcionam em toda a Europa, e a meteorologia da tua saída também. Os postos de combustível com o preço, em Espanha, França, Portugal e Andorra. Os radares, em Espanha, e em França as zonas de perigo, como manda a lei.",
+ "¿Tienes una duda o un problema?":
+   "Tens uma dúvida ou um problema?",
+ "Escríbenos por WhatsApp al 653 835 720 o a soporte@motoclubes.es. Te contestamos lo antes posible.":
+   "Escreve-nos por WhatsApp para o +34 653 835 720 ou para soporte@motoclubes.es. Respondemos o mais depressa possível.",
+ "💬 Escríbenos por WhatsApp":
+   "💬 Escreve-nos por WhatsApp",
+ "¿Cuándo sales? El tiempo por el camino":
+   "Quando sais? O tempo pelo caminho",
+ "Pon el día y la hora de tu salida: el día antes y esa misma mañana te avisamos del tiempo que te espera por la ruta.":
+   "Põe o dia e a hora da tua saída: na véspera e nessa mesma manhã avisamos-te do tempo que te espera pela rota.",
+ "Curvas, con autopista donde quieras":
+   "Curvas, com autoestrada onde quiseres",
+ "En una ruta de curvas o de pista, marca los tramos que prefieres hacer por autopista para llegar antes a lo bueno.":
+   "Numa rota de curvas ou de terra, marca os troços que preferes fazer por autoestrada para chegares mais depressa ao que interessa.",
+ "Cuentas del viaje":
+   "Contas da viagem",
+ "Cada uno apunta lo que paga (gasolina, comidas, hotel…) y la app dice quién debe a quién.":
+   "Cada um aponta o que paga (combustível, refeições, hotel…) e a app diz quem deve a quem.",
+ "Graba con el mapa delante":
+   "Grava com o mapa à frente",
+ "Graba tu salida viendo tu línea y los radares. Y si sales de la pantalla para usar la app, la grabación sigue.":
+   "Grava a tua saída a ver a tua linha e os radares. E se saíres do ecrã para usar a app, a gravação continua.",
+ "¿Llegas tarde? Únete por el camino":
+   "Chegas tarde? Junta-te pelo caminho",
+ "Si arrancas lejos del punto de encuentro, eliges dónde te unes al grupo y, mientras, te llevamos hasta allí.":
+   "Se arrancas longe do ponto de encontro, escolhes onde te juntas ao grupo e, entretanto, levamos-te até lá.",
+ "Radares y límite de velocidad":
+   "Radares e limite de velocidade",
 }
 
 def generar(destino, dic, codigo, locale):
