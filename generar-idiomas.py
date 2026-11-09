@@ -211,13 +211,13 @@ FR = {
 
 PT = {
  "MOTOCLUBes — La app que viaja contigo | Rutas, navegación y comunidad motera":
-   "MOTOCLUBes — A app que viaja consigo | Rotas, navegação e comunidade motard",
+   "MOTOCLUBes — A app que viaja contigo | Rotas, navegação e comunidade motard",
  "MOTOCLUBes es la app para moteros: planifica rutas, navega con GPS pensado para la moto, rueda en grupo con intercom y comparte tus rutas con la comunidad.":
    "MOTOCLUBes é a app para motards: planeia rotas, navega com GPS pensado para a mota, anda em grupo com intercomunicador e partilha as tuas rotas com a comunidade.",
  "Qué es":"A app", "Funciones":"Funções", "Proyecto":"O projeto", "Preguntas":"Perguntas",
  "Negocios":"Negócios", "Descarga":"Descarregar",
  "Planificar":"Planear", "🖥️ Planifica en el ordenador":"🖥️ Planeia no computador",  # PLANIFICAR-WEB-ENLACE-1 (127.ª)
- "La app que viaja contigo.":"A app que viaja consigo.",
+ "La app que viaja contigo.":"A app que viaja contigo.",
  "Tu club. Tus rutas. Tu comunidad.":"O teu clube. As tuas rotas. A tua comunidade.",
  "Ver qué hace":"Ver o que faz", "Soy un negocio":"Tenho um negócio",
  "Estamos rodando la app con riders reales antes de abrirla al público.":
@@ -637,11 +637,20 @@ IT = {
  "\"Marca la casilla de privacidad para poder avisarte.\"": "\"Spunta la casella della privacy per poterti avvisare.\""
 }
 
+# WEB-IT-1 (142.ª): el pie decía «Préparezdor / Planeiador / Pianificador de rutas» (la palabra corta se comía la larga) y el
+# hueco del correo «tu@correo.com» en castellano.
+FR.update({"Planificador de rutas": "Planificateur d'itinéraires", 'placeholder="tu@correo.com"': 'placeholder="toi@email.fr"'})
+PT.update({"Planificador de rutas": "Planeador de rotas", 'placeholder="tu@correo.com"': 'placeholder="tu@email.pt"'})
+IT.update({"Planificador de rutas": "Pianificatore di percorsi", 'placeholder="tu@correo.com"': 'placeholder="tu@email.it"'})
+
 def generar(destino, dic, codigo, locale):
     s = io.open('index.html', encoding='utf8').read()
     # Las cadenas largas primero: si no, una corta rompe una larga que la contiene.
-    for es in sorted(dic, key=len, reverse=True):
-        s = s.replace(es, dic[es])
+    # WEB-IT-1 (142.ª): UNA sola pasada. Antes, con un replace detrás de otro, lo ya traducido se volvía a traducir
+    # («Planificateur» lleva dentro «Planifica» → salía «Préparezteur» en la web francesa).
+    import re as _re0
+    _pat = _re0.compile('|'.join(_re0.escape(k) for k in sorted(dic, key=len, reverse=True)))
+    s = _pat.sub(lambda m: dic[m.group(0)], s)
     s = s.replace('<html lang="es">', f'<html lang="{codigo}">')
     s = s.replace('<meta property="og:locale" content="es">', f'<meta property="og:locale" content="{locale}">')
     s = s.replace('href="https://www.motoclubes.es/"><link rel="alternate" hreflang="x-default"',
