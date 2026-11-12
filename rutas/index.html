@@ -609,6 +609,39 @@ function trazaParaGpx(pts) {
 /* 🆕 WEB-RUTA-DETALLE-1: el GPX lleva las paradas como <wpt>, como el de la app (`ruta-gpx.ts`). Antes devolvía
    `routes.gpx` si existía (solo lo rellena una GRABACIÓN) y si no, la línea pelada: el forero de TomTom o de Garmin
    se bajaba la ruta sin una gasolinera ni un puerto (FORO-BMWMOTOS-1). */
+/* 🆕 GPX-INSTAGRAM-1 (12-nov-2026). Un motero abrió la ruta desde un mensaje de Instagram, pulsó «Descargar GPX» y no pasó
+   nada; a Mario, igual. El navegador que Instagram, Facebook y otras apps llevan dentro no deja descargar archivos (a veces
+   sí, a veces no) y nadie tiene por qué saber que hay que ir a los tres puntitos. Si la página se abre ahí dentro, arriba
+   de los botones sale un botón grande que saca al navegador de verdad de un toque:
+     · iPhone: `x-safari-https://…` (abre Safari; probado por terceros en iOS 15, 17 y 18; en iOS 16 no va → queda el texto).
+     · Android: `intent://…` (abre el navegador del móvil).
+   Debajo, el plan B a la vista: copiar el enlace, o los tres puntitos. Fuera de esas apps no cambia nada. */
+function dentroDeApp() {
+  var ua = navigator.userAgent || "";
+  var m = ua.match(/Instagram|FBAN|FBAV|FB_IAB|Barcelona|TikTok|musical_ly|LinkedInApp|Snapchat|Line\//i);
+  if (!m) return null;
+  var n = m[0];
+  return /Instagram/i.test(n) ? "Instagram" : /^FB/i.test(n) ? "Facebook" : /Barcelona/i.test(n) ? "Threads"
+       : /TikTok|musical_ly/i.test(n) ? "TikTok" : /LinkedIn/i.test(n) ? "LinkedIn" : "esta app";
+}
+function enlaceNavegador() {
+  var ua = navigator.userAgent || "", u = location.href;
+  if (/iPhone|iPad|iPod/i.test(ua)) return "x-safari-" + u;                       // https://… → x-safari-https://…
+  if (/Android/i.test(ua)) return "intent://" + u.replace(/^https?:\/\//, "") + "#Intent;scheme=https;action=android.intent.action.VIEW;end";
+  return u;
+}
+function htmlDentroDeApp(hayGpx) {
+  var app = dentroDeApp();
+  if (!app || !hayGpx) return "";
+  var safari = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  return '<div id="dentroApp" style="margin-top:26px;padding:16px 18px;border-radius:16px;border:2px solid #FF7A1A;background:rgba(255,122,26,.10)">' +
+    '<p style="margin:0 0 12px;font-weight:700">Para descargar el GPX, abre la ruta en ' + (safari ? "Safari" : "tu navegador") + '</p>' +
+    '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" style="display:block;text-align:center">' + (safari ? "Abrir en Safari" : "Abrir en el navegador") + ' ↗</a>' +
+    '<p style="margin:12px 0 0;font-size:14px;opacity:.85">' + esc(app) + ' no deja descargar archivos. ¿No se abre? ' +
+    '<a href="#" id="copiarApp" style="text-decoration:underline">Copia el enlace</a> y pégalo en ' + (safari ? "Safari" : "Chrome") +
+    ', o pulsa <b>⋯</b> arriba y «Abrir en el navegador».</p></div>';
+}
+
 function construirGpx(r, pts) {
   var paradas = Array.isArray(r.paradas) ? r.paradas : [];
   var wpts = paradas.map(function (w, i) {
@@ -652,6 +685,7 @@ function pintar(r) {
     '<div class="datos">' + datos + "</div>" +
     (r.description ? '<p class="entradilla" style="margin-top:24px">' + esc(r.description) + "</p>" : "") +
     htmlTerreno(r) + // TERRENO-RUTA-1
+    htmlDentroDeApp(pts.length > 0) + // GPX-INSTAGRAM-1
     '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
       (pts.length ? '<a class="boton boton-suave" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
       '<a class="boton boton-suave" id="abrirApp" href="' + (esMovil() ? "motoclubes://ruta/" + esc(r.id) : "#") + '">Abrir en la app</a>' + // WEB-ABRIR-APP-1
@@ -932,6 +966,15 @@ function pintar(r) {
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(enlace).then(ok, function () { prompt("Copia el enlace:", enlace); });
       else prompt("Copia el enlace:", enlace);
     });
+  });
+
+  // GPX-INSTAGRAM-1: copiar el enlace (plan B si la app no deja salir al navegador)
+  var cApp = document.getElementById("copiarApp");
+  if (cApp) cApp.addEventListener("click", function (e) {
+    e.preventDefault();
+    var u = location.href, ok = function () { cApp.textContent = "Enlace copiado ✓"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(ok, function () { prompt("Copia el enlace:", u); });
+    else prompt("Copia el enlace:", u);
   });
 
   var b = document.getElementById("bajar");
