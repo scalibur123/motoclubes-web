@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>MOTOCLUBes · SOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',system-ui,sans-serif;background:#111;color:#fff;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;padding:28px 18px 40px}
+.top{width:100%;max-width:440px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.marca{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px}
+.marca img{width:36px;height:36px;border-radius:10px}
+.marca span{color:#FF7A1A}
+select.idioma{background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:10px;padding:8px 10px;font-family:inherit;font-size:14px}
+.card{width:100%;max-width:440px}
+h1{font-size:25px;font-weight:800;letter-spacing:-0.4px;line-height:1.2;margin-bottom:10px}
+p{font-size:15.5px;line-height:1.6;color:rgba(255,255,255,0.78);margin-bottom:12px}
+p.pie{font-size:12.5px;color:rgba(255,255,255,0.5);line-height:1.55}
+p.pie a{color:rgba(255,255,255,0.7)}
+.caja{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:14px 16px;margin:14px 0}
+label.casilla{display:flex;gap:12px;align-items:flex-start;font-size:15.5px;line-height:1.45;cursor:pointer;font-weight:700}
+label.casilla input{width:24px;height:24px;flex:none;margin-top:1px;accent-color:#FF7A1A}
+label.campo{display:block;font-size:13px;color:rgba(255,255,255,0.6);margin:14px 0 6px}
+input.texto{width:100%;background:#1c1c1c;border:1px solid #333;border-radius:12px;color:#fff;font-family:inherit;font-size:16px;padding:13px 14px}
+button{font-family:inherit;cursor:pointer}
+button.primario{width:100%;border:none;border-radius:999px;background:#FF7A1A;color:#111;font-weight:800;font-size:16.5px;padding:15px;margin-top:16px}
+button.primario:disabled{opacity:.45;cursor:default}
+button.secundario{width:100%;border:1px solid #444;border-radius:999px;background:transparent;color:#fff;font-weight:700;font-size:15px;padding:13px;margin-top:10px}
+button.enlace{background:none;border:none;color:rgba(255,255,255,0.6);text-decoration:underline;font-size:14px;margin-top:18px}
+.msg{font-size:14px;color:#ff7b7b;min-height:20px;margin-top:10px}
+.hidden{display:none !important}
+.sello{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:16px}
+.sello.ok{background:rgba(124,255,155,0.14)}
+.sello.sos{background:#DC2626;font-size:17px;font-weight:900;letter-spacing:.5px}
+.rojo{background:#DC2626;border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.rojo h1{margin-bottom:4px}
+.rojo p{color:#fff;margin:0;font-size:14.5px}
+.verde{background:#15803D;border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.verde h1{margin-bottom:4px}
+.verde p{color:#fff;margin:0;font-size:14.5px}
+#mapa{width:100%;height:320px;border-radius:16px;overflow:hidden;background:#1a1a1a;margin-bottom:12px}
+a.boton{display:block;text-align:center;text-decoration:none;border-radius:999px;font-weight:800;font-size:16px;padding:14px;margin-top:10px}
+a.boton.llamar{background:#16A34A;color:#fff}
+a.boton.maps{background:#fff;color:#111}
+a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
+.dato{font-size:13.5px;color:rgba(255,255,255,0.6);margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="marca"><img src="https://www.motoclubes.es/email-logo-helmet.png" alt=""><div>MOTO<span>CLUBes</span></div></div>
+  <select class="idioma" id="idioma" aria-label="Idioma">
+    <option value="es">Español</option><option value="ca">Català</option><option value="en">English</option>
+    <option value="fr">Français</option><option value="pt">Português</option><option value="it">Italiano</option>
+  </select>
+</div>
+
+<!-- CARGANDO -->
+<div id="v-cargando" class="card"><h1 data-t="cargando"></h1></div>
+
+<!-- ENLACE NO VÁLIDO -->
+<div id="v-malo" class="card hidden"><h1 data-t="malo_t"></h1><p data-t="malo_p"></p></div>
+
+<!-- CONTACTO · PENDIENTE: aceptar o no -->
+<div id="v-pendiente" class="card hidden">
+  <h1 id="pen-t"></h1>
+  <p id="pen-p1"></p>
+  <p data-t="pen_p2"></p>
+  <div class="caja"><label class="casilla"><input type="checkbox" id="casilla"><span id="pen-casilla"></span></label></div>
+  <label class="campo" for="tel" data-t="tel_l"></label>
+  <input class="texto" id="tel" type="tel" inputmode="tel" maxlength="20" placeholder="+34 600 000 000" autocomplete="tel">
+  <button class="primario" id="b-aceptar" disabled data-t="aceptar"></button>
+  <button class="secundario" id="b-no" data-t="no_gracias"></button>
+  <p class="msg" id="pen-msg"></p>
+  <p class="pie" id="pen-legal"></p>
+</div>
+
+<!-- CONTACTO · ACEPTADO -->
+<div id="v-aceptado" class="card hidden">
+  <div class="sello ok">✓</div>
+  <h1 id="ace-t"></h1>
+  <p id="ace-p1"></p>
+  <p data-t="ace_p2"></p>
+  <label class="campo" for="tel2" data-t="tel_l"></label>
+  <input class="texto" id="tel2" type="tel" inputmode="tel" maxlength="20" placeholder="+34 600 000 000" autocomplete="tel">
+  <button class="secundario" id="b-guardar" data-t="guardar_tel"></button>
+  <p class="msg" id="ace-msg"></p>
+  <button class="enlace" id="b-dejar"></button>
+</div>
+
+<!-- CONTACTO · HA DICHO QUE NO / HA DEJADO DE SERLO -->
+<div id="v-rechazado" class="card hidden">
+  <h1 data-t="rec_t"></h1>
+  <p id="rec-p"></p>
+</div>
+
+<!-- SOS · EL MAPA -->
+<div id="v-sos" class="card hidden">
+  <div id="sos-cartel" class="rojo"><h1 id="sos-t"></h1><p id="sos-sub"></p></div>
+  <div id="mapa"></div>
+  <p class="dato" id="sos-dato"></p>
+  <a class="boton llamar hidden" id="sos-llamar"></a>
+  <a class="boton maps" id="sos-maps" target="_blank" rel="noopener" data-t="abrir_maps"></a>
+  <a class="boton e112" href="tel:112" data-t="llamar_112"></a>
+  <p class="pie" style="margin-top:16px" data-t="sos_pie"></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js"></script>
+<script>
+(function () {
+  // SOS-SOLO-1 (146.ª, 12-nov-2026). La página de los contactos de emergencia: ?c=<llave> para aceptar o decir que no (o
+  // dejar de serlo) y ?s=<llave> para ver dónde está el rider que ha pedido ayuda. Vive aquí y no en la Edge Function
+  // porque Supabase no sirve HTML (ver /baja/). Abrir el enlace NO acepta nada: hay que marcar la casilla y pulsar.
+  var API = "https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/sos-contacto";
+  var MAPBOX_TOKEN = "pk.eyJ1IjoibW90b2NsdWJlcyIsImEiOiJjbXA2cmJxaTUwM3djMnJzZXlvMzBycGg0In0.dw_0jtLStDE_MyCAm6zOig";
+
+  var T = {
+    es: { cargando: "Un momento…", malo_t: "Este enlace ya no vale", malo_p: "Puede que esté incompleto (ábrelo desde el correo, sin recortarlo) o que el aviso sea de hace más de un día.",
+      pen_t: "{rider} te ha puesto como su contacto de emergencia", pen_p1: "{rider} usa MOTOCLUBes, una app para rutas en moto. Si pide ayuda desde la app cuando va en moto sin grupo, te llegará un correo con el sitio donde está en el mapa.",
+      pen_p2: "No tienes que instalar nada ni crear una cuenta. Hasta que aceptes, no recibirás ningún aviso.",
+      casilla: "Acepto ser contacto de emergencia de {rider}.", tel_l: "Tu móvil (opcional). Solo para avisarte también por SMS cuando esté disponible.",
+      aceptar: "Aceptar", no_gracias: "No, gracias", guardar_tel: "Guardar mi móvil",
+      legal: "MOTOCLUBES TECH, S.L. guarda tu nombre y tu correo (y tu teléfono, si lo dejas) porque {rider} te ha indicado como contacto de emergencia. Solo los usamos para avisarte si pide ayuda. No te enviaremos publicidad ni los cederemos a nadie. Puedes dejar de ser contacto en cualquier momento desde el enlace de cada correo, y tus datos se borran. Más información y derechos: {priv} · soporte@motoclubes.es",
+      priv: "Política de privacidad",
+      ace_t: "Eres contacto de emergencia de {rider}", ace_p1: "Si {rider} pide ayuda desde MOTOCLUBes, te llegará un correo de «MOTOCLUBes Emergencias» con un enlace para ver dónde está.",
+      ace_p2: "Para verlo a la primera, guarda sos@notify.motoclubes.es en tus contactos y, si algún correo nuestro te llega a spam, márcalo como «no es spam».",
+      dejar: "Dejar de ser contacto de {rider}", dejar_seguro: "¿Seguro? Dejarás de recibir sus avisos de ayuda y borraremos tus datos.", guardado: "Guardado.",
+      rec_t: "Hecho", rec_p: "No eres contacto de emergencia y hemos borrado tu correo. No volveremos a escribirte por esto.",
+      err_tel: "Ese teléfono no parece válido. Solo números, con el prefijo si quieres (+34…).", err: "No se ha podido. Inténtalo otra vez.",
+      sos_t: "{rider} ha pedido ayuda", sos_sub: "Desde MOTOCLUBes, {cuando}.", bien_t: "{rider} está bien", bien_sub: "Lo ha avisado {cuando}. No hace falta hacer nada.",
+      dato: "Última posición: {cuando}.", llamar: "Llamar a {rider}", abrir_maps: "Abrir en Google Maps", llamar_112: "Llamar al 112",
+      sos_pie: "Intenta llamarle. Si no contesta o crees que es grave, llama al 112 y diles dónde está. Esta página se actualiza sola.",
+      ahora: "ahora mismo", hace_min: "hace {n} min", hace_h: "hace {n} h", a_las: "a las {h}" },
+    ca: { cargando: "Un moment…", malo_t: "Aquest enllaç ja no val", malo_p: "Pot ser que estigui incomplet (obre'l des del correu, sense retallar-lo) o que l'avís sigui de fa més d'un dia.",
+      pen_t: "{rider} t'ha posat com a contacte d'emergència", pen_p1: "{rider} fa servir MOTOCLUBes, una app per a rutes en moto. Si demana ajuda des de l'app quan va en moto sense grup, rebràs un correu amb el lloc on és al mapa.",
+      pen_p2: "No has d'instal·lar res ni crear cap compte. Fins que acceptis, no rebràs cap avís.",
+      casilla: "Accepto ser contacte d'emergència de {rider}.", tel_l: "El teu mòbil (opcional). Només per avisar-te també per SMS quan estigui disponible.",
+      aceptar: "Acceptar", no_gracias: "No, gràcies", guardar_tel: "Desar el meu mòbil",
+      legal: "MOTOCLUBES TECH, S.L. guarda el teu nom i el teu correu (i el teu telèfon, si el deixes) perquè {rider} t'ha indicat com a contacte d'emergència. Només els fem servir per avisar-te si demana ajuda. No t'enviarem publicitat ni els cedirem a ningú. Pots deixar de ser contacte en qualsevol moment des de l'enllaç de cada correu, i les teves dades s'esborren. Més informació i drets: {priv} · soporte@motoclubes.es",
+      priv: "Política de privacitat",
+      ace_t: "Ets contacte d'emergència de {rider}", ace_p1: "Si {rider} demana ajuda des de MOTOCLUBes, rebràs un correu de «MOTOCLUBes Emergencias» amb un enllaç per veure on és.",
+      ace_p2: "Per veure'l a la primera, desa sos@notify.motoclubes.es als teus contactes i, si algun correu nostre t'arriba al correu brossa, marca'l com a «no és brossa».",
+      dejar: "Deixar de ser contacte de {rider}", dejar_seguro: "Segur? Deixaràs de rebre els seus avisos d'ajuda i esborrarem les teves dades.", guardado: "Desat.",
+      rec_t: "Fet", rec_p: "No ets contacte d'emergència i hem esborrat el teu correu. No et tornarem a escriure per això.",
+      err_tel: "Aquest telèfon no sembla vàlid. Només números, amb el prefix si vols (+34…).", err: "No s'ha pogut. Torna-ho a provar.",
+      sos_t: "{rider} ha demanat ajuda", sos_sub: "Des de MOTOCLUBes, {cuando}.", bien_t: "{rider} està bé", bien_sub: "Ho ha avisat {cuando}. No cal fer res.",
+      dato: "Última posició: {cuando}.", llamar: "Trucar a {rider}", abrir_maps: "Obrir a Google Maps", llamar_112: "Trucar al 112",
+      sos_pie: "Intenta trucar-li. Si no contesta o creus que és greu, truca al 112 i digues-los on és. Aquesta pàgina s'actualitza sola.",
+      ahora: "ara mateix", hace_min: "fa {n} min", hace_h: "fa {n} h", a_las: "a les {h}" },
+    en: { cargando: "One moment…", malo_t: "This link is no longer valid", malo_p: "It may be incomplete (open it from the email, without trimming it) or the alert may be more than a day old.",
+      pen_t: "{rider} has chosen you as their emergency contact", pen_p1: "{rider} uses MOTOCLUBes, an app for motorcycle routes. If they ask for help from the app while riding without a group, you will get an email showing where they are on the map.",
+      pen_p2: "You do not need to install anything or create an account. Until you accept, you will not receive any alerts.",
+      casilla: "I accept being an emergency contact for {rider}.", tel_l: "Your mobile (optional). Only to alert you by SMS as well when that is available.",
+      aceptar: "Accept", no_gracias: "No, thanks", guardar_tel: "Save my mobile",
+      legal: "MOTOCLUBES TECH, S.L. stores your name and email (and your phone number, if you leave it) because {rider} has named you as an emergency contact. We only use them to alert you if they ask for help. We will not send you advertising or pass them on to anyone. You can stop being a contact at any time from the link in each email, and your data are deleted. More information and your rights: {priv} · soporte@motoclubes.es",
+      priv: "Privacy policy",
+      ace_t: "You are an emergency contact for {rider}", ace_p1: "If {rider} asks for help from MOTOCLUBes, you will get an email from “MOTOCLUBes Emergencias” with a link to see where they are.",
+      ace_p2: "To see it straight away, save sos@notify.motoclubes.es to your contacts and, if one of our emails lands in spam, mark it as “not spam”.",
+      dejar: "Stop being a contact for {rider}", dejar_seguro: "Are you sure? You will stop receiving their help alerts and we will delete your data.", guardado: "Saved.",
+      rec_t: "Done", rec_p: "You are not an emergency contact and we have deleted your email. We will not write to you about this again.",
+      err_tel: "That phone number does not look valid. Digits only, with the prefix if you like (+34…).", err: "It did not work. Try again.",
+      sos_t: "{rider} has asked for help", sos_sub: "From MOTOCLUBes, {cuando}.", bien_t: "{rider} is OK", bien_sub: "They let us know {cuando}. There is nothing you need to do.",
+      dato: "Last position: {cuando}.", llamar: "Call {rider}", abrir_maps: "Open in Google Maps", llamar_112: "Call 112",
+      sos_pie: "Try calling them. If they do not answer or you think it is serious, call 112 and tell them the location. This page updates by itself.",
+      ahora: "just now", hace_min: "{n} min ago", hace_h: "{n} h ago", a_las: "at {h}" },
+    fr: { cargando: "Un instant…", malo_t: "Ce lien n'est plus valable", malo_p: "Il est peut-être incomplet (ouvrez-le depuis l'e-mail, sans le couper) ou l'alerte date de plus d'un jour.",
+      pen_t: "{rider} vous a choisi comme contact d'urgence", pen_p1: "{rider} utilise MOTOCLUBes, une app pour les balades à moto. S'il demande de l'aide depuis l'app en roulant sans groupe, vous recevrez un e-mail avec l'endroit où il se trouve sur la carte.",
+      pen_p2: "Vous n'avez rien à installer ni de compte à créer. Tant que vous n'acceptez pas, vous ne recevrez aucune alerte.",
+      casilla: "J'accepte d'être contact d'urgence de {rider}.", tel_l: "Votre mobile (facultatif). Uniquement pour vous prévenir aussi par SMS quand ce sera disponible.",
+      aceptar: "Accepter", no_gracias: "Non, merci", guardar_tel: "Enregistrer mon mobile",
+      legal: "MOTOCLUBES TECH, S.L. conserve votre nom et votre e-mail (et votre téléphone, si vous le laissez) parce que {rider} vous a indiqué comme contact d'urgence. Nous les utilisons uniquement pour vous prévenir s'il demande de l'aide. Nous ne vous enverrons pas de publicité et ne les céderons à personne. Vous pouvez cesser d'être contact à tout moment depuis le lien de chaque e-mail, et vos données sont supprimées. Plus d'informations et vos droits : {priv} · soporte@motoclubes.es",
+      priv: "Politique de confidentialité",
+      ace_t: "Vous êtes contact d'urgence de {rider}", ace_p1: "Si {rider} demande de l'aide depuis MOTOCLUBes, vous recevrez un e-mail de « MOTOCLUBes Emergencias » avec un lien pour voir où il se trouve.",
+      ace_p2: "Pour le voir du premier coup, enregistrez sos@notify.motoclubes.es dans vos contacts et, si l'un de nos e-mails arrive dans les indésirables, marquez-le comme « non indésirable ».",
+      dejar: "Ne plus être contact de {rider}", dejar_seguro: "Vous êtes sûr ? Vous ne recevrez plus ses alertes et nous supprimerons vos données.", guardado: "Enregistré.",
+      rec_t: "C'est fait", rec_p: "Vous n'êtes pas contact d'urgence et nous avons supprimé votre e-mail. Nous ne vous écrirons plus à ce sujet.",
+      err_tel: "Ce numéro ne semble pas valide. Uniquement des chiffres, avec l'indicatif si vous voulez (+34…).", err: "Cela n'a pas fonctionné. Réessayez.",
+      sos_t: "{rider} a demandé de l'aide", sos_sub: "Depuis MOTOCLUBes, {cuando}.", bien_t: "{rider} va bien", bien_sub: "Il l'a signalé {cuando}. Vous n'avez rien à faire.",
+      dato: "Dernière position : {cuando}.", llamar: "Appeler {rider}", abrir_maps: "Ouvrir dans Google Maps", llamar_112: "Appeler le 112",
+      sos_pie: "Essayez de l'appeler. Sans réponse, ou si vous pensez que c'est grave, appelez le 112 et indiquez-leur l'endroit. Cette page se met à jour toute seule.",
+      ahora: "à l'instant", hace_min: "il y a {n} min", hace_h: "il y a {n} h", a_las: "à {h}" },
+    pt: { cargando: "Um momento…", malo_t: "Esta ligação já não é válida", malo_p: "Pode estar incompleta (abre-a a partir do email, sem a cortar) ou o aviso pode ter mais de um dia.",
+      pen_t: "{rider} escolheu-te como contacto de emergência", pen_p1: "{rider} usa o MOTOCLUBes, uma app para rotas de moto. Se pedir ajuda a partir da app quando anda de moto sem grupo, vais receber um email com o sítio onde está no mapa.",
+      pen_p2: "Não tens de instalar nada nem criar conta. Até aceitares, não vais receber nenhum aviso.",
+      casilla: "Aceito ser contacto de emergência de {rider}.", tel_l: "O teu telemóvel (opcional). Só para te avisarmos também por SMS quando estiver disponível.",
+      aceptar: "Aceitar", no_gracias: "Não, obrigado", guardar_tel: "Guardar o meu telemóvel",
+      legal: "A MOTOCLUBES TECH, S.L. guarda o teu nome e o teu email (e o teu telefone, se o deixares) porque {rider} te indicou como contacto de emergência. Só os usamos para te avisar se pedir ajuda. Não te enviaremos publicidade nem os cederemos a ninguém. Podes deixar de ser contacto a qualquer momento a partir da ligação de cada email, e os teus dados são apagados. Mais informação e direitos: {priv} · soporte@motoclubes.es",
+      priv: "Política de privacidade",
+      ace_t: "És contacto de emergência de {rider}", ace_p1: "Se {rider} pedir ajuda a partir do MOTOCLUBes, vais receber um email de «MOTOCLUBes Emergencias» com uma ligação para ver onde está.",
+      ace_p2: "Para o veres à primeira, guarda sos@notify.motoclubes.es nos teus contactos e, se algum email nosso for parar ao spam, marca-o como «não é spam».",
+      dejar: "Deixar de ser contacto de {rider}", dejar_seguro: "Tens a certeza? Deixas de receber os avisos de ajuda e apagamos os teus dados.", guardado: "Guardado.",
+      rec_t: "Feito", rec_p: "Não és contacto de emergência e apagámos o teu email. Não voltaremos a escrever-te por isto.",
+      err_tel: "Esse telefone não parece válido. Só números, com o indicativo se quiseres (+34…).", err: "Não foi possível. Tenta outra vez.",
+      sos_t: "{rider} pediu ajuda", sos_sub: "A partir do MOTOCLUBes, {cuando}.", bien_t: "{rider} está bem", bien_sub: "Avisou {cuando}. Não é preciso fazer nada.",
+      dato: "Última posição: {cuando}.", llamar: "Ligar a {rider}", abrir_maps: "Abrir no Google Maps", llamar_112: "Ligar para o 112",
+      sos_pie: "Tenta ligar-lhe. Se não atender ou achares que é grave, liga para o 112 e diz-lhes onde está. Esta página atualiza-se sozinha.",
+      ahora: "agora mesmo", hace_min: "há {n} min", hace_h: "há {n} h", a_las: "às {h}" },
+    it: { cargando: "Un momento…", malo_t: "Questo link non è più valido", malo_p: "Forse è incompleto (aprilo dall'e-mail, senza tagliarlo) oppure l'avviso è di più di un giorno fa.",
+      pen_t: "{rider} ti ha scelto come contatto di emergenza", pen_p1: "{rider} usa MOTOCLUBes, un'app per i giri in moto. Se chiede aiuto dall'app quando è in moto senza gruppo, riceverai un'e-mail con il punto in cui si trova sulla mappa.",
+      pen_p2: "Non devi installare nulla né creare un account. Finché non accetti, non riceverai nessun avviso.",
+      casilla: "Accetto di essere contatto di emergenza di {rider}.", tel_l: "Il tuo cellulare (facoltativo). Solo per avvisarti anche via SMS quando sarà disponibile.",
+      aceptar: "Accetta", no_gracias: "No, grazie", guardar_tel: "Salva il mio cellulare",
+      legal: "MOTOCLUBES TECH, S.L. conserva il tuo nome e la tua e-mail (e il tuo telefono, se lo lasci) perché {rider} ti ha indicato come contatto di emergenza. Li usiamo solo per avvisarti se chiede aiuto. Non ti invieremo pubblicità e non li cederemo a nessuno. Puoi smettere di essere contatto in qualsiasi momento dal link di ogni e-mail, e i tuoi dati vengono cancellati. Maggiori informazioni e diritti: {priv} · soporte@motoclubes.es",
+      priv: "Informativa sulla privacy",
+      ace_t: "Sei contatto di emergenza di {rider}", ace_p1: "Se {rider} chiede aiuto da MOTOCLUBes, riceverai un'e-mail da «MOTOCLUBes Emergencias» con un link per vedere dove si trova.",
+      ace_p2: "Per vederla subito, salva sos@notify.motoclubes.es tra i tuoi contatti e, se una nostra e-mail finisce nello spam, segnala che «non è spam».",
+      dejar: "Non essere più contatto di {rider}", dejar_seguro: "Sei sicuro? Non riceverai più i suoi avvisi di aiuto e cancelleremo i tuoi dati.", guardado: "Salvato.",
+      rec_t: "Fatto", rec_p: "Non sei contatto di emergenza e abbiamo cancellato la tua e-mail. Non ti scriveremo più per questo.",
+      err_tel: "Questo numero non sembra valido. Solo cifre, con il prefisso se vuoi (+34…).", err: "Non è stato possibile. Riprova.",
+      sos_t: "{rider} ha chiesto aiuto", sos_sub: "Da MOTOCLUBes, {cuando}.", bien_t: "{rider} sta bene", bien_sub: "Lo ha comunicato {cuando}. Non devi fare nulla.",
+      dato: "Ultima posizione: {cuando}.", llamar: "Chiama {rider}", abrir_maps: "Apri in Google Maps", llamar_112: "Chiama il 112",
+      sos_pie: "Prova a chiamare. Se non risponde o pensi che sia grave, chiama il 112 e indica dove si trova. Questa pagina si aggiorna da sola.",
+      ahora: "proprio ora", hace_min: "{n} min fa", hace_h: "{n} h fa", a_las: "alle {h}" }
+  };
+  var PRIV = { es: "/legal/privacidad/", ca: "/legal/privacidad/", en: "/legal/privacidad/", fr: "/legal/privacidad/", pt: "/legal/privacidad/", it: "/legal/privacidad/" };
+
+  var q = new URLSearchParams(location.search);
+  var C = q.get("c"), S = q.get("s");
+  var esLlave = function (x) { return typeof x === "string" && /^[0-9a-f]{64}$/.test(x); };
+  var idioma = (function () {
+    var l = (q.get("l") || "").toLowerCase();
+    if (T[l]) return l;
+    var n = (navigator.languages || [navigator.language || "es"]);
+    for (var i = 0; i < n.length; i++) { var c = String(n[i]).toLowerCase().slice(0, 2); if (T[c]) return c; }
+    return "es";
+  })();
+  var elegido = !!T[(q.get("l") || "").toLowerCase()];
+
+  var $ = function (id) { return document.getElementById(id); };
+  function t(k, v) {
+    var s = (T[idioma] && T[idioma][k]) || T.es[k] || "";
+    if (v) s = s.replace(/\{(\w+)\}/g, function (m, n) { return n in v ? v[n] : m; });
+    return s;
+  }
+  var vistas = ["cargando", "malo", "pendiente", "aceptado", "rechazado", "sos"];
+  var vistaActual = "cargando";
+  function ver(n) { vistaActual = n; vistas.forEach(function (v) { $("v-" + v).classList.toggle("hidden", v !== n); }); }
+
+  var datos = null;   // lo último que dijo el servidor
+  function pintar() {
+    document.documentElement.lang = idioma;
+    $("idioma").value = idioma;
+    document.querySelectorAll("[data-t]").forEach(function (e) { e.textContent = t(e.getAttribute("data-t")); });
+    if (!datos) return;
+    var r = { rider: datos.rider || "" };
+    if (C) {
+      $("pen-t").textContent = t("pen_t", r);
+      $("pen-p1").textContent = t("pen_p1", r);
+      $("pen-casilla").textContent = t("casilla", r);
+      var legal = $("pen-legal"); legal.textContent = "";
+      var trozos = t("legal", r).split("{priv}");
+      legal.appendChild(document.createTextNode(trozos[0]));
+      var a = document.createElement("a"); a.href = PRIV[idioma]; a.target = "_blank"; a.rel = "noopener"; a.textContent = t("priv");
+      legal.appendChild(a);
+      legal.appendChild(document.createTextNode(trozos[1] || ""));
+      $("ace-t").textContent = t("ace_t", r);
+      $("ace-p1").textContent = t("ace_p1", r);
+      $("b-dejar").textContent = t("dejar", r);
+      $("rec-p").textContent = t("rec_p");
+    } else if (S) pintarSos();
+  }
+
+  $("idioma").addEventListener("change", function (e) { idioma = e.target.value; elegido = true; pintar(); });
+
+  function pedir(metodo, cuerpo) {
+    var url = API + (metodo === "GET" ? "?" + (C ? "c=" + C : "s=" + S) : "");
+    var o = { method: metodo, headers: { "Content-Type": "application/json" } };
+    if (cuerpo) o.body = JSON.stringify(cuerpo);
+    return fetch(url, o).then(function (x) { return x.json().then(function (d) { return { s: x.status, d: d }; }); });
+  }
+
+  // ───────────── contacto ─────────────
+  function entrarContacto() {
+    pedir("GET").then(function (res) {
+      if (res.s !== 200 || !res.d.ok) { ver("malo"); return; }
+      datos = res.d;
+      if (!elegido && T[datos.idioma]) idioma = datos.idioma;
+      pintar();
+      ver(datos.estado === "aceptado" ? "aceptado" : datos.estado === "pendiente" ? "pendiente" : "rechazado");
+    }).catch(function () { ver("malo"); });
+  }
+  function responder(acepta, tel, msg, boton) {
+    msg.textContent = "";
+    if (boton) boton.disabled = true;
+    return pedir("POST", { c: C, acepta: acepta, telefono: tel || null, idioma: idioma }).then(function (res) {
+      if (boton) boton.disabled = false;
+      if (res.s === 200 && res.d.ok) return res.d.estado;
+      msg.textContent = t(res.d && res.d.error === "telefono" ? "err_tel" : "err");
+      return null;
+    }).catch(function () { if (boton) boton.disabled = false; msg.textContent = t("err"); return null; });
+  }
+  $("casilla").addEventListener("change", function (e) { $("b-aceptar").disabled = !e.target.checked; });
+  $("b-aceptar").addEventListener("click", function () {
+    if (!$("casilla").checked) return;
+    responder(true, $("tel").value.trim(), $("pen-msg"), $("b-aceptar")).then(function (e) {
+      if (e === "aceptado") { $("tel2").value = $("tel").value.trim(); ver("aceptado"); window.scrollTo(0, 0); }
+      else $("b-aceptar").disabled = !$("casilla").checked;
+    });
+  });
+  $("b-no").addEventListener("click", function () {
+    responder(false, null, $("pen-msg"), $("b-no")).then(function (e) { if (e === "rechazado") { ver("rechazado"); window.scrollTo(0, 0); } });
+  });
+  $("b-guardar").addEventListener("click", function () {
+    responder(true, $("tel2").value.trim(), $("ace-msg"), $("b-guardar")).then(function (e) {
+      if (e === "aceptado") { $("ace-msg").style.color = "#7CFF9B"; $("ace-msg").textContent = t("guardado"); }
+      else $("ace-msg").style.color = "";
+    });
+  });
+  $("b-dejar").addEventListener("click", function () {
+    if (!window.confirm(t("dejar_seguro"))) return;
+    responder(false, null, $("ace-msg"), $("b-dejar")).then(function (e) { if (e === "rechazado") { ver("rechazado"); window.scrollTo(0, 0); } });
+  });
+
+  // ───────────── SOS ─────────────
+  var mapa = null, marca = null, desfase = 0;
+  function cuando(iso) {
+    var d = new Date(iso), ahora = Date.now() + desfase;
+    var min = Math.max(0, Math.round((ahora - d.getTime()) / 60000));
+    var h = d.toLocaleTimeString(idioma === "en" ? "en-GB" : idioma, { hour: "2-digit", minute: "2-digit" });
+    if (min < 1) return t("ahora");
+    if (min < 60) return t("hace_min", { n: min }) + " (" + t("a_las", { h: h }) + ")";
+    if (min < 24 * 60) return t("hace_h", { n: Math.round(min / 60) }) + " (" + t("a_las", { h: h }) + ")";
+    return d.toLocaleString(idioma === "en" ? "en-GB" : idioma);
+  }
+  function pintarSos() {
+    if (!datos) return;
+    var r = { rider: datos.rider || "" };
+    var bien = !!datos.bien_at;
+    $("sos-cartel").className = bien ? "verde" : "rojo";
+    $("sos-t").textContent = (bien ? "✅ " : "🆘 ") + t(bien ? "bien_t" : "sos_t", r);
+    $("sos-sub").textContent = t(bien ? "bien_sub" : "sos_sub", { cuando: cuando(bien ? datos.bien_at : datos.creado_at) });
+    $("sos-dato").textContent = t("dato", { cuando: cuando(datos.actualizado_at) });
+    $("sos-maps").href = "https://www.google.com/maps/search/?api=1&query=" + datos.lat + "," + datos.lng;
+    var ll = $("sos-llamar");
+    if (datos.telefono) { ll.href = "tel:" + datos.telefono; ll.textContent = "📞 " + t("llamar", r); ll.classList.remove("hidden"); }
+    else ll.classList.add("hidden");
+    document.title = (bien ? "✅ " : "🆘 ") + (datos.rider || "SOS") + " · MOTOCLUBes";
+    try {
+      if (!mapa && window.mapboxgl) {
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+        mapa = new mapboxgl.Map({ container: "mapa", style: "mapbox://styles/mapbox/outdoors-v12", center: [datos.lng, datos.lat], zoom: 14, attributionControl: true });
+        mapa.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+        var el = document.createElement("div");
+        el.style.cssText = "width:40px;height:40px;border-radius:50%;background:#DC2626;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.45);color:#fff;font:900 12px system-ui;display:flex;align-items:center;justify-content:center";
+        el.textContent = "SOS";
+        marca = new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([datos.lng, datos.lat]).addTo(mapa);
+      } else if (marca) {
+        marca.setLngLat([datos.lng, datos.lat]);
+        marca.getElement().style.background = bien ? "#15803D" : "#DC2626";
+      }
+    } catch (e) { /* sin mapa: quedan la hora y el botón de Google Maps */ }
+  }
+  var ultimoPunto = "";
+  function entrarSos(primera) {
+    pedir("GET").then(function (res) {
+      if (res.s !== 200 || !res.d.ok) { if (primera) ver("malo"); return; }
+      datos = res.d;
+      if (datos.ahora) desfase = new Date(datos.ahora).getTime() - Date.now();
+      pintar();
+      if (vistaActual !== "sos") ver("sos");
+      var p = datos.lat + "," + datos.lng;
+      if (mapa && p !== ultimoPunto && ultimoPunto) { try { mapa.easeTo({ center: [datos.lng, datos.lat] }); } catch (e) {} }
+      ultimoPunto = p;
+      if (primera && mapa) { try { mapa.resize(); } catch (e) {} }
+    }).catch(function () { if (primera) ver("malo"); });
+  }
+
+  pintar();
+  if (esLlave(C)) { S = null; entrarContacto(); }
+  else if (esLlave(S)) { C = null; entrarSos(true); setInterval(function () { if (!document.hidden) entrarSos(false); }, 30000); document.addEventListener("visibilitychange", function () { if (!document.hidden) entrarSos(false); }); }
+  else ver("malo");
+})();
+</script>
+</body>
+</html>
