@@ -77,6 +77,8 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 @media (max-width:900px){.ficha{grid-template-columns:1fr}}
 @media (max-width:760px){.cifras5{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.cifras{grid-template-columns:1fr 1fr}.fila,.fila.nota{grid-template-columns:1fr}}
+/* RF-NOS-ESCRIBIO-1: en el móvil el formulario de invitar ocupa todo el ancho (el aviso amarillo pasa debajo); antes el correo no se veía entero */
+@media (max-width:760px){#form{grid-template-columns:1fr!important}}
 /* PANEL-MOVIL-1 (31-oct, 133.ª · Mario, desde el móvil: «de responsive, nada»). En el móvil: la cabecera se dobla, las pestañas
    se deslizan dentro de su barra (no estiran la página) y cada fila de una tabla es una tarjeta con el nombre de cada dato encima
    (el nombre lo pone etiquetarTablas() con el texto de la cabecera). En el ordenador no cambia nada. */
@@ -467,7 +469,8 @@ function tipoTxt(t, cat) {
   if (esBar(cat) && esRest(cat)) return 'Bar y restaurante'
   return esBar(cat) ? 'Bar' : 'Restaurante'
 }
-const PREVIO = [['telefono','Por teléfono'],['en_persona','En persona'],['cita','Una cita'],['ninguno','No (puerta fría)']]
+// RF-NOS-ESCRIBIO-1 (12-nov-2026): + «Nos ha escrito él», cuando el negocio nos escribió primero (la carta da las gracias).
+const PREVIO = [['telefono','Por teléfono'],['en_persona','En persona'],['cita','Una cita'],['nos_escribio','Nos ha escrito él'],['ninguno','No (puerta fría)']]
 // MC-RF-INGLES-6OCT-2026 (101.ª, `RF-INVITA-INGLES-1`): la carta, el asunto y los dos PDF en inglés (Casa Lascorz).
 const IDIOMAS = [['es','Español'],['en','English']]
 let idioma = 'es'
