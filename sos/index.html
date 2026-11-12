@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>MOTOCLUBes · SOS</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet" integrity="sha384-SDYx9Nwa5fE1fRuBplOPejrcbPOK/ql0Uym6hsGsTvnlC784P5LZhBJIbo8O/O+0" crossorigin="anonymous">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Manrope',system-ui,sans-serif;background:#111;color:#fff;min-height:100vh;
@@ -105,12 +105,12 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
   <div id="mapa"></div>
   <p class="dato" id="sos-dato"></p>
   <a class="boton llamar hidden" id="sos-llamar"></a>
-  <a class="boton maps" id="sos-maps" target="_blank" rel="noopener" data-t="abrir_maps"></a>
   <a class="boton e112" href="tel:112" data-t="llamar_112"></a>
+  <a class="boton maps" id="sos-maps" target="_blank" rel="noopener" data-t="abrir_maps"></a>
   <p class="pie" style="margin-top:16px" data-t="sos_pie"></p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js" integrity="sha384-8KK5cWPPo2oOBnNju6hBjkoEm4NfYNKN8IoLYBPvwhPZMi9d/nS8HbUA1JyRbxIw" crossorigin="anonymous"></script>
 <script>
 (function () {
   // SOS-SOLO-1 (146.ª, 12-nov-2026). La página de los contactos de emergencia: ?c=<llave> para aceptar o decir que no (o
@@ -133,7 +133,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "Hecho", rec_p: "No eres contacto de emergencia y hemos borrado tu correo. No volveremos a escribirte por esto.",
       err_tel: "Ese teléfono no parece válido. Solo números, con el prefijo si quieres (+34…).", err: "No se ha podido. Inténtalo otra vez.",
       sos_t: "{rider} ha pedido ayuda", sos_sub: "Desde MOTOCLUBes, {cuando}.", bien_t: "{rider} está bien", bien_sub: "Lo ha avisado {cuando}. No hace falta hacer nada.",
-      dato: "Última posición: {cuando}.", llamar: "Llamar a {rider}", abrir_maps: "Abrir en Google Maps", llamar_112: "Llamar al 112",
+      dato: "Última posición: {cuando}.", llamar: "Llamar a {rider}", abrir_maps: "Cómo llegar", llamar_112: "Llamar al 112",
       sos_pie: "Intenta llamarle. Si no contesta o crees que es grave, llama al 112 y diles dónde está. Esta página se actualiza sola.",
       ahora: "ahora mismo", hace_min: "hace {n} min", hace_h: "hace {n} h", a_las: "a las {h}" },
     ca: { cargando: "Un moment…", malo_t: "Aquest enllaç ja no val", malo_p: "Pot ser que estigui incomplet (obre'l des del correu, sense retallar-lo) o que l'avís sigui de fa més d'un dia.",
@@ -149,7 +149,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "Fet", rec_p: "No ets contacte d'emergència i hem esborrat el teu correu. No et tornarem a escriure per això.",
       err_tel: "Aquest telèfon no sembla vàlid. Només números, amb el prefix si vols (+34…).", err: "No s'ha pogut. Torna-ho a provar.",
       sos_t: "{rider} ha demanat ajuda", sos_sub: "Des de MOTOCLUBes, {cuando}.", bien_t: "{rider} està bé", bien_sub: "Ho ha avisat {cuando}. No cal fer res.",
-      dato: "Última posició: {cuando}.", llamar: "Trucar a {rider}", abrir_maps: "Obrir a Google Maps", llamar_112: "Trucar al 112",
+      dato: "Última posició: {cuando}.", llamar: "Trucar a {rider}", abrir_maps: "Com arribar-hi", llamar_112: "Trucar al 112",
       sos_pie: "Intenta trucar-li. Si no contesta o creus que és greu, truca al 112 i digues-los on és. Aquesta pàgina s'actualitza sola.",
       ahora: "ara mateix", hace_min: "fa {n} min", hace_h: "fa {n} h", a_las: "a les {h}" },
     en: { cargando: "One moment…", malo_t: "This link is no longer valid", malo_p: "It may be incomplete (open it from the email, without trimming it) or the alert may be more than a day old.",
@@ -165,7 +165,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "Done", rec_p: "You are not an emergency contact and we have deleted your email. We will not write to you about this again.",
       err_tel: "That phone number does not look valid. Digits only, with the prefix if you like (+34…).", err: "It did not work. Try again.",
       sos_t: "{rider} has asked for help", sos_sub: "From MOTOCLUBes, {cuando}.", bien_t: "{rider} is OK", bien_sub: "They let us know {cuando}. There is nothing you need to do.",
-      dato: "Last position: {cuando}.", llamar: "Call {rider}", abrir_maps: "Open in Google Maps", llamar_112: "Call 112",
+      dato: "Last position: {cuando}.", llamar: "Call {rider}", abrir_maps: "Get directions", llamar_112: "Call 112",
       sos_pie: "Try calling them. If they do not answer or you think it is serious, call 112 and tell them the location. This page updates by itself.",
       ahora: "just now", hace_min: "{n} min ago", hace_h: "{n} h ago", a_las: "at {h}" },
     fr: { cargando: "Un instant…", malo_t: "Ce lien n'est plus valable", malo_p: "Il est peut-être incomplet (ouvrez-le depuis l'e-mail, sans le couper) ou l'alerte date de plus d'un jour.",
@@ -181,7 +181,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "C'est fait", rec_p: "Vous n'êtes pas contact d'urgence et nous avons supprimé votre e-mail. Nous ne vous écrirons plus à ce sujet.",
       err_tel: "Ce numéro ne semble pas valide. Uniquement des chiffres, avec l'indicatif si vous voulez (+34…).", err: "Cela n'a pas fonctionné. Réessayez.",
       sos_t: "{rider} a demandé de l'aide", sos_sub: "Depuis MOTOCLUBes, {cuando}.", bien_t: "{rider} va bien", bien_sub: "Il l'a signalé {cuando}. Vous n'avez rien à faire.",
-      dato: "Dernière position : {cuando}.", llamar: "Appeler {rider}", abrir_maps: "Ouvrir dans Google Maps", llamar_112: "Appeler le 112",
+      dato: "Dernière position : {cuando}.", llamar: "Appeler {rider}", abrir_maps: "Itinéraire", llamar_112: "Appeler le 112",
       sos_pie: "Essayez de l'appeler. Sans réponse, ou si vous pensez que c'est grave, appelez le 112 et indiquez-leur l'endroit. Cette page se met à jour toute seule.",
       ahora: "à l'instant", hace_min: "il y a {n} min", hace_h: "il y a {n} h", a_las: "à {h}" },
     pt: { cargando: "Um momento…", malo_t: "Esta ligação já não é válida", malo_p: "Pode estar incompleta (abre-a a partir do email, sem a cortar) ou o aviso pode ter mais de um dia.",
@@ -197,7 +197,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "Feito", rec_p: "Não és contacto de emergência e apagámos o teu email. Não voltaremos a escrever-te por isto.",
       err_tel: "Esse telefone não parece válido. Só números, com o indicativo se quiseres (+34…).", err: "Não foi possível. Tenta outra vez.",
       sos_t: "{rider} pediu ajuda", sos_sub: "A partir do MOTOCLUBes, {cuando}.", bien_t: "{rider} está bem", bien_sub: "Avisou {cuando}. Não é preciso fazer nada.",
-      dato: "Última posição: {cuando}.", llamar: "Ligar a {rider}", abrir_maps: "Abrir no Google Maps", llamar_112: "Ligar para o 112",
+      dato: "Última posição: {cuando}.", llamar: "Ligar a {rider}", abrir_maps: "Como chegar", llamar_112: "Ligar para o 112",
       sos_pie: "Tenta ligar-lhe. Se não atender ou achares que é grave, liga para o 112 e diz-lhes onde está. Esta página atualiza-se sozinha.",
       ahora: "agora mesmo", hace_min: "há {n} min", hace_h: "há {n} h", a_las: "às {h}" },
     it: { cargando: "Un momento…", malo_t: "Questo link non è più valido", malo_p: "Forse è incompleto (aprilo dall'e-mail, senza tagliarlo) oppure l'avviso è di più di un giorno fa.",
@@ -213,7 +213,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
       rec_t: "Fatto", rec_p: "Non sei contatto di emergenza e abbiamo cancellato la tua e-mail. Non ti scriveremo più per questo.",
       err_tel: "Questo numero non sembra valido. Solo cifre, con il prefisso se vuoi (+34…).", err: "Non è stato possibile. Riprova.",
       sos_t: "{rider} ha chiesto aiuto", sos_sub: "Da MOTOCLUBes, {cuando}.", bien_t: "{rider} sta bene", bien_sub: "Lo ha comunicato {cuando}. Non devi fare nulla.",
-      dato: "Ultima posizione: {cuando}.", llamar: "Chiama {rider}", abrir_maps: "Apri in Google Maps", llamar_112: "Chiama il 112",
+      dato: "Ultima posizione: {cuando}.", llamar: "Chiama {rider}", abrir_maps: "Come arrivare", llamar_112: "Chiama il 112",
       sos_pie: "Prova a chiamare. Se non risponde o pensi che sia grave, chiama il 112 e indica dove si trova. Questa pagina si aggiorna da sola.",
       ahora: "proprio ora", hace_min: "{n} min fa", hace_h: "{n} h fa", a_las: "alle {h}" }
   };
@@ -335,7 +335,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
     $("sos-t").textContent = (bien ? "✅ " : "🆘 ") + t(bien ? "bien_t" : "sos_t", r);
     $("sos-sub").textContent = t(bien ? "bien_sub" : "sos_sub", { cuando: cuando(bien ? datos.bien_at : datos.creado_at) });
     $("sos-dato").textContent = t("dato", { cuando: cuando(datos.actualizado_at) });
-    $("sos-maps").href = "https://www.google.com/maps/search/?api=1&query=" + datos.lat + "," + datos.lng;
+    $("sos-maps").href = "https://www.google.com/maps/dir/?api=1&destination=" + datos.lat + "," + datos.lng;
     var ll = $("sos-llamar");
     if (datos.telefono) { ll.href = "tel:" + datos.telefono; ll.textContent = "📞 " + t("llamar", r); ll.classList.remove("hidden"); }
     else ll.classList.add("hidden");
