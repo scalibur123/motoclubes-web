@@ -348,6 +348,7 @@ a.boton.e112{background:transparent;color:#fff;border:2px solid #DC2626}
         var el = document.createElement("div");
         el.style.cssText = "width:40px;height:40px;border-radius:50%;background:#DC2626;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.45);color:#fff;font:900 12px system-ui;display:flex;align-items:center;justify-content:center";
         el.textContent = "SOS";
+        if (bien) el.style.background = "#15803D"; // ya está bien: el punto, en verde como el cartel
         marca = new mapboxgl.Marker({ element: el, anchor: "center" }).setLngLat([datos.lng, datos.lat]).addTo(mapa);
       } else if (marca) {
         marca.setLngLat([datos.lng, datos.lat]);
