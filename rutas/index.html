@@ -636,16 +636,40 @@ function enlaceNavegador() {
   if (/Android/i.test(ua)) return "intent://" + u.replace(/^https?:\/\//, "") + "#Intent;scheme=https;action=android.intent.action.VIEW;end";
   return u;
 }
+/* GPX-INSTAGRAM-1, segunda vuelta (12-nov 18:41, Mario en su iPhone: «sale naranja, pero el botón no hace nada»). Instagram
+   ya bloquea `x-safari-https://` en iPhone. Lo que sí tiene su navegador es el menú de compartir del iPhone: se le pasa el
+   GPX como archivo y el motero elige «Guardar en Archivos» o su app de GPS. En Android se sigue saliendo al navegador. */
+function archivoGpx(texto, nombre) {
+  if (!(navigator.canShare && navigator.share && window.File)) return null;
+  var tipos = ["application/gpx+xml", "application/octet-stream", "text/xml", "text/plain"];
+  for (var k = 0; k < tipos.length; k++) {
+    try {
+      var f = new File([texto], nombre, { type: tipos[k] });
+      if (navigator.canShare({ files: [f] })) return f;
+    } catch (e) {}
+  }
+  return null;
+}
 function htmlDentroDeApp(hayGpx) {
   var app = dentroDeApp();
   if (!app || !hayGpx) return "";
-  var safari = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-  return '<div id="dentroApp" style="margin-top:26px;padding:16px 18px;border-radius:16px;border:2px solid #FF7A1A;background:rgba(255,122,26,.10)">' +
-    '<p style="margin:0 0 12px;font-weight:700">Para descargar el GPX, abre la ruta en ' + (safari ? "Safari" : "tu navegador") + '</p>' +
-    '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" style="display:block;text-align:center;background:#FF7A1A;color:#111;font-weight:800;font-size:18px;padding:16px;border-radius:14px;text-decoration:none">' + (safari ? "Abrir en Safari" : "Abrir en el navegador") + ' ↗</a>' +
-    '<p style="margin:12px 0 0;font-size:14px;opacity:.85">' + esc(app) + ' no deja descargar archivos. ¿No se abre? ' +
-    '<a href="#" id="copiarApp" style="text-decoration:underline">Copia el enlace</a> y pégalo en ' + (safari ? "Safari" : "Chrome") +
-    ', o pulsa <b>⋯</b> arriba y «Abrir en el navegador».</p></div>';
+  var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  var caja = '<div id="dentroApp" style="margin-top:26px;padding:16px 18px;border-radius:16px;border:2px solid #FF7A1A;background:rgba(255,122,26,.10)">';
+  var boton = 'style="display:block;text-align:center;background:#FF7A1A;color:#111;font-weight:800;font-size:18px;padding:16px;border-radius:14px;text-decoration:none"';
+  var planB = '<a href="#" id="copiarApp" style="text-decoration:underline">Copia el enlace</a> y pégalo en ' + (ios ? "Safari" : "Chrome") +
+              ', o pulsa <b>⋯</b> arriba y «Abrir en el navegador».';
+  if (archivoGpx("<gpx></gpx>", "prueba.gpx")) {
+    return caja + '<a id="guardarApp" href="#" ' + boton + '>⬇ Guardar el GPX</a>' +
+      '<p style="margin:12px 0 0;font-size:14px;opacity:.9">Se abre el menú de tu móvil: elige <b>«Guardar en Archivos»</b> o tu app de GPS (Sygic, TomTom, Garmin…).</p>' +
+      '<p id="falloApp" hidden style="margin:10px 0 0;font-size:14px"></p></div>';
+  }
+  if (!ios) {
+    return caja + '<p style="margin:0 0 12px;font-weight:700">Para descargar el GPX, abre la ruta en tu navegador</p>' +
+      '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" ' + boton + '>Abrir en el navegador ↗</a>' +
+      '<p style="margin:12px 0 0;font-size:14px;opacity:.85">' + esc(app) + ' no deja descargar archivos. ¿No se abre? ' + planB + '</p></div>';
+  }
+  return caja + '<p style="margin:0 0 8px;font-weight:700">Para descargar el GPX, ábrela en Safari</p>' +
+    '<p style="margin:0;font-size:15px">' + esc(app) + ' no deja descargar archivos. ' + planB + '</p></div>';
 }
 
 function construirGpx(r, pts) {
@@ -983,18 +1007,34 @@ function pintar(r) {
     else prompt("Copia el enlace:", u);
   });
 
-  var b = document.getElementById("bajar");
-  if (b) b.addEventListener("click", function (e) {
+  var nombreGpx = (r.title || "ruta").replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, "").trim().replace(/\s+/g, "_") + ".gpx";
+  var bajarDeSiempre = function (texto) {
+    var blob = new Blob([texto], { type: "application/gpx+xml" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = nombreGpx;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  };
+  var alPulsar = function (e) {
     e.preventDefault();
     // WEB-RUTAS-GPX-1: se cuenta ANTES de descargar (en el iPhone la descarga puede sacar la página antes de seguir)
     try { if (window.mcVisitaGpx) window.mcVisitaGpx(); } catch (e2) {}
-    var blob = new Blob([construirGpx(r, pts)], { type: "application/gpx+xml" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = (r.title || "ruta").replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, "").trim().replace(/\s+/g, "_") + ".gpx";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-  });
+    var texto = construirGpx(r, pts);
+    // GPX-INSTAGRAM-1: dentro de Instagram y compañía, por el menú de compartir del móvil (ahí la descarga no hace nada)
+    var f = dentroDeApp() ? archivoGpx(texto, nombreGpx) : null;
+    if (!f) { bajarDeSiempre(texto); return; }
+    navigator.share({ files: [f] }).catch(function (err) {
+      if (err && err.name === "AbortError") return; // cerró el menú sin elegir
+      var p = document.getElementById("falloApp");
+      if (p) { p.hidden = false; p.innerHTML = 'No se ha podido abrir el menú (' + esc((err && err.name) || "error") + '). Pulsa <b>⋯</b> arriba y «Abrir en el navegador», y descárgalo ahí.'; }
+      bajarDeSiempre(texto);
+    });
+  };
+  var b = document.getElementById("bajar");
+  if (b) b.addEventListener("click", alPulsar);
+  var gApp = document.getElementById("guardarApp");
+  if (gApp) gApp.addEventListener("click", alPulsar);
 }
 
 if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
