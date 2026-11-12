@@ -138,6 +138,13 @@ var VIDEO = {
   // 🔄 VIDEO-3D-RAPIDO-1 (132.ª, Mario 19:40: «queda fantástico… ¿podría ir un poquito más rápida la moto para que no se haga tan
   // largo?»): de un tercio más lento (×1,5, 30-75 s) a un 20 % (×1,2, 25-65 s). Y parar en los puertos se elige (casilla).
   LENTO_3D: 1.2, DIBUJO_MIN_3D: 25, DIBUJO_MAX_3D: 65,
+  // 🆕 VIDEO-PUBLICAR-RITMO-1 (145.ª, 12-nov · Mario: «hay que hacerlas un poco más lentas… despacio, normal y rápido; yo
+  // empezaría lento»). El ritmo se elige al pedir el vídeo (por defecto, despacio). «rapido» es el de antes (VIDEO-3D-RAPIDO-1
+  // en 3D, km/15 en plano). Despacio: 2 km por segundo de dibujo, entre 60 y 120 s · Normal: 4 km/s, entre 40 y 90 s. Nunca
+  // más deprisa que el rápido. Y el vídeo entero no pasa de MAX_S: Instagram deja reels de hasta 3 min (desde ene-2025) y por
+  // encima no los enseña a quien no te sigue; si se pasa, se acorta el dibujo (sin bajar del rápido).
+  RITMOS: { despacio: { KM_S: 2, MIN: 60, MAX: 120 }, normal: { KM_S: 4, MIN: 40, MAX: 90 } },
+  MAX_S: 175,
   ESTILO: "outdoors-v12"
 };
 // 🆕 MAPA-SATELITE-1 (15-oct, 109.ª). Mario, con un reel de referencia (vista de satélite, la curva señalada con una flecha
@@ -251,7 +258,7 @@ function datosResumen(paradas, puertos) {
   return { bajo: bajo, cuentas: cuentas, lista: lista, top: top, paginas: paginas };
 }
 
-function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, pararPuertos) {
+function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, pararPuertos, ritmo) {
   fotos = fotos || [];
   var fino = aligerarTraza(pts, 20); // v5: menos puntos que pintar por fotograma (va más fino), sin perder la forma
   var acum = kmAcum(fino), total = acum[acum.length - 1] || 1;
@@ -369,14 +376,17 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, para
   grupos.sort(function (a, b) { return a.km - b.km; });
 
   // Tiempos.
-  var tDibujo = tresD ? Math.max(VIDEO.DIBUJO_MIN_3D, Math.min(VIDEO.DIBUJO_MAX_3D, total * VIDEO.LENTO_3D / VIDEO.KM_POR_S)) // VIDEO-3D-DESPACIO-1
+  var tRapido = tresD ? Math.max(VIDEO.DIBUJO_MIN_3D, Math.min(VIDEO.DIBUJO_MAX_3D, total * VIDEO.LENTO_3D / VIDEO.KM_POR_S)) // VIDEO-3D-DESPACIO-1
     : Math.max(VIDEO.DIBUJO_MIN, Math.min(VIDEO.DIBUJO_MAX, total / VIDEO.KM_POR_S));
+  var RIT = VIDEO.RITMOS[ritmo] || null; // VIDEO-PUBLICAR-RITMO-1: sin ritmo (o «rapido»), el de antes
+  var tDibujo = RIT ? Math.max(tRapido, Math.max(RIT.MIN, Math.min(RIT.MAX, total / RIT.KM_S))) : tRapido;
   // VIDEO-PUERTOS-ARRIBA-1: los puertos en los que se para el casco (todos o, si son muchos, los más altos)
   var conKmP = VIDEO_SOLO === "linea" || (VIDEO_CORTO && dest.length > 0) ? [] : (puertos || []).filter(function (pu) { return pu.km != null && isFinite(pu.km); });
   var paraEn = pararPuertos === false ? [] /* VIDEO-PUERTOS-ELEGIR-1: sin parar, todos suben sin detenerse */ : conKmP.length <= VIDEO.PUERTOS_PARA ? conKmP : conKmP.slice().sort(function (a, b) { return (b.ele || 0) - (a.ele || 0); }).slice(0, VIDEO.PUERTOS_PARA);
   var cortes = grupos.map(function (g) { return { km: g.km, g: g }; })
     .concat(paraEn.map(function (pu) { return { km: Math.max(0, Math.min(total, kmF(pu.km))), pu: pu }; }))
     .sort(function (a, b) { return a.km - b.km || (a.pu ? 1 : 0) - (b.pu ? 1 : 0); });
+  function montar(tDibujo) { // VIDEO-PUBLICAR-RITMO-1: se monta otra vez si con el ritmo elegido pasa de MAX_S
   var tramos = []; var t = 0;
   tramos.push({ tipo: "vista", a: t, b: t += VIDEO.T_VISTA });
   tramos.push({ tipo: "zoom", a: t, b: t += VIDEO.T_ZOOM });
@@ -408,6 +418,14 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, para
   var nFilas = 6 + (DR.bajo ? 1 : 0) + DR.cuentas.length;
   tramos.push({ tipo: "resumen", a: t, b: t += Math.max(VIDEO.T_RESUMEN, 1.2 + nFilas * 0.3 + 2) });
   tramos.push({ tipo: "cierre", a: t, b: t += VIDEO.T_CIERRE });
+  return { tramos: tramos, t: t, DR: DR };
+  }
+  var MT = montar(tDibujo);
+  if (RIT && MT.t > VIDEO.MAX_S && tDibujo > tRapido) {
+    tDibujo = Math.max(tRapido, tDibujo - (MT.t - VIDEO.MAX_S)); MT = montar(tDibujo);
+  }
+  var tramos = MT.tramos, t = MT.t, DR = MT.DR;
+  console.log("[video] ritmo " + (ritmo || "rapido") + ": " + Math.round(tDibujo) + " s de dibujo para " + Math.round(total) + " km, vídeo de " + Math.round(t) + " s");
   var DUR = t;
 
   // REEL-CORTO-1: otro guion, solo con los tramos destacados
@@ -506,6 +524,22 @@ function guion(r, pts, paradas, puertos, fotos, captura, destacados, tresD, para
     var txt = partes.length > 1 && (!p.w.waypointType || /^[A-Z]{1,3}-?\d/.test(partes[0])) ? partes[partes.length - 1] : nom;
     avisos.push({ km: kmF(p.km), txt: p.t.e + " " + txt });
   });
+  // 🆕 VIDEO-PUBLICAR-RITMO-1 (145.ª, Mario: «que salgan todos los pueblos», faltaba Puigcerdà): abajo también el pueblo de
+  // salida (al arrancar) y el de llegada (al acercarse al final); si la ruta vuelve a donde salió y no tiene llegada aparte,
+  // la llegada es la salida. Solo con nombre de verdad (no «Salida» / «Llegada» puestos a falta de nombre).
+  if (!VIDEO_SOLO) {
+    var deNombre = function (p) {
+      var nom = String((p.w && p.w.name) || "").trim(); if (!nom || /^Punto\s+\d+$/i.test(nom)) return null;
+      var partes = nom.split(" · ");
+      return p.t.e + " " + (partes.length > 1 && (!p.w.waypointType || /^[A-Z]{1,3}-?\d/.test(partes[0])) ? partes[partes.length - 1] : nom);
+    };
+    var pIni = paradas.filter(function (p) { return p.inicio; })[0], pFin = paradas.filter(function (p) { return p.fin; })[0];
+    var txtIni = pIni ? deNombre(pIni) : null, txtFin = pFin ? deNombre(pFin) : null;
+    if (!pFin && pIni && pts.length > 1 && hav(pts[0], pts[pts.length - 1]) <= 1.5) txtFin = txtIni; // vuelve a la salida
+    var antesFin = Math.max(0, total - Math.max(8, total * 0.035) * 0.6); // se ve al acercarse (el letrero dura ~8 km)
+    if (txtIni) avisos.push({ km: 0, txt: txtIni });
+    if (txtFin) avisos.push({ km: antesFin, txt: txtFin });
+  }
   // VIDEO-PUERTOS-ARRIBA-1: los puertos ya no van abajo; su nombre sube arriba en grande (cartelPuerto)
   avisos.sort(function (a, b) { return a.km - b.km; });
 
@@ -665,13 +699,13 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   }).then(function (rs) {
     fotosIm = rs.filter(Boolean);
     var con3D = avisar.tresD != null ? !!avisar.tresD && !VIDEO_CORTO : VIDEO_3D;
-    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, con3D, avisar.pararPuertos); // VIDEO-3D-DESPACIO-1 · VIDEO-PUERTOS-ELEGIR-1
+    G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, con3D, avisar.pararPuertos, avisar.ritmo); // VIDEO-3D-DESPACIO-1 · VIDEO-PUERTOS-ELEGIR-1 · VIDEO-PUBLICAR-RITMO-1
     // VIDEO-3D-1: en 3D el mapa lo pinta Mapbox (no hacen falta teselas); si no carga, sale el vídeo de siempre
     // VIDEO-3D-ELEGIR-1 (132.ª): el 3D lo elige la persona en la pantalla del vídeo (avisar.tresD); «&video=3d» sigue valiendo
     if (con3D) return cargarVideo3D().then(function () { return Video3D.preparar(G, W, H, avisar); }).then(function (v) { V3D = v; }, function (e) {
       if (avisar.cancelado && avisar.cancelado()) throw e; // VIDEO-3D-ESPERA-1: cerrado a media precarga → no seguir con el de siempre
       console.warn("[video] sin 3D: " + ((e && e.message) || e));
-      G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, false, avisar.pararPuertos); // VIDEO-3D-DESPACIO-1: el de siempre, a su velocidad
+      G = guion(r, pts, paradas, puertos, fotosIm, capturaIm, destacados, false, avisar.pararPuertos, avisar.ritmo); // VIDEO-3D-DESPACIO-1: el de siempre, a su velocidad · VIDEO-PUBLICAR-RITMO-1: con el ritmo elegido
       if (avisar.aviso) avisar.aviso("El vídeo en 3D no se puede hacer aquí: sale el de siempre.");
     });
   }).then(function () {
