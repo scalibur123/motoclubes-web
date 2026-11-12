@@ -334,7 +334,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <main id="v-cor" class="oculto">
   <div><h1>Correo a un rider</h1><div class="sub">Busca al rider y pulsa «✉️ Correo». Sale de Soporte o Equipo MOTOCLUBes (nunca con tu nombre) y, si contesta, la respuesta llega a soporte@motoclubes.es.</div></div>
   <input type="text" id="c2-buscar" placeholder="🔍 Nombre o correo del rider" style="max-width:420px">
-  <div class="card tabla"><table><thead><tr><th>Rider</th><th>Correo</th><th>Abrió la app</th><th></th></tr></thead><tbody id="c2-filas"></tbody></table></div>
+  <!-- CORREO-VARIOS-1 (145.ª, Mario: «poner un check y todas las cuentas a las que quieras enviar, y que salgan 5 correos con el mismo texto»):
+       marcas a los que quieras (también buscando uno y luego otro) y «✉️ Correo a los N»: sale un correo a cada uno, por separado. -->
+  <div id="c2-sel" class="card oculto" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
+  <div class="card tabla"><table><thead><tr><th style="width:34px"></th><th>Rider</th><th>Correo</th><th>Abrió la app</th><th></th></tr></thead><tbody id="c2-filas"></tbody></table></div>
 </main>
 <main id="v-for" class="oculto">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
@@ -1708,6 +1711,7 @@ function mailListo(listo) {
 }
 let correoDesdeFicha = null // CORREO-NEGOCIO-1: si se abrió desde una ficha de Negocios, al salir se repinta su lista
 $('f2-escribir').onclick = () => { const c = cands.find(x => x.id === fichaId); if (c && c.correo) abrirCorreo(c.nombre, c.correo, c.id) }
+let mailParaLista = [] // CORREO-VARIOS-1
 let mailDestino = 'negocio' // CORREO-SOPORTE-1: 'rider' | 'negocio' (a dónde contestan: soporte@ o negocios@)
 // CORREO-TESTER-SIN-CUENTA-1 (138.ª): Play solo deja dar de alta la cuenta de Google con la que el tester entra en Play Store.
 const esGmail = (e) => /@(gmail|googlemail)\.com$/i.test(String(e || '').trim())
@@ -1726,7 +1730,9 @@ function abrirCorreo(nombre, correo, desdeFicha, destino) {
     ? 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes» (nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
     : 'Sale tal cual lo escribes, de «Mario · MOTOCLUBes» (o Soporte / Equipo, si lo cambias). Firma tú al final («Mario · Fundador de MOTOCLUBes»). Si contesta, la respuesta llega a negocios@motoclubes.es.'
   mailListo(false); $('mail-aviso').innerHTML = ''
-  $('mail-quien').textContent = nombre || correo; $('mail-para').value = correo
+  // CORREO-VARIOS-1: `correo` puede ser una lista (varios riders marcados): sale un correo a cada uno, por separado
+  mailParaLista = Array.isArray(correo) ? correo.slice() : [correo]
+  $('mail-quien').textContent = nombre || mailParaLista.join(', '); $('mail-para').value = mailParaLista.join(', ')
   $('mail-asunto').value = ''; $('mail-texto').value = ''; $('mail-fuera').checked = false
   ;['mail-asunto', 'mail-texto'].forEach(k => delete $(k).dataset.tecleado)
   $('mail-enviar').textContent = 'Enviar'
@@ -1748,6 +1754,22 @@ $('mail-enviar').onclick = async () => {
   const asunto = $('mail-asunto').value.trim(), texto = $('mail-texto').value.trim(), fuera = $('mail-fuera').checked, para = $('mail-para').value
   if (!asunto) return ($('mail-aviso').innerHTML = '<div class="aviso mal">Pon el asunto.</div>')
   if (!texto) return ($('mail-aviso').innerHTML = '<div class="aviso mal">Pega el texto.</div>')
+  // CORREO-VARIOS-1: a varios, uno detrás de otro (cada uno recibe el suyo, sin ver a los demás), y se dice cómo ha ido cada uno
+  if (mailParaLista.length > 1) {
+    if (!confirm(`¿Mandar este correo a ${mailParaLista.length} riders? A cada uno le llega el suyo, por separado.`)) return
+    $('mail-enviar').disabled = true
+    const ok = [], mal = []
+    for (const [i, e] of mailParaLista.entries()) {
+      $('mail-aviso').innerHTML = `<div class="sub">Enviando ${i + 1} de ${mailParaLista.length}…</div>`
+      try { await invitar({ modo: 'correo-mc', email: e, asunto, texto, fuera: false, remitente: $('mail-de').value, destino: mailDestino }); ok.push(e) }
+      catch (x) { mal.push(`${esc(e)}: ${esc(x.message)}`) }
+      await new Promise(r => setTimeout(r, 400)) // sin ráfagas
+    }
+    $('mail-aviso').innerHTML = `<div class="aviso ${mal.length ? 'mal' : 'ok'}">✅ Enviados ${ok.length} de ${mailParaLista.length}${mal.length ? '<br>No han salido:<br>' + mal.join('<br>') : ''}</div>`
+    mailListo(true); $('mail-enviar').disabled = false
+    if (!mal.length) { C2_SEL.clear(); pintarCorreoRider() }
+    return
+  }
   if (!fuera && !confirm(`¿Mandar este correo a ${para}?`)) return
   $('mail-enviar').disabled = true
   try {
@@ -2228,12 +2250,32 @@ function pintarCorreoRider() {
   const q = ($('c2-buscar').value || '').trim().toLowerCase()
   const l = RIDERS.filter(r => !q || (r.rider || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q))
     .sort((a, b) => (b.abrio || '').localeCompare(a.abrio || '')).slice(0, 30)
-  $('c2-filas').innerHTML = l.map(r => `<tr><td><b>${esc(r.rider || '(sin nombre)')}</b></td><td class="sub">${esc(r.email)}</td><td class="sub">${hace(r.abrio)}</td>
+  $('c2-filas').innerHTML = l.map(r => `<tr><td><input type="checkbox" class="c2-marca" data-email="${esc(r.email)}" ${C2_SEL.has(r.email) ? 'checked' : ''} style="width:20px;height:20px;accent-color:#FF7A1A"></td><td><b>${esc(r.rider || '(sin nombre)')}</b></td><td class="sub">${esc(r.email)}</td><td class="sub">${hace(r.abrio)}</td>
     <td style="text-align:right"><button class="btn3 o c2-correo" data-email="${esc(r.email)}">✉️ Correo</button></td></tr>`).join('')
-    || `<tr><td colspan="4" class="sub">${RIDERS.length ? 'Nadie con ese nombre o correo.' : 'Cargando…'}</td></tr>`
+    || `<tr><td colspan="5" class="sub">${RIDERS.length ? 'Nadie con ese nombre o correo.' : 'Cargando…'}</td></tr>`
+  pintarC2Sel()
+}
+// CORREO-VARIOS-1: los marcados se guardan aunque cambies la búsqueda; arriba, quiénes son y el botón
+const C2_SEL = new Map() // email → nombre
+function pintarC2Sel() {
+  const n = C2_SEL.size, caja = $('c2-sel')
+  caja.classList.toggle('oculto', !n)
+  caja.innerHTML = n ? `<b>${n} marcado${n === 1 ? '' : 's'}:</b> ` + [...C2_SEL].map(([e, nom]) => `<span class="chip gris">${esc(nom || e)} <button class="c2-quitar" data-email="${esc(e)}" title="Quitar" style="border:0;background:none;cursor:pointer;font-weight:800">✕</button></span>`).join(' ') +
+    ` <button class="btn c2-varios" style="margin-left:auto">✉️ Correo a ${n === 1 ? '1' : 'los ' + n}</button> <button class="btn2 c2-ninguno">Quitar todos</button>` : ''
+}
+$('c2-sel').onclick = (ev) => {
+  const q = ev.target.closest('.c2-quitar'); if (q) { C2_SEL.delete(q.dataset.email); return pintarCorreoRider() }
+  if (ev.target.closest('.c2-ninguno')) { C2_SEL.clear(); return pintarCorreoRider() }
+  if (ev.target.closest('.c2-varios')) { const ls = [...C2_SEL]; return abrirCorreo(ls.length === 1 ? (ls[0][1] || ls[0][0]) : `${ls.length} riders`, ls.map(x => x[0]), null, 'rider') }
 }
 $('s-cor').onclick = async () => { verPestana('cor'); pintarCorreoRider(); if (!RIDERS.length) { await cargarRiders(); pintarCorreoRider() } setTimeout(() => $('c2-buscar').focus(), 50) }
 $('c2-buscar').oninput = () => pintarCorreoRider()
+$('c2-filas').onchange = (ev) => { // CORREO-VARIOS-1
+  const m = ev.target.closest('.c2-marca'); if (!m) return
+  const r = RIDERS.find(x => x.email === m.dataset.email)
+  if (m.checked) C2_SEL.set(m.dataset.email, r?.rider || ''); else C2_SEL.delete(m.dataset.email)
+  pintarC2Sel()
+}
 $('c2-filas').onclick = (ev) => { const b = ev.target.closest('.c2-correo'); if (!b) return; const r = RIDERS.find(x => x.email === b.dataset.email); abrirCorreo(r?.rider || b.dataset.email, b.dataset.email, null, 'rider') }
 
 // PANEL-SE-ACTUALIZA-1 (17-oct, Mario: «yo no debería recargar el panel; cuando salga, debe recargarlo solo»). Cada minuto y
