@@ -2050,7 +2050,7 @@ function pintarSos() {
   }).join('') || '<tr><td colspan="6" class="sub">Ningún SOS en estos días.</td></tr>'
   $('so-riders').innerHTML = riders.map(r => `<tr><td>${quien({ email: r.email, rider: r.rider })}<div class="sub" style="font-size:12px">${r.aceptados} aceptados · ${r.pendientes} esperando${r.rechazados ? ' · ' + r.rechazados + ' que no' : ''}</div></td>
     <td>${esc(r.nombre || '—')}${r.telefono ? `<div class="sub"><a href="tel:${esc(r.telefono)}">${esc(r.telefono)}</a></div>` : ''}</td>
-    <td>${(r.contactos || []).map(k => `<div style="padding:2px 0"><b>${esc(k.nombre)}</b>${k.email ? ` · <a href="mailto:${esc(k.email)}">${esc(k.email)}</a>` : ''}${k.telefono ? ` · <a href="tel:${esc(k.telefono)}">${esc(k.telefono)}</a>` : ''} · ${soEstado(k.estado)}${k.rebote ? ' · <b style="color:#DC2626">correo rebotado</b>' : ''}<span class="sub" style="font-size:12px"> · ${k.respondido_at ? 'contestó el ' + fecha(k.respondido_at) : 'invitado el ' + fecha(k.invitado_at)}</span></div>`).join('')}</td></tr>`).join('')
+    <td>${(r.contactos || []).map(k => `<div style="padding:2px 0"><b>${esc(k.nombre)}</b>${k.email ? ` · <a href="mailto:${encodeURIComponent(k.email)}">${esc(k.email)}</a>` : ''}${k.telefono ? ` · <a href="tel:${esc(k.telefono)}">${esc(k.telefono)}</a>` : ''} · ${soEstado(k.estado)}${k.rebote ? ' · <b style="color:#DC2626">correo rebotado</b>' : ''}<span class="sub" style="font-size:12px"> · ${k.respondido_at ? 'contestó el ' + fecha(k.respondido_at) : 'invitado el ' + fecha(k.invitado_at)}</span></div>`).join('')}</td></tr>`).join('')
     || '<tr><td colspan="3" class="sub">Ningún rider ha puesto contactos todavía.</td></tr>'
 }
 $('so-sos').onclick = (ev) => {
