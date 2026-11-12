@@ -103,7 +103,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><div id="g-caja" class="oculto" style="position:relative"><input type="search" id="g-buscar" placeholder="🔍 Buscar en todo: apodo, correo, negocio, contacto" autocomplete="off" spellcheck="false" aria-label="Buscar en todo el panel"><div id="g-res" class="oculto"></div></div><!-- PANEL-BUSCAR-1 --><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-hec">✅ Hecho</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-sos">🆘 SOS</button><button type="button" id="p-hec">✅ Hecho</button></nav>
 <!-- PANEL-CONTESTAR-1 (29-oct, 130.ª · Mario: «tiene que haber un sitio… lo que hago normalmente, que es contestar. Y dentro, foro,
      correo… tengo 9 pestañas»). Una pestaña «Contestar» con tres apartados: el Foro, Te escuchamos y un correo a un rider. -->
 <nav class="pest oculto" id="sub-cont" style="background:#FBF8F4"><button type="button" id="s-for">Foro <span class="n" id="s-n-for">·</span></button><button type="button" id="s-inc">Te escuchamos <span class="n" id="s-n-inc">·</span></button><button type="button" id="s-cor">✉️ Correo a un rider</button></nav>
@@ -316,6 +316,21 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
 </main>
 <!-- PANEL-HECHO-1 (30-oct, 131.ª). Mario: «echo de menos una visión general de todo lo hecho en el portal». Todo en una lista, de lo último a lo primero. -->
+<!-- SOS-SOLO-1 (146.ª, 12-nov · Mario 15:17: «en el panel de administración tiene que estar, por conocerlo, saber cuántos
+     contactos, qué contactos y quién ha sido que lo ha pedido»). Los SOS lanzados (al grupo y a los contactos de emergencia) y
+     los contactos de cada rider. Lee mc_admin_sos(p_dias) (db/sos_solo_2_hacer.sql), que solo contesta a un admin. Lo último, arriba. -->
+<main id="v-sos" class="oculto">
+  <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div style="flex-grow:1" class="partir"><h1>SOS</h1><div class="sub">Quién ha pedido ayuda, cuándo, a quién se avisó y si los correos salieron. Y los contactos de emergencia de cada rider. Toca un SOS para ver sus correos, o un rider para abrir su ficha.</div></div>
+    <label>DÍAS<select id="so-dias"><option value="7">Últimos 7</option><option value="30" selected>Últimos 30</option><option value="365">Último año</option></select></label>
+  </div>
+  <div id="so-aviso"></div>
+  <div class="cifras" id="so-cifras"></div>
+  <h2 style="margin:18px 0 6px">SOS lanzados</h2>
+  <div class="card tabla"><table><thead><tr><th>Cuándo</th><th>Quién</th><th>A quién</th><th>Avisados</th><th>Estado</th><th>Dónde</th></tr></thead><tbody id="so-sos"></tbody></table></div>
+  <h2 style="margin:18px 0 6px">Contactos de emergencia de cada rider</h2>
+  <div class="card tabla"><table><thead><tr><th>Rider</th><th>Su nombre y móvil</th><th>Contactos</th></tr></thead><tbody id="so-riders"></tbody></table></div>
+</main>
 <main id="v-hec" class="oculto">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
     <div style="flex-grow:1" class="partir"><h1>Hecho</h1><div class="sub">Todo lo hecho desde el portal, de lo último a lo primero: correos y avisos, foro, quitados de la lista, invitaciones y llamadas a negocios y notas de contactos. Toca una línea para ir a su ficha.</div></div>
@@ -576,7 +591,7 @@ async function entrar() {
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto'); $('g-caja').classList.remove('oculto') // PANEL-BUSCAR-1
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
-  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor', 'hec'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
+  const PESTANAS = ['altas', 'cand', 'test', 'rid', 'inc', 'con', 'gui', 'not', 'uso', 'for', 'cor', 'hec', 'sos'] // CONTACTOS-1: + con · USO-APP-1: + uso · FORO-ADMIN-WEB-1: + for
   verPestana('altas')
   // ENLACE-PLAY-1: el botón del aviso «Tester nuevo» abre /admin/?ficha=<correo>: directo a su ficha
   const fichaUrl = new URLSearchParams(location.search).get('ficha')
@@ -685,6 +700,7 @@ function verPestana(cual) {
   $('v-gui').classList.toggle('oculto', cual !== 'gui'); $('v-not').classList.toggle('oculto', cual !== 'not') // CONTENIDO-WEB-1
   $('v-con').classList.toggle('oculto', cual !== 'con') // CONTACTOS-1
   $('v-uso').classList.toggle('oculto', cual !== 'uso') // USO-APP-1
+  $('v-sos').classList.toggle('oculto', cual !== 'sos'); $('p-sos').classList.toggle('sel', cual === 'sos') // SOS-SOLO-1
   $('v-hec').classList.toggle('oculto', cual !== 'hec'); $('p-hec').classList.toggle('sel', cual === 'hec') // PANEL-HECHO-1
   $('v-for').classList.toggle('oculto', cual !== 'for') // FORO-ADMIN-WEB-1
 }
@@ -1363,7 +1379,7 @@ $('r-filas').onclick = (ev) => {
   const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid')
 }
 let fichaVuelve = 'test'
-$('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else if (fichaVuelve === 'inc') cargarIncidencias(); else if (fichaVuelve === 'hec') cargarHecho(); else cargarRiders() }
+$('f-volver').onclick = () => { verPestana(fichaVuelve); if (fichaVuelve === 'test') cargarTesters(); else if (fichaVuelve === 'inc') cargarIncidencias(); else if (fichaVuelve === 'hec') cargarHecho(); else if (fichaVuelve === 'sos') cargarSos(); else cargarRiders() }
 const dato = (k, v) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #EFEAE3"><span class="sub">${k}</span><b style="text-align:right">${v}</b></div>`
 const cifra = (n, t) => `<div class="card cifra" style="padding:16px"><b>${n}</b><span>${t}</span></div>`
 // INVITACION-SEGUIMIENTO-1 (15-oct): en qué quedó el correo de la invitación, según Resend (se pregunta al abrir la ficha).
@@ -1993,6 +2009,59 @@ function pintarUso() {
 $('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
 $('u-dias').onchange = () => cargarUso()
 $('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
+// ── SOS-SOLO-1 (146.ª, 12-nov) · «SOS»: los SOS lanzados y los contactos de emergencia de cada rider ──
+let SOS = null, soPet = 0, soAbierto = null
+const soAviso = (t) => { $('so-aviso').innerHTML = t ? `<div class="aviso mal">${t}</div>` : '' }
+const SO_TIPO = { sos: 'Ha pedido ayuda', bien: 'Está bien', prueba: 'Prueba', invitacion: 'Invitación' }
+const soEstado = (e) => e === 'aceptado' ? '🟢 Aceptado' : e === 'pendiente' ? '🟠 Esperando' : '🔴 No ha aceptado'
+function soCorreo(c) { // cómo fue un correo
+  if (c.error === 'rebote') return '<b style="color:#DC2626">rebotado</b>'
+  if (c.ok === true) return '<span style="color:#16A34A">enviado</span>'
+  if (c.ok === false) return `<span class="sub">${esc(c.error || 'no enviado')}</span>`
+  return `<b style="color:#DC2626">sin salir</b>${c.intentos ? ` (${c.intentos} intentos${c.error ? ', ' + esc(c.error) : ''})` : ''}`
+}
+async function cargarSos() {
+  const n = ++soPet
+  soAviso(''); $('so-sos').innerHTML = '<tr><td colspan="6" class="sub">Cargando…</td></tr>'; $('so-riders').innerHTML = ''
+  const { data, error } = await sb.rpc('mc_admin_sos', { p_dias: Number($('so-dias').value) || 30 })
+  if (n !== soPet) return
+  if (error) {
+    $('so-sos').innerHTML = ''
+    return soAviso(/mc_admin_sos|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Aún no está creada la función en la base: falta ejecutar <b>db/sos_solo_2_hacer.sql</b>.' : 'No se ha podido cargar: ' + esc(error.message))
+  }
+  SOS = data || { sos: [], riders: [], cifras: {} }; soAbierto = null
+  pintarSos()
+}
+function pintarSos() {
+  const c = SOS?.cifras || {}, lista = Array.isArray(SOS?.sos) ? SOS.sos : [], riders = Array.isArray(SOS?.riders) ? SOS.riders : []
+  $('so-cifras').innerHTML = [[lista.length, 'SOS en estos días'], [c.riders_con_contactos ?? 0, 'Riders con contactos'], [c.aceptados ?? 0, 'Contactos que han aceptado'], [c.pendientes ?? 0, 'Esperando respuesta'], [c.rebotes ?? 0, 'Correos rebotados'], [c.correos_sin_salir ?? 0, 'Correos sin salir (última hora)']]
+    .map(([n, t]) => `<div class="card cifra"><b>${n}</b><span>${t}</span></div>`).join('')
+  const quien = (x) => x.email ? `<button class="nombre-c so-ficha" data-email="${esc(x.email)}">${esc(x.rider || x.email)}</button>${x.nombre ? ` <span class="sub">${esc(x.nombre)}</span>` : ''}` : esc(x.rider || '—')
+  $('so-sos').innerHTML = lista.map((s, i) => {
+    const abierta = soAbierto === i, correos = Array.isArray(s.correos) ? s.correos : []
+    const detalle = !abierta ? '' : `<tr><td colspan="6" style="background:rgba(0,0,0,.03)">${s.solo
+      ? (correos.length ? correos.map(k => `<div style="font-size:13px;padding:2px 0">${esc(SO_TIPO[k.tipo] || k.tipo)} → <b>${esc(k.a || 'contacto quitado')}</b> · ${fechaHora(k.creado_at)} · ${soCorreo(k)}</div>`).join('') : '<span class="sub">Sin correos.</span>')
+      : '<span class="sub">SOS al grupo: se avisa con aviso en el móvil y campanita, no por correo.</span>'}
+      <div class="sub" style="font-size:12px;margin-top:6px">Última posición: ${fechaHora(s.actualizado_at)}</div></td></tr>`
+    return `<tr class="org-fila" data-so="${i}"><td>${fechaHora(s.creado_at)}</td><td>${quien(s)}</td>
+      <td>${s.solo ? 'Sus contactos' : 'Grupo ' + esc(s.grupo || '')}</td><td><b>${s.avisados ?? 0}</b></td>
+      <td>${s.bien_at ? '✅ Está bien · ' + fechaHora(s.bien_at) : '<b style="color:#DC2626">🆘 Abierto</b>'}</td>
+      <td><a href="https://www.google.com/maps/search/?api=1&query=${Number(s.lat)},${Number(s.lng)}" target="_blank" rel="noopener">Ver en el mapa</a></td></tr>${detalle}`
+  }).join('') || '<tr><td colspan="6" class="sub">Ningún SOS en estos días.</td></tr>'
+  $('so-riders').innerHTML = riders.map(r => `<tr><td>${quien({ email: r.email, rider: r.rider })}<div class="sub" style="font-size:12px">${r.aceptados} aceptados · ${r.pendientes} esperando${r.rechazados ? ' · ' + r.rechazados + ' que no' : ''}</div></td>
+    <td>${esc(r.nombre || '—')}${r.telefono ? `<div class="sub"><a href="tel:${esc(r.telefono)}">${esc(r.telefono)}</a></div>` : ''}</td>
+    <td>${(r.contactos || []).map(k => `<div style="padding:2px 0"><b>${esc(k.nombre)}</b>${k.email ? ` · <a href="mailto:${esc(k.email)}">${esc(k.email)}</a>` : ''}${k.telefono ? ` · <a href="tel:${esc(k.telefono)}">${esc(k.telefono)}</a>` : ''} · ${soEstado(k.estado)}${k.rebote ? ' · <b style="color:#DC2626">correo rebotado</b>' : ''}<span class="sub" style="font-size:12px"> · ${k.respondido_at ? 'contestó el ' + fecha(k.respondido_at) : 'invitado el ' + fecha(k.invitado_at)}</span></div>`).join('')}</td></tr>`).join('')
+    || '<tr><td colspan="3" class="sub">Ningún rider ha puesto contactos todavía.</td></tr>'
+}
+$('so-sos').onclick = (ev) => {
+  const fi = ev.target.closest('.so-ficha'); if (fi) return verFicha(fi.dataset.email, 'sos')
+  if (ev.target.closest('a')) return
+  const tr = ev.target.closest('[data-so]'); if (!tr) return
+  soAbierto = soAbierto === Number(tr.dataset.so) ? null : Number(tr.dataset.so); pintarSos()
+}
+$('so-riders').onclick = (ev) => { const fi = ev.target.closest('.so-ficha'); if (fi) verFicha(fi.dataset.email, 'sos') }
+$('so-dias').onchange = () => cargarSos()
+$('p-sos').onclick = () => { verPestana('sos'); cargarSos() }
 // ── PANEL-HECHO-1 (30-oct, 131.ª) · «Hecho»: todo lo hecho desde el portal en una lista ──
 // Sale de lo que ya se guarda: los envíos (mc_envios, por web-invitar-testers «hecho»), el foro (lo escrito como MOTOCLUBes o con tu
 // cuenta), los quitados de la lista, las invitaciones y llamadas de Negocios y las notas de Contactos. Sin SQL nuevo.
