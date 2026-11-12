@@ -1950,8 +1950,8 @@ $('p-con').onclick = () => { verPestana('con'); coAviso(''); cargarContactos() }
 // ── USO-APP-1 (28-oct, 129.ª) · qué miran los riders ──
 const USO_BLOQUES = [
   ['videos', '🎬 Vídeos', 'Cada vez que un vídeo de la guía o de una noticia llega a arrancar. «Llegan al» = hasta qué segundo lo ven, de media (solo cuenta cuando cierran el vídeo o cambian de pantalla). Desde la versión 1.26.10284.'],
-  ['noticias', '📰 Noticias', 'Todas las noticias colgadas en estos días, la última arriba, y cuántos riders la han abierto.'],
-  ['hilos', '💬 Hilos del foro', 'Todos los hilos abiertos en estos días, el último arriba, y cuántos riders lo han abierto. Tus visitas no cuentan.'],
+  ['noticias', '📰 Noticias', 'Todas las noticias, la última arriba, y cuántos riders han abierto cada una en estos días.'],
+  ['hilos', '💬 Hilos del foro', 'Todos los hilos, el último arriba, y cuántos riders han abierto cada uno en estos días. Tus visitas no cuentan.'],
   ['guia', '📖 Guía · apartados', 'Cada apartado de la guía que abren. Desde la versión 1.26.10284.'],
   ['guia_otros', '📖 Guía · otros botones', 'Por el texto del botón, en el idioma del rider (y los apartados en las versiones anteriores a la 1.26.10284).'],
   ['pantallas', '📱 Pantallas', 'Cada vez que entran en una pantalla.'],
@@ -1964,7 +1964,7 @@ const USO_PANTALLA = { '/app': 'Inicio', '/app/notificaciones': 'Avisos (campani
   '/app/descubrir-riders': 'Descubrir riders', '/app/ranking': 'Ranking', '/app/lugares': 'Lugares', '/app/mis-rutas': 'Mis rutas', '/app/guia': 'Guía',
   '/app/grupos/:id/salidas/:id/detalle': 'Salida · detalle', '/app/grupos/:id/salidas/:id/resumen': 'Salida · resumen', '/app/planificar-grupo': 'Planificar en grupo',
   '/app/grabar': 'Grabar', '/app/mis-usos': 'Mis usos', '/app/mis-qr': 'Mis QR', '/app/navegar-resumen': 'Resumen de navegar', '/app/gasolineras': 'Gasolineras',
-  '/app/aceptar-terminos': 'Aceptar condiciones', '/app/completar-perfil': 'Completar perfil', '/app/actividad': 'Actividad', '/app/market/:id': 'Market · anuncio' }
+  '/app/contactos-emergencia': 'Contactos de emergencia', '/app/aceptar-terminos': 'Aceptar condiciones', '/app/completar-perfil': 'Completar perfil', '/app/actividad': 'Actividad', '/app/market/:id': 'Market · anuncio' }
 let USO = null, usoAbierta = null, usoPet = 0, USO_FECHA = {} // USO_FECHA: hilo → cuándo se colgó (USO-ULTIMO-ARRIBA-1) // usoPet: si cambias los días rápido, solo vale la última respuesta (revisión)
 const usoAviso = (t, bien) => { $('u-aviso').innerHTML = t ? `<div class="aviso ${bien ? 'ok' : 'mal'}">${t}</div>` : '' }
 const usoSeg = (s) => s == null ? '' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
@@ -1984,24 +1984,55 @@ async function cargarUso() {
     for (const t of ts || []) USO_FECHA[t.id] = t.created_at
   }
   if (n !== usoPet) return
-  // 🆕 USO-SIN-ABRIR-1 (146.ª, 12-nov, Mario 20:21: «el nuevo hilo que han abierto en la app no aparece… Uso es la visión general
-  // de toda la app… lo último publicado, lo que está por contestar, todo»). «Uso» salía solo del registro de la app: un hilo o una
-  // noticia que todavía no ha abierto nadie (o cuyo registro aún no ha subido; tus propias visitas no cuentan) no existía aquí.
-  // Ahora los hilos y las noticias colgados en esos días salen SIEMPRE, con 0 riders y «Sin abrir todavía» si nadie los ha abierto.
+  // 🆕 USO-SIN-ABRIR-1 (146.ª, 12-nov). Mario 20:21: «el nuevo hilo que han abierto en la app no aparece»; 20:23: «Uso es la visión
+  // general de toda la app: lo que han hecho, lo que no han hecho, dónde han entrado, dónde no… lo último publicado, lo que está
+  // por contestar, todo»; 20:29: «en Uso tiene que estar todo, absolutamente todo». «Uso» salía solo del registro de la app: lo que
+  // ningún rider había abierto NO EXISTÍA aquí (y tus visitas no cuentan). Ahora cada bloque trae su lista ENTERA y lo que nadie
+  // ha tocado sale con 0: todas las noticias y todos los hilos, todos los vídeos (de la guía y de las noticias), todos los
+  // apartados de la guía y todas las pantallas que el panel conoce. Sin SQL: se lee con las mismas políticas de admin de siempre.
   try {
-    const dias = Number($('u-dias').value) || 30
-    const { data: nuevos } = await sb.from('threads').select('id, title, category, created_at').is('hidden_at', null)
-      .gte('created_at', new Date(Date.now() - dias * 86400000).toISOString()).order('created_at', { ascending: false }).limit(300)
-    if (n !== usoPet) return
-    const ya = new Set((USO.filas || []).filter(f => f.bloque === 'noticias' || f.bloque === 'hilos').map(f => f.clave))
-    USO.filas = Array.isArray(USO.filas) ? USO.filas : []
-    for (const t of nuevos || []) {
-      USO_FECHA[t.id] = t.created_at
-      if (!ya.has(t.id)) USO.filas.push({ bloque: t.category === 'noticias' ? 'noticias' : 'hilos', clave: t.id, que: t.title || '(sin título)', veces: 0, riders: 0, quienes: [], sinAbrir: true })
+    const todos = async (tabla, campos, filtro) => { // de 1.000 en 1.000 (el tope por petición), hasta 5.000
+      const out = []
+      for (let d = 0; d < 5000; d += 1000) {
+        let q = sb.from(tabla).select(campos).range(d, d + 999)
+        if (filtro) q = filtro(q)
+        const { data, error } = await q
+        if (error) { console.warn('[uso] ' + tabla, error.message); break }
+        out.push(...(data || []))
+        if ((data || []).length < 1000) break
+      }
+      return out
     }
-  } catch (e) { console.warn('[uso] hilos sin abrir', e) }
+    const [hilos, guia] = await Promise.all([
+      todos('threads', 'id, title, category, created_at, video_url', q => q.is('hidden_at', null).order('created_at', { ascending: false })),
+      todos('guia_secciones', 'id, titulo, video_url, visible, orden', q => q.order('orden', { ascending: true })),
+    ])
+    if (n !== usoPet) return
+    for (const t of hilos) USO_FECHA[t.id] = t.created_at
+    usoCompletar(USO, { hilos, guia, pantallas: Object.keys(USO_PANTALLA) })
+  } catch (e) { console.warn('[uso] lista entera', e) }
   if (n !== usoPet) return
   pintarUso()
+}
+/* USO-SIN-ABRIR-1: añade a `uso.filas` lo que existe y nadie ha tocado en esos días, con 0 y `sinAbrir`. No toca lo que ya hay.
+   Pura (sin red ni pantalla) para poder probarla. */
+function usoCompletar(uso, cat) {
+  uso.filas = Array.isArray(uso.filas) ? uso.filas : []
+  const ya = (b) => new Set(uso.filas.filter(f => f.bloque === b).map(f => f.clave))
+  const cero = (bloque, clave, que) => uso.filas.push({ bloque, clave, que, veces: 0, riders: 0, quienes: [], seg: null, dura: null, sinAbrir: true })
+  const yaNot = ya('noticias'), yaHil = ya('hilos'), yaVid = ya('videos'), yaGui = ya('guia'), yaPan = ya('pantallas')
+  for (const t of cat.hilos || []) {
+    const esNoticia = t.category === 'noticias'
+    if (!(esNoticia ? yaNot : yaHil).has(t.id)) cero(esNoticia ? 'noticias' : 'hilos', t.id, t.title || '(sin título)')
+    if (esNoticia && t.video_url && !yaVid.has('noticia:' + t.id)) cero('videos', 'noticia:' + t.id, '📰 ' + (t.title || t.id))
+  }
+  for (const g of cat.guia || []) {
+    if (g.visible === false) continue // lo que está escondido en la guía no se le puede pedir a nadie que lo abra
+    if (!yaGui.has(g.id)) cero('guia', g.id, g.titulo || g.id)
+    if (g.video_url && !yaVid.has('guia:' + g.id)) cero('videos', 'guia:' + g.id, '🎬 ' + (g.titulo || g.id))
+  }
+  for (const r of cat.pantallas || []) if (!yaPan.has(r)) cero('pantallas', r, r)
+  return uso
 }
 function pintarUso() {
   const filas = Array.isArray(USO?.filas) ? USO.filas : []
@@ -2018,11 +2049,13 @@ function pintarUso() {
         : porFecha && USO_FECHA[f.clave] ? `${esc(f.que)} <span class="sub" style="font-size:12px">${fecha(USO_FECHA[f.clave])}</span>` : esc(f.que)
       // USO-SIN-ABRIR-1: lo que nadie ha abierto aún, y lo que espera respuesta (lo sabe el apartado Foro, si ya ha cargado)
       const pendiente = porFecha && typeof FO !== 'undefined' && Array.isArray(FO) && FO.some(h => h.id === f.clave && h.pend)
-      const chips = (f.sinAbrir ? ' <span class="chip gris">Sin abrir todavía</span>' : '') + (pendiente ? ' <span class="chip amar">Por contestar</span>' : '')
+      const chips = (f.sinAbrir ? ` <span class="chip gris">${b === 'videos' ? 'Nadie lo ha visto' : b === 'pantallas' ? 'Nadie ha entrado' : 'Nadie lo ha abierto'}</span>` : '') + (pendiente ? ' <span class="chip amar">Por contestar</span>' : '')
       return `<tr class="org-fila" data-uso="${k}"><td class="partir"><button class="nombre-c">${nombre}</button>${chips}${abierta ? `<div class="sub partir" style="font-size:13px;margin-top:6px">${esc((f.quienes || []).join(', ')) || 'Nadie todavía.'}</div>` : ''}</td>
         <td><b>${f.riders}</b></td><td>${f.veces}</td>${conSeg ? `<td>${f.seg != null ? usoSeg(f.seg) + (f.dura ? ` de ${usoSeg(f.dura)}` : '') : '—'}</td>` : ''}</tr>`
     }).join('') || `<tr><td colspan="${conSeg ? 4 : 3}" class="sub">Nada en estos días.</td></tr>`
-    return `<div><h2 style="margin:0 0 4px">${titulo}</h2><div class="sub" style="margin-bottom:8px">${ayuda}</div>
+    const ceros = lista.filter(f => f.sinAbrir).length // USO-SIN-ABRIR-1: de un vistazo, cuánto hay y cuánto no ha tocado nadie
+    const cuenta = b === 'guia_otros' ? '' : ` <span class="sub" style="font-size:14px;font-weight:400">· ${lista.length} en total${ceros ? `, ${ceros} sin tocar` : ''}</span>`
+    return `<div><h2 style="margin:0 0 4px">${titulo}${cuenta}</h2><div class="sub" style="margin-bottom:8px">${ayuda}</div>
       <div class="card tabla"><table><thead><tr><th>Qué</th><th>Riders</th><th>Veces</th>${conSeg ? '<th>Llegan al</th>' : ''}</tr></thead><tbody>${cuerpo}</tbody></table></div></div>`
   }).join('')
 }
