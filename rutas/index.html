@@ -835,6 +835,30 @@ function pintar(r) {
         } catch (e) {}
       });
       var fich = new File([res.blob], nombre, { type: res.blob.type });
+      // 🆕 VIDEO-VELOCIDAD-1 (145.ª, Mario: «si no me gusta porque lo veo muy lento, no puedo modificarlo… sería lógico»): en el
+      // 3D, ×1 · ×1,5 · ×2 con el vídeo ya hecho. Se ve al momento (playbackRate) y la descarga y «Compartir» salen a esa
+      // velocidad (video3d.js lo vuelve a montar sin pintar nada). En el plano no hay botones: habría que hacerlo otra vez.
+      if (typeof res.velocidad === "function") {
+        var velCaja = document.createElement("div"), hechos = { 1: { blob: res.blob, url: urlV } };
+        velCaja.className = "elige-ritmo";
+        velCaja.innerHTML = "<span>Velocidad:</span>" + [1, 1.5, 2].map(function (f) {
+          return '<button type="button" role="radio" aria-checked="' + (f === 1) + '" class="' + (f === 1 ? "on" : "") + '" data-f="' + f + '">×' + String(f).replace(".", ",") + "</button>";
+        }).join("");
+        acc.parentNode.insertBefore(velCaja, acc);
+        velCaja.addEventListener("click", function (ev) {
+          var b = ev.target.closest("button[data-f]"); if (!b) return;
+          var f = Number(b.getAttribute("data-f"));
+          Array.prototype.forEach.call(velCaja.querySelectorAll("button"), function (o) { var si = o === b; o.classList.toggle("on", si); o.setAttribute("aria-checked", si ? "true" : "false"); });
+          var v = vista.querySelector("video"); if (v) v.playbackRate = f; // se ve al momento
+          try {
+            if (!hechos[f]) { var bl = res.velocidad(f); hechos[f] = { blob: bl, url: URL.createObjectURL(bl) }; }
+          } catch (e) { estado.textContent = "No se ha podido cambiar la velocidad: " + String((e && e.message) || e); return; }
+          var nom = f === 1 ? nombre : nombre.replace(/\.mp4$/, "") + "-x" + String(f).replace(".", "-") + ".mp4";
+          var dl = acc.querySelector("a[download]"); if (dl) { dl.href = hechos[f].url; dl.setAttribute("download", nom); }
+          fich = new File([hechos[f].blob], nom, { type: "video/mp4" });
+          estado.textContent = "Listo" + (f === 1 ? "" : " a ×" + String(f).replace(".", ",")) + ". Súbelo a tus redes (Instagram, TikTok…) y ponle música allí.";
+        });
+      }
       var comp = document.getElementById("compVideo");
       if (navigator.canShare && navigator.canShare({ files: [fich] })) {
         comp.hidden = false;
@@ -941,7 +965,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=35" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=36" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>

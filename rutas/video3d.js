@@ -310,9 +310,22 @@
 
       // WebCodecs: cada fotograma con su hora exacta (i/30 s), tarde lo que tarde en pintarse
       function grabarCodec(codec) {
-        var muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: "avc", width: W, height: H, frameRate: FPS }, fastStart: "in-memory" });
-        var fallo = null;
-        var enc = new VideoEncoder({ output: function (ch, meta) { muxer.addVideoChunk(ch, meta); }, error: function (e) { fallo = e; } });
+        // 🆕 VIDEO-VELOCIDAD-1 (145.ª, Mario: «si no me gusta porque lo veo muy lento… sería lógico poder cambiarlo»): los trozos
+        // ya codificados se guardan y el MP4 se monta al final; «×1,5» o «×2» vuelve a montarlo al momento con la hora de cada
+        // imagen dividida (a 45 o 60 imágenes por segundo), sin volver a pintar nada. Se acelera todo por igual.
+        var trozos = [], metaPrimero = null, fallo = null;
+        var enc = new VideoEncoder({ output: function (ch, meta) {
+          var d = new Uint8Array(ch.byteLength); ch.copyTo(d);
+          if (!metaPrimero && meta && meta.decoderConfig) metaPrimero = meta;
+          trozos.push({ d: d, tipo: ch.type, t: ch.timestamp, dur: ch.duration || Math.round(1e6 / FPS) });
+        }, error: function (e) { fallo = e; } });
+        function montar(factor) { // → Blob MP4 a esa velocidad (1, 1.5, 2)
+          var f = factor > 0 ? factor : 1;
+          var mx = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: "avc", width: W, height: H, frameRate: Math.round(FPS * f) }, fastStart: "in-memory" });
+          trozos.forEach(function (c, k) { mx.addVideoChunkRaw(c.d, c.tipo, Math.round(c.t / f), Math.max(1, Math.round(c.dur / f)), k === 0 ? metaPrimero : undefined); });
+          mx.finalize();
+          return new Blob([mx.target.buffer], { type: "video/mp4" });
+        }
         enc.configure({ codec: codec, width: W, height: H, bitrate: V3.BITRATE, framerate: FPS, avc: { format: "avc" } });
         console.log("[video3d] WebCodecs " + codec);
         var i = 0, primero = true;
@@ -337,8 +350,9 @@
         return paso().catch(function (e) { try { if (enc.state !== "closed") enc.close(); } catch (x) {} throw e; }) // revisión 131.ª: no dejar el codificador abierto
           .then(function () { return enc.flush(); }).then(function () {
           if (fallo) throw fallo;
-          enc.close(); muxer.finalize();
-          return { blob: new Blob([muxer.target.buffer], { type: "video/mp4" }), ext: "mp4", segundos: Math.round(G.DUR) };
+          enc.close();
+          if (!trozos.length || !metaPrimero) throw new Error("el vídeo ha salido vacío");
+          return { blob: montar(1), ext: "mp4", segundos: Math.round(G.DUR), velocidad: montar }; // VIDEO-VELOCIDAD-1
         });
       }
     }
