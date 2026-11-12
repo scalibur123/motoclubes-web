@@ -643,6 +643,13 @@ FR.update({"Planificador de rutas": "Planificateur d'itinéraires", 'placeholder
 PT.update({"Planificador de rutas": "Planeador de rotas", 'placeholder="tu@correo.com"': 'placeholder="tu@email.pt"'})
 IT.update({"Planificador de rutas": "Pianificatore di percorsi", 'placeholder="tu@correo.com"': 'placeholder="tu@email.it"'})
 
+# SOS-GRUPO-WEB-1 (146.ª, 12-nov): la tarjeta del SOS al grupo (versión 1.26.1112).
+_SOS_T = "SOS al grupo"
+_SOS_P = "Si necesitas ayuda, mantén el dedo 3 segundos en el mapa: a todo tu grupo le llega el aviso con dónde estás, y a los que van rodando se lo dice la voz por el casco."
+FR.update({_SOS_T: "SOS au groupe", _SOS_P: "Besoin d'aide ? Gardez le doigt 3 secondes sur la carte : tout votre groupe reçoit l'alerte avec votre position, et ceux qui roulent l'entendent dans le casque."})
+PT.update({_SOS_T: "SOS ao grupo", _SOS_P: "Se precisares de ajuda, mantém o dedo 3 segundos no mapa: todo o teu grupo recebe o aviso com o sítio onde estás, e quem vai a rodar ouve-o no capacete."})
+IT.update({_SOS_T: "SOS al gruppo", _SOS_P: "Se hai bisogno di aiuto, tieni il dito 3 secondi sulla mappa: tutto il gruppo riceve l'avviso con la tua posizione, e chi sta guidando lo sente nel casco."})
+
 def generar(destino, dic, codigo, locale):
     s = io.open('index.html', encoding='utf8').read()
     # Las cadenas largas primero: si no, una corta rompe una larga que la contiene.

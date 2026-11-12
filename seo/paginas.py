@@ -33,7 +33,7 @@ ICO = {
     "vuela": I["Vuela la ruta antes de hacerla"], "voz": I["Radio del grupo"], "vivo": I["Seguimiento en vivo"],
     "gasolina": I["Gasolineras de cuatro países"], "lugar": I["Tus lugares"], "coche": I["CarPlay y Android Auto"],
     "candado": I["Pública o privada, tú decides"], "fotos": I["Las fotos de la salida"], "retos": I["Ranking, logros y retos"],
-    "foro": I["Foro de la comunidad"], "rf": I["Rider Friendly"],
+    "foro": I["Foro de la comunidad"], "rf": I["Rider Friendly"], "sos": I["SOS al grupo"],
 }
 
 PREGUNTA_DESCARGA = ("¿Cuándo la puedo descargar?",
@@ -86,6 +86,7 @@ PAGINAS = [
             ("mapa", "La ruta del día, con el tiempo", "La mañana de la salida cada uno recibe la ruta del día y el tiempo que hará al salir y al llegar."),
             ("vivo", "Todos los cascos en el mapa", "Durante la salida ves dónde va cada compañero, con el color de su casco. Sabes quién se ha quedado atrás sin parar a llamar."),
             ("voz", "La radio del grupo", "Habláis entre todos por el intercomunicador que ya lleváis, de la marca que sea. Va por los datos del móvil: no depende del alcance del aparato."),
+            ("sos", "SOS: un dedo y lo sabe todo el grupo", "Mantén el dedo 3 segundos en el mapa y a cada compañero le llega el aviso con tu sitio. Los que van rodando lo oyen por el casco y pueden ir hasta ti con un toque. Con «Estoy bien» se enteran todos de que ya pasó."),
             ("brujula", "Con el móvil en el bolsillo", "El mapa del grupo y la radio siguen funcionando con la pantalla apagada."),
             ("perfil", "Viajes de varios días", "Etapas por días, cada una con su ruta, y el GPX para quien quiera llevarla en su navegador."),
             ("fotos", "El resumen de la salida", "Al terminar: quién fue, los kilómetros de cada uno y las fotos que sube cada rider, guardado en el historial del grupo."),
@@ -99,6 +100,8 @@ PAGINAS = [
              "No. Solo te ven los compañeros de tu salida, y solo mientras dura. Y si no quieres compartir tu posición, lo apagas en tu perfil."),
             ("¿Sirve para cuatro amigos o solo para clubes?",
              "Para los dos. Vale igual para un club con su estructura que para cuatro amigos que salen a desayunar el domingo."),
+            ("¿Y si alguien del grupo tiene un problema?",
+             "Mantiene el dedo 3 segundos en el mapa y el grupo entero recibe un SOS con dónde está. Si no hay cobertura, sale solo en cuanto vuelve. Si es grave, llama siempre al 112."),
             ("¿Y si alguien del grupo no lleva intercomunicador?",
              "Sigue al grupo en el mapa igual que los demás y oye la radio por el móvil. Para hablar le hace falta un intercomunicador."),
             PREGUNTA_DESCARGA,
