@@ -1950,8 +1950,8 @@ $('p-con').onclick = () => { verPestana('con'); coAviso(''); cargarContactos() }
 // ── USO-APP-1 (28-oct, 129.ª) · qué miran los riders ──
 const USO_BLOQUES = [
   ['videos', '🎬 Vídeos', 'Cada vez que un vídeo de la guía o de una noticia llega a arrancar. «Llegan al» = hasta qué segundo lo ven, de media (solo cuenta cuando cierran el vídeo o cambian de pantalla). Desde la versión 1.26.10284.'],
-  ['noticias', '📰 Noticias', 'Cada vez que abren una noticia del foro.'],
-  ['hilos', '💬 Hilos del foro', 'Cada vez que abren un hilo que no es noticia.'],
+  ['noticias', '📰 Noticias', 'Todas las noticias colgadas en estos días, la última arriba, y cuántos riders la han abierto.'],
+  ['hilos', '💬 Hilos del foro', 'Todos los hilos abiertos en estos días, el último arriba, y cuántos riders lo han abierto. Tus visitas no cuentan.'],
   ['guia', '📖 Guía · apartados', 'Cada apartado de la guía que abren. Desde la versión 1.26.10284.'],
   ['guia_otros', '📖 Guía · otros botones', 'Por el texto del botón, en el idioma del rider (y los apartados en las versiones anteriores a la 1.26.10284).'],
   ['pantallas', '📱 Pantallas', 'Cada vez que entran en una pantalla.'],
@@ -1984,6 +1984,23 @@ async function cargarUso() {
     for (const t of ts || []) USO_FECHA[t.id] = t.created_at
   }
   if (n !== usoPet) return
+  // 🆕 USO-SIN-ABRIR-1 (146.ª, 12-nov, Mario 20:21: «el nuevo hilo que han abierto en la app no aparece… Uso es la visión general
+  // de toda la app… lo último publicado, lo que está por contestar, todo»). «Uso» salía solo del registro de la app: un hilo o una
+  // noticia que todavía no ha abierto nadie (o cuyo registro aún no ha subido; tus propias visitas no cuentan) no existía aquí.
+  // Ahora los hilos y las noticias colgados en esos días salen SIEMPRE, con 0 riders y «Sin abrir todavía» si nadie los ha abierto.
+  try {
+    const dias = Number($('u-dias').value) || 30
+    const { data: nuevos } = await sb.from('threads').select('id, title, category, created_at').is('hidden_at', null)
+      .gte('created_at', new Date(Date.now() - dias * 86400000).toISOString()).order('created_at', { ascending: false }).limit(300)
+    if (n !== usoPet) return
+    const ya = new Set((USO.filas || []).filter(f => f.bloque === 'noticias' || f.bloque === 'hilos').map(f => f.clave))
+    USO.filas = Array.isArray(USO.filas) ? USO.filas : []
+    for (const t of nuevos || []) {
+      USO_FECHA[t.id] = t.created_at
+      if (!ya.has(t.id)) USO.filas.push({ bloque: t.category === 'noticias' ? 'noticias' : 'hilos', clave: t.id, que: t.title || '(sin título)', veces: 0, riders: 0, quienes: [], sinAbrir: true })
+    }
+  } catch (e) { console.warn('[uso] hilos sin abrir', e) }
+  if (n !== usoPet) return
   pintarUso()
 }
 function pintarUso() {
@@ -1999,7 +2016,10 @@ function pintarUso() {
       const k = b + '|' + i, abierta = usoAbierta === k
       const nombre = b === 'pantallas' ? (USO_PANTALLA[f.que] ? `${esc(USO_PANTALLA[f.que])} <span class="sub" style="font-size:12px">${esc(f.que)}</span>` : esc(f.que))
         : porFecha && USO_FECHA[f.clave] ? `${esc(f.que)} <span class="sub" style="font-size:12px">${fecha(USO_FECHA[f.clave])}</span>` : esc(f.que)
-      return `<tr class="org-fila" data-uso="${k}"><td class="partir"><button class="nombre-c">${nombre}</button>${abierta ? `<div class="sub partir" style="font-size:13px;margin-top:6px">${esc((f.quienes || []).join(', '))}</div>` : ''}</td>
+      // USO-SIN-ABRIR-1: lo que nadie ha abierto aún, y lo que espera respuesta (lo sabe el apartado Foro, si ya ha cargado)
+      const pendiente = porFecha && typeof FO !== 'undefined' && Array.isArray(FO) && FO.some(h => h.id === f.clave && h.pend)
+      const chips = (f.sinAbrir ? ' <span class="chip gris">Sin abrir todavía</span>' : '') + (pendiente ? ' <span class="chip amar">Por contestar</span>' : '')
+      return `<tr class="org-fila" data-uso="${k}"><td class="partir"><button class="nombre-c">${nombre}</button>${chips}${abierta ? `<div class="sub partir" style="font-size:13px;margin-top:6px">${esc((f.quienes || []).join(', ')) || 'Nadie todavía.'}</div>` : ''}</td>
         <td><b>${f.riders}</b></td><td>${f.veces}</td>${conSeg ? `<td>${f.seg != null ? usoSeg(f.seg) + (f.dura ? ` de ${usoSeg(f.dura)}` : '') : '—'}</td>` : ''}</tr>`
     }).join('') || `<tr><td colspan="${conSeg ? 4 : 3}" class="sub">Nada en estos días.</td></tr>`
     return `<div><h2 style="margin:0 0 4px">${titulo}</h2><div class="sub" style="margin-bottom:8px">${ayuda}</div>
