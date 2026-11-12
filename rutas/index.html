@@ -633,7 +633,12 @@ function dentroDeApp() {
 function enlaceNavegador() {
   var ua = navigator.userAgent || "", u = location.href;
   if (/iPhone|iPad|iPod/i.test(ua)) return "x-safari-" + u;                       // https://… → x-safari-https://…
-  if (/Android/i.test(ua)) return "intent://" + u.replace(/^https?:\/\//, "") + "#Intent;scheme=https;action=android.intent.action.VIEW;end";
+  if (/Android/i.test(ua)) {
+    // Mario, 18:51 con el Oppo: «tengo que pasar por 3 pantallas». La dirección lleva `gpx=1`: al abrirse en el navegador, la
+    // página descarga sola, sin tener que buscar otra vez el botón.
+    var conGpx = u.replace(/#.*$/, "") + (u.indexOf("?") >= 0 ? "&" : "?") + "gpx=1";
+    return "intent://" + conGpx.replace(/^https?:\/\//, "") + "#Intent;scheme=https;action=android.intent.action.VIEW;end";
+  }
   return u;
 }
 /* GPX-INSTAGRAM-1, segunda vuelta (12-nov 18:41, Mario en su iPhone: «sale naranja, pero el botón no hace nada»). Instagram
@@ -664,9 +669,8 @@ function htmlDentroDeApp(hayGpx) {
       '<p id="falloApp" hidden style="margin:10px 0 0;font-size:14px"></p></div>';
   }
   if (!ios) {
-    return caja + '<p style="margin:0 0 12px;font-weight:700">Para descargar el GPX, abre la ruta en tu navegador</p>' +
-      '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" ' + boton + '>Abrir en el navegador ↗</a>' +
-      '<p style="margin:12px 0 0;font-size:14px;opacity:.85">' + esc(app) + ' no deja descargar archivos. ¿No se abre? ' + planB + '</p></div>';
+    return caja + '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" ' + boton + '>⬇ Descargar el GPX</a>' +
+      '<p style="margin:12px 0 0;font-size:14px;opacity:.85">Se abre tu navegador y se descarga solo. ¿No se abre? ' + planB + '</p></div>';
   }
   return caja + '<p style="margin:0 0 8px;font-weight:700">Para descargar el GPX, ábrela en Safari</p>' +
     '<p style="margin:0;font-size:15px">' + esc(app) + ' no deja descargar archivos. ' + planB + '</p></div>';
@@ -1017,7 +1021,7 @@ function pintar(r) {
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
   };
   var alPulsar = function (e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     // WEB-RUTAS-GPX-1: se cuenta ANTES de descargar (en el iPhone la descarga puede sacar la página antes de seguir)
     try { if (window.mcVisitaGpx) window.mcVisitaGpx(); } catch (e2) {}
     var texto = construirGpx(r, pts);
@@ -1035,6 +1039,15 @@ function pintar(r) {
   if (b) b.addEventListener("click", alPulsar);
   var gApp = document.getElementById("guardarApp");
   if (gApp) gApp.addEventListener("click", alPulsar);
+  // GPX-INSTAGRAM-1: viene de «Descargar el GPX» pulsado dentro de una app en Android (`gpx=1`): ya en el navegador, baja sola.
+  // La coletilla se quita de la dirección para que recargar o compartir la página no vuelva a descargar.
+  try {
+    if (pts.length && !dentroDeApp() && /[?&]gpx=1(&|$)/.test(location.search)) {
+      var limpia = location.pathname + location.search.replace(/([?&])gpx=1(&|$)/, function (m, a, z) { return z ? a : ""; }) + location.hash;
+      history.replaceState(null, "", limpia);
+      setTimeout(function () { alPulsar(null); }, 700);
+    }
+  } catch (e3) {}
 }
 
 if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
