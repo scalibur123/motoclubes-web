@@ -619,10 +619,16 @@ function trazaParaGpx(pts) {
 function dentroDeApp() {
   var ua = navigator.userAgent || "";
   var m = ua.match(/Instagram|FBAN|FBAV|FB_IAB|Barcelona|TikTok|musical_ly|LinkedInApp|Snapchat|Line\//i);
-  if (!m) return null;
+  if (!m) {
+    // Red de seguridad: cualquier navegador metido dentro de una app. En iPhone no lleva «Safari/» en su firma (Safari, Chrome
+    // y el navegador que abre WhatsApp sí la llevan); en Android lleva «; wv)».
+    var ios = /iPhone|iPad|iPod/i.test(ua) && !/Safari\//i.test(ua);
+    var andr = /Android/i.test(ua) && /; wv\)/i.test(ua);
+    return ios || andr ? "Esta app" : null;
+  }
   var n = m[0];
   return /Instagram/i.test(n) ? "Instagram" : /^FB/i.test(n) ? "Facebook" : /Barcelona/i.test(n) ? "Threads"
-       : /TikTok|musical_ly/i.test(n) ? "TikTok" : /LinkedIn/i.test(n) ? "LinkedIn" : "esta app";
+       : /TikTok|musical_ly/i.test(n) ? "TikTok" : /LinkedIn/i.test(n) ? "LinkedIn" : "Esta app";
 }
 function enlaceNavegador() {
   var ua = navigator.userAgent || "", u = location.href;
