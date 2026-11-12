@@ -642,7 +642,7 @@ function htmlDentroDeApp(hayGpx) {
   var safari = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
   return '<div id="dentroApp" style="margin-top:26px;padding:16px 18px;border-radius:16px;border:2px solid #FF7A1A;background:rgba(255,122,26,.10)">' +
     '<p style="margin:0 0 12px;font-weight:700">Para descargar el GPX, abre la ruta en ' + (safari ? "Safari" : "tu navegador") + '</p>' +
-    '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" style="display:block;text-align:center">' + (safari ? "Abrir en Safari" : "Abrir en el navegador") + ' ↗</a>' +
+    '<a class="boton" id="salirApp" href="' + esc(enlaceNavegador()) + '" style="display:block;text-align:center;background:#FF7A1A;color:#111;font-weight:800;font-size:18px;padding:16px;border-radius:14px;text-decoration:none">' + (safari ? "Abrir en Safari" : "Abrir en el navegador") + ' ↗</a>' +
     '<p style="margin:12px 0 0;font-size:14px;opacity:.85">' + esc(app) + ' no deja descargar archivos. ¿No se abre? ' +
     '<a href="#" id="copiarApp" style="text-decoration:underline">Copia el enlace</a> y pégalo en ' + (safari ? "Safari" : "Chrome") +
     ', o pulsa <b>⋯</b> arriba y «Abrir en el navegador».</p></div>';
