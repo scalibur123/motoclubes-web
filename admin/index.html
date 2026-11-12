@@ -2044,7 +2044,7 @@ function pintarSos() {
       : '<span class="sub">SOS al grupo: se avisa con aviso en el móvil y campanita, no por correo.</span>'}
       <div class="sub" style="font-size:12px;margin-top:6px">Última posición: ${fechaHora(s.actualizado_at)}</div></td></tr>`
     return `<tr class="org-fila" data-so="${i}"><td>${fechaHora(s.creado_at)}</td><td>${quien(s)}</td>
-      <td>${s.solo ? 'Sus contactos' : 'Grupo ' + esc(s.grupo || '')}</td><td><b>${s.avisados ?? 0}</b></td>
+      <td>${s.solo ? 'Sus contactos' : (/^grupo\b/i.test(s.grupo || '') ? '' : 'Grupo ') + esc(s.grupo || '')}</td><td><b>${s.avisados ?? 0}</b></td>
       <td>${s.bien_at ? '✅ Está bien · ' + fechaHora(s.bien_at) : '<b style="color:#DC2626">🆘 Abierto</b>'}</td>
       <td><a href="https://www.google.com/maps/search/?api=1&query=${Number(s.lat)},${Number(s.lng)}" target="_blank" rel="noopener">Ver en el mapa</a></td></tr>${detalle}`
   }).join('') || '<tr><td colspan="6" class="sub">Ningún SOS en estos días.</td></tr>'
