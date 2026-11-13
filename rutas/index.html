@@ -921,7 +921,8 @@ function pintar(r) {
       var fich = new File([res.blob], nombre, { type: res.blob.type });
       // 🆕 VIDEO-VELOCIDAD-1 (145.ª, Mario: «si no me gusta porque lo veo muy lento, no puedo modificarlo… sería lógico»): en el
       // 3D, ×1 · ×1,5 · ×2 con el vídeo ya hecho. Se ve al momento (playbackRate) y la descarga y «Compartir» salen a esa
-      // velocidad (video3d.js lo vuelve a montar sin pintar nada). En el plano no hay botones: habría que hacerlo otra vez.
+      // velocidad (video3d.js lo vuelve a montar sin pintar nada). 🆕 VIDEO-VELOCIDAD-PLANO-1 (148.ª): también en el plano
+      // cuando se graba con WebCodecs (video.js, grabarExacto); con la grabación de antes (MediaRecorder) no salen los botones.
       if (typeof res.velocidad === "function") {
         var velCaja = document.createElement("div"), hechos = { 1: { blob: res.blob, url: urlV } };
         velCaja.className = "elige-ritmo";

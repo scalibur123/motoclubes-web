@@ -620,10 +620,23 @@ function grabarExacto(cv, cuadro, avisar, DUR) {
     if (!codec) return null;
     return cargarMuxer().then(function (hay) {
       if (!hay) return null;
-      var muxer, enc, fallo = null;
+      // 🆕 VIDEO-VELOCIDAD-PLANO-1 (148.ª, 13-nov · Mario: «debería ser como el 3D: generarlo en 1 y luego poder elegir 1,5 o 2»):
+      // los trozos ya codificados se guardan y el MP4 se monta al final, como en video3d.js (VIDEO-VELOCIDAD-1); «×1,5» o «×2»
+      // lo vuelve a montar al momento con la hora de cada imagen dividida (45 o 60 imágenes por segundo), sin pintar nada.
+      var enc, fallo = null, trozos = [], metaPrimero = null;
+      function montar(factor) { // → Blob MP4 a esa velocidad (1, 1.5, 2)
+        var f = factor > 0 ? factor : 1;
+        var mx = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: "avc", width: W, height: H, frameRate: Math.round(FPS * f) }, fastStart: "in-memory" });
+        trozos.forEach(function (c, k) { mx.addVideoChunkRaw(c.d, c.tipo, Math.round(c.t / f), Math.max(1, Math.round(c.dur / f)), k === 0 ? metaPrimero : undefined); });
+        mx.finalize();
+        return new Blob([mx.target.buffer], { type: "video/mp4" });
+      }
       try {
-        muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: "avc", width: W, height: H, frameRate: FPS }, fastStart: "in-memory" });
-        enc = new VideoEncoder({ output: function (ch, meta) { muxer.addVideoChunk(ch, meta); }, error: function (e) { fallo = e; } });
+        enc = new VideoEncoder({ output: function (ch, meta) {
+          var d = new Uint8Array(ch.byteLength); ch.copyTo(d);
+          if (!metaPrimero && meta && meta.decoderConfig) metaPrimero = meta;
+          trozos.push({ d: d, tipo: ch.type, t: ch.timestamp, dur: ch.duration || Math.round(1e6 / FPS) });
+        }, error: function (e) { fallo = e; } });
         enc.configure({ codec: codec, width: W, height: H, bitrate: 8000000, framerate: FPS, avc: { format: "avc" } });
       } catch (e) { console.warn("[video] WebCodecs no arranca, se graba como antes:", e); return null; }
       console.log("[video] grabación exacta " + codec);
@@ -645,8 +658,9 @@ function grabarExacto(cv, cuadro, avisar, DUR) {
       }
       return paso().then(function () { return enc.flush(); }).then(function () {
         if (fallo) throw fallo;
-        cerrar(); muxer.finalize();
-        return { blob: new Blob([muxer.target.buffer], { type: "video/mp4" }), ext: "mp4", segundos: Math.round(DUR) };
+        cerrar();
+        if (!trozos.length || !metaPrimero) throw new Error("el vídeo ha salido vacío");
+        return { blob: montar(1), ext: "mp4", segundos: Math.round(DUR), velocidad: montar }; // VIDEO-VELOCIDAD-PLANO-1
       });
     });
   });
