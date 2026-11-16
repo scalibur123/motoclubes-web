@@ -242,6 +242,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="opc" id="t-periodo"></div><!-- PERIODO-1 -->
   <div id="t-filtro"></div><!-- TESTERS-AVISOS-1: qué se está viendo y quitar el filtro -->
   <div class="card" id="t-grupo" style="padding:16px 22px;display:none"></div><!-- TESTERS-AVISOS-1: «Recordar a los N» / «Mandar ayuda a los N», encima de esas filas -->
+  <div class="card" id="t-ultimo" style="padding:16px 22px;display:none"></div><!-- TESTERS-LIMPIEZA-1: «Último aviso» a los que llevan más de 14 días sin entrar -->
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
   <div class="card" id="t-quitados" style="padding:16px 22px;display:none"></div><!-- QUITAR-LISTA-1: los quitados, aparte, para abrir su ficha y volver a ponerlos -->
 </main>
@@ -715,7 +716,7 @@ async function invitar(cuerpo) {
   if (error) { let m = error.message; try { m = (await error.context.json()).error || m } catch (e) {} ; throw new Error(m) }
   return data
 }
-let TESTERS = [], QUITADOS = []
+let TESTERS = [], QUITADOS = [], ULTIMO = [] // TESTERS-LIMPIEZA-1
 // ── TESTERS-AVISOS-1 (17-oct-2026, 112.ª) · Mario: «me cuesta bastante seguirlo […] cuántas solicitudes hay sin haber hecho nada,
 // cuántas ya están tramitadas […] y de esos cuántos han entrado». Cuatro números que se pulsan (Te toca a ti · Dentro · A medias ·
 // Sin pulsar), la fase la da la función (faseTester, la misma regla que el envío automático), «Recordar» y «Mandar ayuda» a uno o
@@ -735,7 +736,47 @@ async function cargarTesters() {
       <button class="nombre-c t-ficha" data-email="${esc(q.email)}">${esc(q.email)}</button>
       <span class="sub" style="text-align:right">${q.quitado_motivo ? '«' + esc(q.quitado_motivo) + '» · ' : ''}${fecha(q.quitado_at)}</span></div>`).join('')}</div></details>` : ''
   if (TESTERS.length && !('fase' in TESTERS[0])) tAviso('Falta desplegar la función nueva (web-invitar-testers): los números no se pueden calcular.')
+  // TESTERS-LIMPIEZA-1: a quién le toca el «Último aviso» (lo calcula la función, con la misma regla que el envío)
+  try { ULTIMO = (await invitar({ modo: 'ultimo' })).filas || [] } catch (e) { ULTIMO = [] } // función vieja: el bloque no sale
   pintarTesters()
+  pintarUltimo()
+}
+// ── 🆕 TESTERS-LIMPIEZA-1 (150.ª, 16-nov · Mario: «limpiar todos los que están pendientes… desde octubre que no entran»; correos
+// aprobados 16:58, «tal cual»). Los que llevan más de 14 días sin entrar (sin pulsar o a medias): un último correo, cariñoso; si a
+// los 3 días siguen sin entrar, testers-diario los quita de la lista (salen en «Quitados») y te lo cuenta en el correo de la mañana.
+// «No quitar» en su ficha lo para (si contesta a soporte).
+const GRUPO_ULT = { play: 'Android con el enlace de Play', gmail: 'Android con Gmail, sin dar su cuenta de Play', otro: 'Android sin Gmail (Hotmail, Outlook…)', iphone: 'iPhone' }
+function pintarUltimo() {
+  const u = $('t-ultimo')
+  if (!ULTIMO.length) { u.style.display = 'none'; u.innerHTML = ''; return }
+  u.style.display = ''
+  const n = (g) => ULTIMO.filter(x => x.grupo === g).length
+  u.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="flex-grow:1"><b>Llevan más de 14 días sin entrar · ${ULTIMO.length}</b>
+    <div class="sub" style="font-size:13px">Les llega un último correo: su plaza sigue guardada unos días más y, si no es su momento, que escriban a soporte@motoclubes.es cuando quieran. Si a los 3 días siguen sin entrar, salen solos de la lista (en «Quitados», se pueden volver a poner).</div>
+    <div class="sub" style="font-size:13px;margin-top:6px">${Object.entries(GRUPO_ULT).filter(([g]) => n(g)).map(([g, t]) => `${esc(t)}: <b>${n(g)}</b> <button class="btn3" data-ult="${g}" style="padding:3px 10px;margin-left:4px">Ver el correo</button>`).join(' · ')}</div></div>
+    <button class="btn" id="t-ultimo-enviar">Mandar el último aviso a ${ULTIMO.length === 1 ? '1' : 'los ' + ULTIMO.length}</button></div>
+    <details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Ver quiénes son</summary><div class="sub" style="margin-top:6px;line-height:1.7">${ULTIMO.map(x => `${esc(x.email)} (${esc(GRUPO_ULT[x.grupo] || x.grupo)}, desde el ${fecha(x.desde)})`).join('<br>')}</div></details>`
+}
+$('t-ultimo').onclick = async (ev) => {
+  const v = ev.target.closest('[data-ult]')
+  if (v) {
+    const w = window.open('', '_blank'); if (!w) return tAviso('El navegador ha bloqueado la ventana: permite las ventanas emergentes de motoclubes.es.')
+    try { const d = await invitar({ modo: 'muestra', correo: 'ultimo', grupo: v.dataset.ult }); w.document.write(d.html); w.document.title = d.asunto; w.document.close() }
+    catch (e) { w.close(); tAviso('No se ha podido preparar la muestra: ' + esc(e.message)) }
+    return
+  }
+  const b = ev.target.closest('#t-ultimo-enviar'); if (!b) return
+  const emails = ULTIMO.map(x => x.email)
+  if (!emails.length || !confirm(`¿Mandar el último aviso a ${emails.length} ${emails.length === 1 ? 'persona' : 'personas'}? A los 3 días, los que sigan sin entrar saldrán de la lista.`)) return
+  if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
+  enviandoAviso = true; b.disabled = true; tAviso('Enviando…', true)
+  try {
+    const r = await invitar({ modo: 'ultimo', emails })
+    const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
+    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length)
+  } catch (e) { tAviso('No se ha podido mandar el último aviso: ' + esc(e.message)) }
+  enviandoAviso = false
+  await cargarTesters()
 }
 // El automático (testers-diario, cron 08:20 UTC) sale en la primera tanda después de «desde + N días».
 function tandaAuto(iso, dias) {
@@ -760,6 +801,8 @@ function estadoFila(t) {
   if (t.fase === 'dentro') return '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
   // Correo bloqueado (baja de los correos, rebote o spam): no le sale nada, ni a mano ni automático; no se promete ningún envío
   const bloq = t.bloqueado ? ' <span class="chip rojo">Correo bloqueado: no le sale nada</span>' : ''
+  // TESTERS-LIMPIEZA-1: el último aviso, cuándo y si sale de la lista (o «No quitar»)
+  if (t.ultimo_aviso_at) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + ' si no entra'}</span>${bloq}`
   // ANDROID-PLAY-DIRECTO-1 (17-oct, Mario: «que me ponga invitar, si lo que está esperando es el enlace, no sé qué pinta»):
   // a un Android sin enlace de Play no se le invita: le das de alta en Play Console y le mandas el enlace desde aquí.
   if (t.fase === 'te_toca' && t.plataforma === 'android') return t.bloqueado ? `<span class="chip gris">Por dar de alta en Play</span>${bloq}`
@@ -1415,7 +1458,10 @@ async function verFicha(email, vuelve) {
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${['Entró con otro correo', 'Se cansó de esperar', 'Está repetido', 'No contesta', 'Ya no quiere probarla'].map(m =>
             `<button type="button" class="btn3 fq-sug" data-m="${esc(m)}" style="padding:4px 10px;font-size:12px">${esc(m)}</button>`).join('')}</div>
           <input type="text" id="fq-motivo" maxlength="200" placeholder="Escribe el motivo o toca uno de arriba y cámbialo" style="width:100%;box-sizing:border-box">
-          <div style="text-align:right;margin-top:8px"><button class="btn3" id="fq-quitar">Quitar de la lista</button></div></div>`)
+          <div style="text-align:right;margin-top:8px"><button class="btn3" id="fq-quitar">Quitar de la lista</button></div></div>` +
+          // TESTERS-LIMPIEZA-1: con el último aviso mandado, «No quitar» (si contesta a soporte) o volver a dejar que salga solo
+          (w.ultimo_aviso_at ? dato('Último aviso', fechaHora(w.ultimo_aviso_at) + (w.no_quitar ? ' · no se quita de la lista' : ' · sale solo de la lista a los 3 días si no entra')) +
+            `<div style="text-align:right;margin-top:8px"><button class="btn3" id="fn-noquitar" data-si="${w.no_quitar ? '0' : '1'}">${w.no_quitar ? 'Dejar que salga solo' : 'No quitar de la lista'}</button></div>` : ''))
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', p?.app_movil ? esc(p.app_movil) : movilTxt(p?.app_platform)) /* MOVIL-FICHA-1: el modelo, si la app ya lo ha mandado */ +
       dato('Versión', esc(verApp(p?.app_version, p?.app_build))) +
@@ -1488,6 +1534,14 @@ $('f-cuerpo').onclick = (ev) => {
     ev.target.disabled = true
     invitar({ modo: 'quitar', email: FICHA.web.email, quitar, motivo })
       .then(async () => { await verFicha(FICHA.email, fichaVuelve); tAviso(quitar ? '✅ Quitado de la lista. Ya no cuenta en las cifras ni se le escribe.' : '✅ Vuelve a estar en la lista.', true) })
+      .catch((e) => { ev.target.disabled = false; tAviso('No se ha podido: ' + esc(e.message)) })
+    return
+  }
+  if (ev.target.closest('#fn-noquitar') && FICHA?.web) { // TESTERS-LIMPIEZA-1
+    const si = ev.target.closest('#fn-noquitar').dataset.si === '1'
+    ev.target.disabled = true
+    invitar({ modo: 'no_quitar', email: FICHA.web.email, si })
+      .then(async () => { await verFicha(FICHA.email, fichaVuelve); tAviso(si ? '✅ No saldrá de la lista.' : '✅ Saldrá solo de la lista a los 3 días del último aviso si no entra.', true) })
       .catch((e) => { ev.target.disabled = false; tAviso('No se ha podido: ' + esc(e.message)) })
     return
   }
