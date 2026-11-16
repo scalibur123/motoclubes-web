@@ -102,7 +102,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 </style>
 </head>
 <body>
-<header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><div id="g-caja" class="oculto" style="position:relative"><input type="search" id="g-buscar" placeholder="🔍 Buscar en todo: apodo, correo, negocio, contacto" autocomplete="off" spellcheck="false" aria-label="Buscar en todo el panel"><div id="g-res" class="oculto"></div></div><!-- PANEL-BUSCAR-1 --><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
+<header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><button type="button" id="cupo" class="oculto" title="Correos de hoy en Resend (pulsa para actualizar)" style="margin-left:12px;border:0;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer"></button><!-- CORREOS-CUPO-1 --><div id="g-caja" class="oculto" style="position:relative"><input type="search" id="g-buscar" placeholder="🔍 Buscar en todo: apodo, correo, negocio, contacto" autocomplete="off" spellcheck="false" aria-label="Buscar en todo el panel"><div id="g-res" class="oculto"></div></div><!-- PANEL-BUSCAR-1 --><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
 <nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-sos">🆘 SOS</button><button type="button" id="p-hec">✅ Hecho</button></nav>
@@ -589,10 +589,11 @@ function reinvitar(id) {
 }
 async function entrar() {
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('v-cor').classList.add('oculto'); $('sub-cont').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('g-caja').classList.add('oculto'); $('salir').classList.add('oculto'); $('quien').textContent = ''; return }
+  if (!session) { $('v-login').classList.remove('oculto'); $('v-panel').classList.add('oculto'); $('v-cand').classList.add('oculto'); $('v-test').classList.add('oculto'); $('v-rid').classList.add('oculto'); $('v-ficha').classList.add('oculto'); $('v-inc').classList.add('oculto'); $('v-gui').classList.add('oculto'); $('v-not').classList.add('oculto'); $('v-con').classList.add('oculto'); $('v-uso').classList.add('oculto'); $('v-for').classList.add('oculto'); $('v-cor').classList.add('oculto'); $('sub-cont').classList.add('oculto'); $('pestanas').classList.add('oculto'); $('g-caja').classList.add('oculto'); $('salir').classList.add('oculto'); $('cupo').classList.add('oculto'); $('quien').textContent = ''; return }
   const { data: admin } = await sb.rpc('mc_soy_admin')
   if (!admin) { await sb.auth.signOut({ scope: 'local' }); $('l-error').textContent = 'Este usuario no es administrador.'; $('l-error').classList.remove('oculto'); return entrar() }
   $('quien').textContent = session.user.email
+  cargarCupo(); if (!window.__cupoT) window.__cupoT = setInterval(cargarCupo, 3 * 60e3) // CORREOS-CUPO-1
   $('v-login').classList.add('oculto'); $('salir').classList.remove('oculto'); $('pestanas').classList.remove('oculto'); $('g-caja').classList.remove('oculto') // PANEL-BUSCAR-1
   // SIGUE-DONDE-ESTABAS-1: se vuelve a la pestaña (o la ficha) en la que estabas antes de recargar
   const donde = decodeURIComponent(location.hash.slice(1))
@@ -718,6 +719,38 @@ async function invitar(cuerpo) {
   return data
 }
 let TESTERS = [], QUITADOS = [], ULTIMO = [] // TESTERS-LIMPIEZA-1
+// ── 🆕 CORREOS-CUPO-1 (150.ª, 16-nov · Mario 18:55: «un contador… para saber cuántos llevo en el día para no pasarme siempre de los
+// 100»). El número lo da Resend (modo 'cupo' de web-invitar-testers): verde hasta 50, amarillo hasta 80, rojo desde 80. Antes de un
+// envío en tanda se vuelve a leer: si con ese envío se pasa del tope, no se manda (al pasar, Resend deja de mandar TODO, el SOS
+// incluido). Si no se puede leer, se avisa y se deja mandar.
+let CUPO = null
+const horaCupo = (iso) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('es-ES', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) }
+async function cargarCupo() {
+  try { const r = await invitar({ modo: 'cupo' }); CUPO = r && r.ok ? r.daily : null } catch (e) { CUPO = null }
+  pintarCupo(); return CUPO
+}
+function pintarCupo() {
+  const b = $('cupo'); if (!b) return
+  b.classList.remove('oculto')
+  if (!CUPO) { b.textContent = 'Correos hoy: ?'; b.style.background = '#EFEAE3'; b.style.color = '#6B4423'; b.title = 'No se ha podido leer el contador de Resend. Pulsa para intentarlo otra vez.'; return }
+  const u = CUPO.used, l = CUPO.limit, vuelta = horaCupo(CUPO.resets_at)
+  b.textContent = l ? `Correos hoy: ${u} de ${l}` : `Correos hoy: ${u}`
+  const pct = l ? u / l : 0
+  b.style.background = pct >= 0.8 ? '#C62828' : pct >= 0.5 ? '#F9A825' : '#2E7D32'; b.style.color = pct >= 0.5 && pct < 0.8 ? '#1a1a1a' : '#fff'
+  b.title = `Enviados ${CUPO.sent} · recibidos ${CUPO.received}${vuelta ? ' · vuelve a cero: ' + vuelta : ''}. Pulsa para actualizar.`
+}
+$('cupo').onclick = () => cargarCupo()
+// Antes de mandar n correos: devuelve la línea para la pregunta, o null si no se debe mandar
+async function cupoAntes(n) {
+  const c = await cargarCupo()
+  if (!c) return '\n\n(No se ha podido leer el contador de correos de hoy.)'
+  if (c.limit && c.used + n > c.limit) {
+    const vuelta = horaCupo(c.resets_at)
+    alert(`Llevas ${c.used} de ${c.limit} correos hoy. Con estos ${n} te pasarías y Resend dejaría de mandar todos los correos, también los del SOS.\n\nEspera a que vuelva a cero${vuelta ? ' (' + vuelta + ')' : ''} o manda a menos gente.`)
+    return null
+  }
+  return `\n\nLlevas ${c.used}${c.limit ? ' de ' + c.limit : ''} correos hoy. Con estos ${n} te quedas en ${c.used + n}.`
+}
 // ── TESTERS-AVISOS-1 (17-oct-2026, 112.ª) · Mario: «me cuesta bastante seguirlo […] cuántas solicitudes hay sin haber hecho nada,
 // cuántas ya están tramitadas […] y de esos cuántos han entrado». Cuatro números que se pulsan (Te toca a ti · Dentro · A medias ·
 // Sin pulsar), la fase la da la función (faseTester, la misma regla que el envío automático), «Recordar» y «Mandar ayuda» a uno o
@@ -741,6 +774,7 @@ async function cargarTesters() {
   try { ULTIMO = (await invitar({ modo: 'ultimo' })).filas || [] } catch (e) { ULTIMO = [] } // función vieja: el bloque no sale
   pintarTesters()
   pintarUltimo()
+  cargarCupo() // CORREOS-CUPO-1: al volver de un envío, el contador al día
 }
 // ── 🆕 TESTERS-LIMPIEZA-1 (150.ª, 16-nov · Mario: «limpiar todos los que están pendientes… desde octubre que no entran»; correos
 // aprobados 16:58, «tal cual»). Los que llevan más de 14 días sin entrar (sin pulsar o a medias): un último correo, cariñoso; si a
@@ -768,7 +802,9 @@ $('t-ultimo').onclick = async (ev) => {
   }
   const b = ev.target.closest('#t-ultimo-enviar'); if (!b) return
   const emails = ULTIMO.map(x => x.email)
-  if (!emails.length || !confirm(`¿Mandar el último aviso a ${emails.length} ${emails.length === 1 ? 'persona' : 'personas'}? A los 3 días, los que sigan sin entrar saldrán de la lista.`)) return
+  if (!emails.length) return
+  const lc = await cupoAntes(emails.length); if (lc === null) return // CORREOS-CUPO-1
+  if (!confirm(`¿Mandar el último aviso a ${emails.length} ${emails.length === 1 ? 'persona' : 'personas'}? A los 3 días, los que sigan sin entrar saldrán de la lista.${lc}`)) return
   if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
   enviandoAviso = true; b.disabled = true; tAviso('Enviando…', true)
   try {
@@ -913,7 +949,8 @@ function pintarMarcados() {
 async function mandarUltimoElegido(emails, b) {
   if (!emails.length) return null
   if (enviandoAviso) { tAviso('Espera a que termine el envío que está saliendo.'); return null } // revisión: antes de preguntar
-  if (!confirm(`¿Mandar el último aviso a ${emails.length === 1 ? emails[0] : emails.length + ' personas'}? A los 3 días, si siguen sin entrar, saldrán de la lista.`)) return null
+  const lc = await cupoAntes(emails.length); if (lc === null) return null // CORREOS-CUPO-1
+  if (!confirm(`¿Mandar el último aviso a ${emails.length === 1 ? emails[0] : emails.length + ' personas'}? A los 3 días, si siguen sin entrar, saldrán de la lista.${lc}`)) return null
   enviandoAviso = true; if (b) b.disabled = true; tAviso('Enviando…', true)
   try {
     const r = await invitar({ modo: 'ultimo', emails, mano: true })
@@ -959,7 +996,9 @@ $('t-grupo').onclick = async (ev) => {
   const b = ev.target.closest('#t-grupo-enviar'); if (!b) return
   const modo = filtroFase === 'a_medias' ? 'ayuda' : 'recordar'
   const vis = [...$('t-filas').querySelectorAll('.t-recordar, .t-ayuda')].map(x => x.dataset.email) // los que tienen botón (sin bloqueados)
-  if (!vis.length || !confirm(`¿Mandar ${modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'} a ${vis.length} ${vis.length === 1 ? 'persona' : 'personas'}?`)) return
+  if (!vis.length) return
+  const lc = await cupoAntes(vis.length); if (lc === null) return // CORREOS-CUPO-1
+  if (!confirm(`¿Mandar ${modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'} a ${vis.length} ${vis.length === 1 ? 'persona' : 'personas'}?${lc}`)) return
   b.disabled = true
   await mandarAviso(modo, vis)
 }
@@ -1658,7 +1697,8 @@ $('t-ver-and').onclick = () => verCorreo('android')
 $('t-enviar').onclick = async () => {
   const por = TESTERS.filter(porInvitar)
   if (!por.length) return
-  if (!confirm(`¿Mandar la invitación a ${por.length} personas ahora? Se manda una sola vez a cada una.`)) return
+  const lc = await cupoAntes(por.length); if (lc === null) return // CORREOS-CUPO-1
+  if (!confirm(`¿Mandar la invitación a ${por.length} personas ahora? Se manda una sola vez a cada una.${lc}`)) return
   $('t-enviar').disabled = true; tAviso('Enviando…', true)
   // PLAY-SIN-INVITAR-1: uno a uno, solo a los de la lista de arriba (el envío «a todos» de la función no sabe lo del enlace de Play)
   let enviados = 0; const fallos = []
@@ -1891,7 +1931,8 @@ $('mail-enviar').onclick = async () => {
   if (!texto) return ($('mail-aviso').innerHTML = '<div class="aviso mal">Pega el texto.</div>')
   // CORREO-VARIOS-1: a varios, uno detrás de otro (cada uno recibe el suyo, sin ver a los demás), y se dice cómo ha ido cada uno
   if (mailParaLista.length > 1) {
-    if (!confirm(`¿Mandar este correo a ${mailParaLista.length} riders? A cada uno le llega el suyo, por separado.`)) return
+    const lc = await cupoAntes(mailParaLista.length); if (lc === null) return // CORREOS-CUPO-1
+    if (!confirm(`¿Mandar este correo a ${mailParaLista.length} riders? A cada uno le llega el suyo, por separado.${lc}`)) return
     $('mail-enviar').disabled = true
     const ok = [], mal = []
     for (const [i, e] of mailParaLista.entries()) {
