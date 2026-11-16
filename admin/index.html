@@ -243,6 +243,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div id="t-filtro"></div><!-- TESTERS-AVISOS-1: qué se está viendo y quitar el filtro -->
   <div class="card" id="t-grupo" style="padding:16px 22px;display:none"></div><!-- TESTERS-AVISOS-1: «Recordar a los N» / «Mandar ayuda a los N», encima de esas filas -->
   <div class="card" id="t-ultimo" style="padding:16px 22px;display:none"></div><!-- TESTERS-LIMPIEZA-1: «Último aviso» a los que llevan más de 14 días sin entrar -->
+  <div class="card" id="t-marcados" style="padding:16px 22px;display:none"></div><!-- TESTERS-LIMPIEZA-2: los que marcas tú para el último aviso -->
   <div class="card tabla"><table><thead id="t-cab"><tr><th data-k="email">Correo</th><th data-k="plataforma">Móvil</th><th data-k="apuntado">Se apuntó</th><th data-k="origen">De dónde</th><th data-k="estado">Estado</th></tr></thead><tbody id="t-filas"></tbody></table></div>
   <div class="card" id="t-quitados" style="padding:16px 22px;display:none"></div><!-- QUITAR-LISTA-1: los quitados, aparte, para abrir su ficha y volver a ponerlos -->
 </main>
@@ -888,8 +889,50 @@ function pintarTesters() {
   } else { g.style.display = 'none'; g.innerHTML = '' }
   marcarCab('t-cab', ordenT) // ORDENAR-TODO-1
   $('t-filas').innerHTML = ordenar(vis, ordenT, (t, k) => k === 'estado' ? ORDEN_FASE[t.fase] : k === 'origen' ? deDonde(t.origen) : k === 'plataforma' ? movilTxt(t.plataforma) : t[k]).map(t => `<tr>
-    <td><button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
+    <td>${elegibleUlt(t) ? `<input type="checkbox" class="t-marca" data-email="${esc(t.email)}" title="Marcar para el último aviso" style="margin-right:8px;width:18px;height:18px;vertical-align:middle;cursor:pointer"${MARCA.has(t.email.toLowerCase()) ? ' checked' : ''}>` : ''}<button class="nombre-c t-ficha" data-email="${esc(t.email)}">${esc(t.email)}</button></td><td>${t.plataforma === 'ios' ? 'iPhone' : t.plataforma === 'android' ? 'Android' : '—'}</td>
     <td class="sub">${fecha(t.apuntado)}</td><td class="sub">${esc(deDonde(t.origen))}</td><td>${estadoFila(t)}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">${viendo.length || perT !== 'todos' ? 'Nadie con ese filtro.' : 'Nadie en la lista.'}</td></tr>`
+  pintarMarcados()
+}
+// ── 🆕 TESTERS-LIMPIEZA-2 (16-nov, Mario 17:47: «un botón para ir metiendo a la gente que considere yo… voy recogiendo 3, 4, 5, 6 y
+// les mando el correo para que les lleguen 3 días y si no, sacarles de la lista»). Casilla en cada fila de quien no ha entrado (sin
+// pulsar o a medias, sin cuenta, sin correo bloqueado y sin último aviso): los que marcas reciben el mismo último aviso, sin esperar
+// a los 14 días; a los 3 días salen solos si no hacen nada (testers-diario, igual que el recuadro de los 14 días).
+const MARCA = new Set()
+const elegibleUlt = (t) => (t.fase === 'sin_pulsar' || t.fase === 'a_medias') && !t.bloqueado && !t.ultimo_aviso_at && !t.tiene_cuenta && !t.no_quitar
+function pintarMarcados() {
+  const m = $('t-marcados')
+  for (const e of [...MARCA]) if (!TESTERS.some(t => t.email.toLowerCase() === e && elegibleUlt(t))) MARCA.delete(e) // ya no se puede (ha entrado…)
+  if (!MARCA.size) { m.style.display = 'none'; m.innerHTML = ''; return }
+  m.style.display = ''
+  m.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div style="flex-grow:1"><b>Marcados para el último aviso · ${MARCA.size}</b>
+    <div class="sub" style="font-size:13px">${[...MARCA].map(esc).join(', ')}</div>
+    <div class="sub" style="font-size:13px;margin-top:4px">Les llega el mismo último correo de su móvil. Si a los 3 días siguen sin entrar, salen solos de la lista.</div></div>
+    <button class="btn3" id="t-marca-quitar">Quitar las marcas</button>
+    <button class="btn" id="t-marca-enviar">Mandar el último aviso a ${MARCA.size === 1 ? '1 marcado' : 'los ' + MARCA.size + ' marcados'}</button></div>`
+}
+async function mandarUltimoElegido(emails, b) {
+  if (!emails.length) return null
+  if (enviandoAviso) { tAviso('Espera a que termine el envío que está saliendo.'); return null } // revisión: antes de preguntar
+  if (!confirm(`¿Mandar el último aviso a ${emails.length === 1 ? emails[0] : emails.length + ' personas'}? A los 3 días, si siguen sin entrar, saldrán de la lista.`)) return null
+  enviandoAviso = true; if (b) b.disabled = true; tAviso('Enviando…', true)
+  try {
+    const r = await invitar({ modo: 'ultimo', emails, mano: true })
+    const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
+    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length)
+    enviandoAviso = false
+    return { fallos: (r.fallos || []).map(x => String(x).toLowerCase()) }
+  } catch (e) { // revisión: si se corta a mitad, puede que alguno ya haya salido: se dice y se recarga la lista para verlo
+    tAviso('No se ha podido terminar el envío: ' + esc(e.message) + '. Puede que a alguno ya le haya llegado: mira la lista (los que lo tienen salen con «Último aviso»).')
+    if (b) b.disabled = false; enviandoAviso = false
+    return { cortado: true, fallos: emails.map(x => x.toLowerCase()) }
+  }
+}
+$('t-marcados').onclick = async (ev) => {
+  if (ev.target.closest('#t-marca-quitar')) { MARCA.clear(); return pintarTesters() }
+  const b = ev.target.closest('#t-marca-enviar'); if (!b) return
+  const r = await mandarUltimoElegido([...MARCA], b); if (!r) return
+  MARCA.clear(); for (const e of r.fallos) MARCA.add(e) // revisión: los que fallaron siguen marcados (los que ya lo tienen se quitan solos)
+  const msg = $('t-aviso').innerHTML; await cargarTesters(); $('t-aviso').innerHTML = msg
 }
 // Mandar el recordatorio o la ayuda (uno o varios) y decir qué ha pasado
 let enviandoAviso = false // revisión: mientras sale un envío, ningún otro botón manda (la función mira lo enviado al empezar)
@@ -1464,6 +1507,11 @@ async function verFicha(email, vuelve) {
           <input type="text" id="fq-motivo" maxlength="200" placeholder="Escribe el motivo o toca uno de arriba y cámbialo" style="width:100%;box-sizing:border-box">
           <div style="text-align:right;margin-top:8px"><button class="btn3" id="fq-quitar">Quitar de la lista</button></div></div>` +
           // TESTERS-LIMPIEZA-1: con el último aviso mandado, «No quitar» (si contesta a soporte) o volver a dejar que salga solo
+          // TESTERS-LIMPIEZA-2: mandárselo tú a esta persona (sin cuenta, invitada y sin entrar); la función dice si no se puede
+          // revisión: la misma regla que la casilla (fase, bloqueado, «No quitar»), con su fila de Solicitudes; sin ella, la de antes
+          ((() => { const t = (TESTERS || []).find(x => x.email.toLowerCase() === String(w.email).toLowerCase()); return t ? elegibleUlt(t)
+            : !w.ultimo_aviso_at && !w.no_quitar && !c && !w.baja_at && w.confirmado_at && w.quiere_probar && (w.invitado_at || w.play_enviado_at) })()
+            ? `<div style="text-align:right;margin-top:8px"><button class="btn3" id="fn-ultimo">Mandarle el último aviso</button></div>` : '') +
           (w.ultimo_aviso_at ? dato('Último aviso', fechaHora(w.ultimo_aviso_at) + (w.no_quitar ? ' · no se quita de la lista' : ' · sale solo de la lista a los 3 días si no entra')) +
             `<div style="text-align:right;margin-top:8px"><button class="btn3" id="fn-noquitar" data-si="${w.no_quitar ? '0' : '1'}">${w.no_quitar ? 'Dejar que salga solo' : 'No quitar de la lista'}</button></div>` : ''))
     : '<div class="sub">No está en la lista de la web.</div>'
@@ -1541,6 +1589,11 @@ $('f-cuerpo').onclick = (ev) => {
       .catch((e) => { ev.target.disabled = false; tAviso('No se ha podido: ' + esc(e.message)) })
     return
   }
+  if (ev.target.closest('#fn-ultimo') && FICHA?.web) { // TESTERS-LIMPIEZA-2
+    const b = ev.target.closest('#fn-ultimo')
+    mandarUltimoElegido([FICHA.web.email], b).then(async (r) => { if (!r) return; const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg }) // verFicha borra el aviso: se vuelve a poner
+    return
+  }
   if (ev.target.closest('#fn-noquitar') && FICHA?.web) { // TESTERS-LIMPIEZA-1
     const si = ev.target.closest('#fn-noquitar').dataset.si === '1'
     ev.target.disabled = true
@@ -1573,6 +1626,11 @@ $('a-anadir').onclick = async () => {
 }
 // INVITAR-UNO-1 (15-oct, Mario): «al lado se pone un botón de invitar, lo pulso y voy viendo cómo funciona»
 $('t-quitados').onclick = (ev) => { const fi = ev.target.closest('.t-ficha'); if (fi) verFicha(fi.dataset.email, 'test') } // QUITAR-LISTA-1
+$('t-filas').addEventListener('change', (ev) => { // TESTERS-LIMPIEZA-2
+  const c = ev.target.closest('.t-marca'); if (!c) return
+  const e = c.dataset.email.toLowerCase(); if (c.checked) MARCA.add(e); else MARCA.delete(e)
+  pintarMarcados()
+})
 $('t-filas').onclick = async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'test')
   const pl = ev.target.closest('.t-play'); if (pl) { pl.disabled = true; await mandarPlay(pl.dataset.email); return cargarTesters() }
