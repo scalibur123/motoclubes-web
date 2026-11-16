@@ -802,7 +802,11 @@ function estadoFila(t) {
   // Correo bloqueado (baja de los correos, rebote o spam): no le sale nada, ni a mano ni automático; no se promete ningún envío
   const bloq = t.bloqueado ? ' <span class="chip rojo">Correo bloqueado: no le sale nada</span>' : ''
   // TESTERS-LIMPIEZA-1: el último aviso, cuándo y si sale de la lista (o «No quitar»)
-  if (t.ultimo_aviso_at) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + ' si no entra'}</span>${bloq}`
+  // Revisión: si ha hecho algo DESPUÉS del aviso (pulsó el enlace, le mandaste el de Play…) ya no sale solo de la lista
+  // y su fila vuelve a mostrar lo normal (con sus botones), para que no se te esconda lo que te toca hacer a ti.
+  const trasAviso = (iso) => !!iso && !!t.ultimo_aviso_at && iso > t.ultimo_aviso_at
+  const contesto = t.ultimo_aviso_at && (trasAviso(t.clic_at) || trasAviso(t.play_enviado_at) || trasAviso(t.play_clic_at))
+  if (t.ultimo_aviso_at && !contesto) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + ' si no entra'}</span>${bloq}`
   // ANDROID-PLAY-DIRECTO-1 (17-oct, Mario: «que me ponga invitar, si lo que está esperando es el enlace, no sé qué pinta»):
   // a un Android sin enlace de Play no se le invita: le das de alta en Play Console y le mandas el enlace desde aquí.
   if (t.fase === 'te_toca' && t.plataforma === 'android') return t.bloqueado ? `<span class="chip gris">Por dar de alta en Play</span>${bloq}`
