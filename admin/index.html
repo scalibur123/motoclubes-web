@@ -340,9 +340,9 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 </main>
 <main id="v-hec" class="oculto">
   <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-    <div style="flex-grow:1" class="partir"><h1>Hecho</h1><div class="sub">Todo lo hecho desde el portal, de lo último a lo primero: correos y avisos, foro, quitados de la lista, invitaciones y llamadas a negocios y notas de contactos. Toca una línea para ir a su ficha.</div></div>
+    <div style="flex-grow:1" class="partir"><h1>Hecho</h1><div class="sub">Todo lo que se ha movido, de lo último a lo primero: lo que haces tú desde el portal (correos y avisos, foro, quitados de la lista, invitaciones, llamadas a negocios y notas de contactos) y lo que sale solo (confirmar el correo, pedir la cuenta de Google, TestFlight, recordatorios, avisos de salida…), con la etiqueta «Automático». Toca una línea para ir a su ficha.</div></div>
     <label>CUÁNDO<select id="h-dias"><option value="1">Hoy</option><option value="7" selected>Últimos 7 días</option><option value="30">Últimos 30</option><option value="90">Últimos 90</option></select></label>
-    <label>QUIÉN<select id="h-quien"><option value="mio">Solo lo tuyo</option><option value="todo">También lo automático</option></select></label>
+    <label>QUIÉN<select id="h-quien"><option value="todo" selected>Todo</option><option value="mio">Solo lo tuyo</option></select></label>
   </div>
   <div id="h-aviso"></div>
   <div class="cifras" id="h-cifras"></div>
@@ -2188,19 +2188,19 @@ $('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos() }
 const ULT_TIPO = { alta: 'Alta', entrada: 'Entra en la app', ruta: 'Ruta', publica: 'Ruta pública', foto: 'Foto', comentario: 'Comentario',
   aplauso: 'Aplauso', favorita: 'Favorita', hilo: 'Comunidad', respuesta: 'Comunidad', salida: 'Salida en grupo', grupo: 'Grupo',
   rf: 'Rider Friendly', escuchamos: 'Te escuchamos', mercadillo: 'Mercadillo', sigue: 'Seguir', denuncia: 'Denuncia' }
-let ULTIMOS = [], ultPet = 0
+let ULTIMOS = [], ultPet = 0, ultN = 15 // ADMIN-ULTIMOS-1 (Mario 17:51): 15 y «Ver más» (de 15 en 15, hasta 50)
 const ultHora = (iso) => { const d = new Date(iso), h = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
   return d.toDateString() === new Date().toDateString() ? h : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + ' ' + h }
 async function cargarUltimos() {
   const n = ++ultPet
-  const { data, error } = await sb.rpc('mc_admin_ultimos', { p_limit: 10 })
+  const { data, error } = await sb.rpc('mc_admin_ultimos', { p_limit: ultN })
   if (n !== ultPet) return
   if (error) {
     $('u-ultimos').innerHTML = `<div class="sub">${/mc_admin_ultimos|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Lo último: falta ejecutar <b>db/admin_ultimos_2_hacer.sql</b> en Supabase.' : 'No se ha podido cargar lo último: ' + esc(error.message)}</div>`
     return
   }
   ULTIMOS = Array.isArray(data) ? data : []
-  $('u-ultimos').innerHTML = `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="font-size:16px">Lo último</b><span class="sub">Las 10 últimas cosas de los riders, de la más nueva a la más vieja. Se actualiza solo cada minuto.</span></div>`
+  $('u-ultimos').innerHTML = `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="font-size:16px">Lo último</b><span class="sub">Las ${ULTIMOS.length} últimas cosas de los riders, de la más nueva a la más vieja. Se actualiza solo cada minuto.</span></div>`
     + (ULTIMOS.length ? ULTIMOS.map((x, i) => `<div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:${i ? '1px solid #EFE7DD' : 'none'}">
         <span class="sub" style="flex:0 0 92px;white-space:nowrap">${esc(ultHora(x.t))}</span>
         <span style="flex:0 0 auto">${esc(x.icono || '')}</span>
@@ -2208,8 +2208,10 @@ async function cargarUltimos() {
         <span style="flex:1 1 auto"><b>${esc((x.nick || 'Rider').trim())}</b> ${esc(x.texto || '')}</span>
         <button type="button" class="btn3 u-ult" data-i="${i}" style="padding:4px 12px;flex:0 0 auto">Abrir</button></div>`).join('')
       : '<div class="sub">Todavía no hay nada.</div>')
+    + (ULTIMOS.length >= ultN && ultN < 50 ? '<div style="text-align:center;margin-top:10px"><button type="button" class="btn3" id="u-ult-mas">Ver más</button></div>' : '')
 }
 $('u-ultimos').onclick = (ev) => {
+  if (ev.target.closest('#u-ult-mas')) { ultN = Math.min(50, ultN + 15); return cargarUltimos() }
   const b = ev.target.closest('.u-ult'); if (!b) return
   const x = ULTIMOS[Number(b.dataset.i)]; if (!x) return
   if (x.ir === 'ruta' && x.ir_id) return window.open('https://motoclubes.es/rutas/?id=' + encodeURIComponent(x.ir_id), '_blank', 'noopener')
@@ -2275,6 +2277,12 @@ $('p-sos').onclick = () => { verPestana('sos'); cargarSos() }
 // Sale de lo que ya se guarda: los envíos (mc_envios, por web-invitar-testers «hecho»), el foro (lo escrito como MOTOCLUBes o con tu
 // cuenta), los quitados de la lista, las invitaciones y llamadas de Negocios y las notas de Contactos. Sin SQL nuevo.
 let HECHO = [], hePet = 0
+// HECHO-TODO-1: correos del registro que ya salen por mc_envios (no se repiten) o que van a ti (avisos para Mario).
+const HE_LOG_FUERA = ['web_enlace_play', 'web_ayuda_tester', 'web_aviso_testflight', 'web_ultimo_aviso_tester', 'web_recordatorio_tester',
+  'admin_correo_rider', 'admin_aviso_rider', 'admin_correo_negocio', 'incidencia_respuesta', 'incidencia_arreglada', 'web_invitacion_tester',
+  'web_pedir_cuenta_google', 'web_aviso_tester_admin', 'testers_diario_admin']
+const HE_LOG_TXT = { web_aviso_confirmar: 'Correo para confirmar su correo', 'notify-salida': 'Aviso de salida en grupo',
+  'notify-salida-copia': 'Aviso de salida en grupo', 'notify-feedback-resolved': 'Aviso de «Te escuchamos» resuelto' }
 const heDia = (iso) => String(iso || '').length === 10 ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : fechaHora(iso)
 function heNombre(email) {
   const e = String(email || '').toLowerCase()
@@ -2294,11 +2302,15 @@ async function cargarHecho() {
   if (!foOficial) { const { data } = await sb.rpc('mc_cuenta_oficial'); foOficial = data || null }
   if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null
   const yoyos = [foOficial, foYo].filter(Boolean)
-  const [env, hilos, posts, marcas] = await Promise.all([
+  const [env, hilos, posts, marcas, logs] = await Promise.all([
     invitar({ modo: 'hecho', dias: Math.ceil(dias) }).catch(e => { avisos.push('Los correos y avisos no se han podido cargar: ' + esc(e.message)); return { envios: [] } }),
     yoyos.length ? sb.from('threads').select('id, user_id, category, title, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(500) : { data: [] },
     yoyos.length ? sb.from('posts').select('id, user_id, thread_id, created_at').in('user_id', yoyos).gte('created_at', desdeIso).order('created_at', { ascending: false }).limit(1000) : { data: [] },
     sb.rpc('mc_admin_hilos_atendidos'), // FORO-ATENDIDO-HECHO-1: «No hace falta contestar», con la hora del clic (marcado_at)
+    // HECHO-TODO-1 (151.ª, Mario 17:48 «todo lo que se mueva tiene que estar en hecho»): los correos automáticos que no pasan por
+    // mc_envios (el de confirmar de la web, los avisos de salida en grupo, «resuelto»…). Los que ya salen arriba y los que son a ti, fuera.
+    sb.from('email_send_log').select('template_name, recipient_email, status, created_at, metadata').gte('created_at', desdeIso)
+      .not('template_name', 'in', '(' + HE_LOG_FUERA.join(',') + ')').order('created_at', { ascending: false }).limit(2000),
   ])
   if (n !== hePet) return
   if (hilos.error || posts.error) avisos.push('El foro no se ha podido cargar: ' + esc((hilos.error || posts.error).message))
@@ -2321,6 +2333,14 @@ async function cargarHecho() {
     const c = neg ? cands.find(y => String(y.correo || '').toLowerCase() === String(x.email).toLowerCase()) : null
     L.push({ en: x.creado, auto: x.por === 'auto', que: (ENVIO_TXT[x.que] || x.que) + (neg ? ' a negocio' : ''), aQuien: heNombre(x.email), detalle: x.titulo ? '«' + x.titulo + '»' : '', res,
       abrir: c ? { t: 'neg', id: c.id } : { t: 'ficha', email: x.email } })
+  }
+  if (logs.error) avisos.push('Los correos automáticos no se han podido cargar: ' + esc(logs.error.message)) // HECHO-TODO-1
+  for (const x of logs.data || []) {
+    const m = x.metadata || {}, movil = m.plataforma === 'android' ? 'Android' : m.plataforma === 'ios' ? 'iPhone' : ''
+    L.push({ en: x.created_at, auto: true, que: HE_LOG_TXT[x.template_name] || ('Correo automático · ' + x.template_name), aQuien: heNombre(x.recipient_email),
+      detalle: x.template_name === 'web_aviso_confirmar' ? (m.flujo === 'probar' ? 'Quiere probar la app' + (movil ? ' · ' + movil : '') : 'Caja «Avísame» de la web') : '',
+      res: x.status === 'sent' ? '<span class="chip verde">✅ Correo enviado</span>' : '<span class="chip rojo">No salió</span>',
+      abrir: { t: 'ficha', email: x.recipient_email } })
   }
   for (const h of hilos.data || []) L.push({ en: h.created_at, que: h.category === 'noticias' ? 'Noticia publicada' : 'Hilo nuevo en el foro', aQuien: 'Foro', detalle: '«' + h.title + '» · ' + quien(h.user_id), abrir: { t: 'hilo', id: h.id } })
   for (const p of posts.data || []) L.push({ en: p.created_at, que: 'Respuesta en el foro', aQuien: 'Foro', detalle: '«' + (tit[p.thread_id] || 'Hilo') + '» · ' + quien(p.user_id), abrir: { t: 'hilo', id: p.thread_id } })
