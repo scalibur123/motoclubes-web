@@ -105,7 +105,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
 <header><img src="https://motoclubes.es/email-logo-helmet.png" alt=""><span class="m">MOTOCLUBes</span><span class="s">· Administración</span><div id="g-caja" class="oculto" style="position:relative"><input type="search" id="g-buscar" placeholder="🔍 Buscar en todo: apodo, correo, negocio, contacto" autocomplete="off" spellcheck="false" aria-label="Buscar en todo el panel"><div id="g-res" class="oculto"></div></div><!-- PANEL-BUSCAR-1 --><span class="u" id="quien"></span><button id="salir" class="oculto">Salir</button></header>
 
 <!-- MC-ADMIN-CANDIDATOS-2OCT-2026 (95.ª, ADMIN-CANDIDATOS-1, maqueta A4 aprobada por Mario): pestaña Candidatos. -->
-<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc" class="oculto">Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-sos">🆘 SOS</button><button type="button" id="p-hec">✅ Hecho</button></nav>
+<nav class="pest oculto" id="pestanas"><button type="button" id="p-cont">💬 Contestar <span class="n" id="n-cont">·</span></button><button type="button" id="p-altas" class="sel">Altas <span class="n" id="n-altas">0</span></button><button type="button" id="p-cand">Negocios <span class="n" id="n-cand">0</span></button><button type="button" id="p-test">Solicitudes <span class="n" id="n-test">0</span></button><button type="button" id="p-rid">Riders <span class="n" id="n-rid">·</span></button><button type="button" id="p-inc">📣 Te escuchamos <span class="n" id="n-inc">·</span></button><button type="button" id="p-con">Contactos <span class="n" id="n-con">·</span></button><button type="button" id="p-gui">Guías en vídeo</button><button type="button" id="p-not">Noticias</button><button type="button" id="p-for" class="oculto">Foro <span class="n" id="n-for">·</span></button><button type="button" id="p-uso">Uso</button><button type="button" id="p-sos">🆘 SOS</button><button type="button" id="p-hec">✅ Hecho</button></nav>
 <!-- PANEL-CONTESTAR-1 (29-oct, 130.ª · Mario: «tiene que haber un sitio… lo que hago normalmente, que es contestar. Y dentro, foro,
      correo… tengo 9 pestañas»). Una pestaña «Contestar» con tres apartados: el Foro, Te escuchamos y un correo a un rider. -->
 <nav class="pest oculto" id="sub-cont" style="background:#FBF8F4"><button type="button" id="s-for">Foro <span class="n" id="s-n-for">·</span></button><button type="button" id="s-inc">Te escuchamos <span class="n" id="s-n-inc">·</span></button><button type="button" id="s-cor">✉️ Correo a un rider</button></nav>
@@ -315,6 +315,9 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div style="flex-grow:1" class="partir"><h1>Uso de la app</h1><div class="sub">Qué miran los riders: vídeos, guía, noticias, foro y pantallas. Sale del registro que manda la app (se guarda 90 días), sin contarte a ti, a la cuenta oficial ni a Prueba_Android. Toca una fila para ver quiénes son.</div></div>
     <label>DÍAS<select id="u-dias"><option value="7">Últimos 7</option><option value="30" selected>Últimos 30</option><option value="90">Últimos 90</option></select></label>
   </div>
+  <!-- ADMIN-ULTIMOS-1 (151.ª, 17-nov · Mario: «arriba de todo, las 10 últimas cosas que han pasado en la app, de cualquier tipo, sin
+       agrupar»). Lee mc_admin_ultimos(10) (db/admin_ultimos_2_hacer.sql). Se refresca solo cada minuto mientras miras Uso. -->
+  <div class="card" id="u-ultimos" style="padding:16px 22px"><div class="sub">Cargando lo último…</div></div>
   <div id="u-aviso"></div>
   <div class="cifras" id="u-cifras"></div>
   <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
@@ -2180,7 +2183,41 @@ function pintarUso() {
 }
 $('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
 $('u-dias').onchange = () => cargarUso()
-$('p-uso').onclick = () => { verPestana('uso'); cargarUso() }
+$('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos() }
+// ── ADMIN-ULTIMOS-1 (151.ª): «Lo último», arriba de Uso. Las 10 últimas cosas de la app, de la más nueva a la más vieja. ──
+const ULT_TIPO = { alta: 'Alta', entrada: 'Entra en la app', ruta: 'Ruta', publica: 'Ruta pública', foto: 'Foto', comentario: 'Comentario',
+  aplauso: 'Aplauso', favorita: 'Favorita', hilo: 'Comunidad', respuesta: 'Comunidad', salida: 'Salida en grupo', grupo: 'Grupo',
+  rf: 'Rider Friendly', escuchamos: 'Te escuchamos', mercadillo: 'Mercadillo', sigue: 'Seguir', denuncia: 'Denuncia' }
+let ULTIMOS = [], ultPet = 0
+const ultHora = (iso) => { const d = new Date(iso), h = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  return d.toDateString() === new Date().toDateString() ? h : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + ' ' + h }
+async function cargarUltimos() {
+  const n = ++ultPet
+  const { data, error } = await sb.rpc('mc_admin_ultimos', { p_limit: 10 })
+  if (n !== ultPet) return
+  if (error) {
+    $('u-ultimos').innerHTML = `<div class="sub">${/mc_admin_ultimos|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || '')) ? 'Lo último: falta ejecutar <b>db/admin_ultimos_2_hacer.sql</b> en Supabase.' : 'No se ha podido cargar lo último: ' + esc(error.message)}</div>`
+    return
+  }
+  ULTIMOS = Array.isArray(data) ? data : []
+  $('u-ultimos').innerHTML = `<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="font-size:16px">Lo último</b><span class="sub">Las 10 últimas cosas de los riders, de la más nueva a la más vieja. Se actualiza solo cada minuto.</span></div>`
+    + (ULTIMOS.length ? ULTIMOS.map((x, i) => `<div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:${i ? '1px solid #EFE7DD' : 'none'}">
+        <span class="sub" style="flex:0 0 92px;white-space:nowrap">${esc(ultHora(x.t))}</span>
+        <span style="flex:0 0 auto">${esc(x.icono || '')}</span>
+        <span class="sub" style="flex:0 0 120px">${esc(ULT_TIPO[x.tipo] || x.tipo || '')}</span>
+        <span style="flex:1 1 auto"><b>${esc((x.nick || 'Rider').trim())}</b> ${esc(x.texto || '')}</span>
+        <button type="button" class="btn3 u-ult" data-i="${i}" style="padding:4px 12px;flex:0 0 auto">Abrir</button></div>`).join('')
+      : '<div class="sub">Todavía no hay nada.</div>')
+}
+$('u-ultimos').onclick = (ev) => {
+  const b = ev.target.closest('.u-ult'); if (!b) return
+  const x = ULTIMOS[Number(b.dataset.i)]; if (!x) return
+  if (x.ir === 'ruta' && x.ir_id) return window.open('https://motoclubes.es/rutas/?id=' + encodeURIComponent(x.ir_id), '_blank', 'noopener')
+  if (x.ir === 'hilo' && x.ir_id) { verPestana('for'); foAviso(''); abrirHilo(x.ir_id); void cargarForo(); return }
+  if (x.ir === 'inc') return $('p-inc').click()
+  if (x.email) return verFicha(x.email, 'uso')
+}
+setInterval(() => { if (!$('v-uso').classList.contains('oculto') && document.visibilityState === 'visible') cargarUltimos() }, 60000)
 // ── SOS-SOLO-1 (146.ª, 12-nov) · «SOS»: los SOS lanzados y los contactos de emergencia de cada rider ──
 let SOS = null, soPet = 0, soAbierto = null
 const soAviso = (t) => { $('so-aviso').innerHTML = t ? `<div class="aviso mal">${t}</div>` : '' }
