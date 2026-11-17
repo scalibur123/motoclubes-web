@@ -355,7 +355,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
      interruptor del móvil (FORO-PANEL-1). Sin SQL nuevo: las políticas `threads_admin` y `posts_admin` dejan al admin guardar
      con el user_id de la cuenta oficial (`mc_cuenta_oficial`). -->
 <main id="v-cor" class="oculto">
-  <div><h1>Correo a un rider</h1><div class="sub">Busca al rider y pulsa «✉️ Correo». Sale de Soporte o Equipo MOTOCLUBes (nunca con tu nombre) y, si contesta, la respuesta llega a soporte@motoclubes.es.</div></div>
+  <div><h1>Correo a un rider</h1><div class="sub">Busca al rider y pulsa «✉️ Correo». Sale de MOTOCLUBes (o de Soporte MOTOCLUBes si es una incidencia; nunca con tu nombre) y, si contesta, la respuesta llega a soporte@motoclubes.es.</div></div>
   <input type="text" id="c2-buscar" placeholder="🔍 Nombre o correo del rider" style="max-width:420px">
   <!-- CORREO-VARIOS-1 (145.ª, Mario: «poner un check y todas las cuentas a las que quieras enviar, y que salgan 5 correos con el mismo texto»):
        marcas a los que quieras (también buscando uno y luego otro) y «✉️ Correo a los N»: sale un correo a cada uno, por separado. -->
@@ -420,7 +420,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card" style="max-width:600px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:92vh;overflow:auto">
     <div style="font-weight:800;font-size:18px">Correo a <span id="mail-quien"></span></div>
     <label>PARA<input type="email" id="mail-para" maxlength="200" readonly></label>
-    <label>DE<select id="mail-de"><option value="mario" id="mail-de-mario">Mario · MOTOCLUBes</option><option value="soporte">Soporte MOTOCLUBes</option><option value="equipo">Equipo MOTOCLUBes</option></select></label><!-- CORREO-SOPORTE-1: a riders, nunca «Mario» · NEGOCIOS-MARIO-1: a negocios, Mario de entrada -->
+    <label>DE<select id="mail-de"><option value="mario" id="mail-de-mario">Mario · MOTOCLUBes</option><option value="equipo">MOTOCLUBes</option><option value="soporte">Soporte MOTOCLUBes (incidencias)</option></select></label><!-- CORREO-SOPORTE-1: a riders, nunca «Mario» · NEGOCIOS-MARIO-1: a negocios, Mario de entrada · REMITENTE-UNICO-1: a riders, «MOTOCLUBes» de entrada; Soporte solo para incidencias -->
     <label>ASUNTO<input type="text" id="mail-asunto" maxlength="150"></label>
     <label>TEXTO<textarea id="mail-texto" rows="12" maxlength="8000" placeholder="Pega aquí el texto, con tu saludo y tu firma"></textarea></label>
     <label class="check" id="mail-fuera-fila"><input type="checkbox" id="mail-fuera"> Ya lo he mandado yo desde mi correo: solo apúntalo</label>
@@ -1862,11 +1862,11 @@ function abrirCorreo(nombre, correo, desdeFicha, destino) {
   correoDesdeFicha = desdeFicha; mailDestino = destino === 'rider' ? 'rider' : 'negocio'
   // NEGOCIOS-MARIO-1 (130.ª, Mario 20:03): a un negocio sale de Mario (fundador) de entrada; a un rider, la opción ni aparece
   $('mail-de-mario').hidden = mailDestino === 'rider'; $('mail-de-mario').disabled = mailDestino === 'rider'
-  $('mail-de').value = mailDestino === 'rider' ? 'soporte' : 'mario'
+  $('mail-de').value = mailDestino === 'rider' ? 'equipo' : 'mario' // REMITENTE-UNICO-1
   $('mail-texto').placeholder = mailDestino === 'rider' ? 'Pega aquí el texto, con el saludo y la firma del equipo («El equipo de MOTOCLUBes»)' : 'Pega aquí el texto, con tu saludo y tu firma («Mario · Fundador de MOTOCLUBes»)'
   $('mail-fuera-fila').classList.toggle('oculto', mailDestino === 'rider') // a un rider siempre se le manda desde aquí
   $('mail-nota').textContent = mailDestino === 'rider'
-    ? 'Sale tal cual lo escribes, de «Soporte MOTOCLUBes» o «Equipo MOTOCLUBes» (nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
+    ? 'Sale tal cual lo escribes, de «MOTOCLUBes» (o de «Soporte MOTOCLUBes» si es una incidencia; nunca con tu nombre). Si contesta, la respuesta llega a soporte@motoclubes.es.'
     : 'Sale tal cual lo escribes, de «Mario · MOTOCLUBes» (o Soporte / Equipo, si lo cambias). Firma tú al final («Mario · Fundador de MOTOCLUBes»). Si contesta, la respuesta llega a negocios@motoclubes.es.'
   mailListo(false); $('mail-aviso').innerHTML = ''
   // CORREO-VARIOS-1: `correo` puede ser una lista (varios riders marcados): sale un correo a cada uno, por separado
