@@ -303,10 +303,12 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>TÍTULO<input type="text" id="n-titulo"></label>
     <label>TEXTO<textarea id="n-texto" rows="14" placeholder="Texto de la noticia… y, al final, la pregunta"></textarea></label>
     <label>VÍDEO (OPCIONAL)<input type="file" id="n-video" accept="video/mp4,video/quicktime"><span class="sub" id="n-video-txt" style="font-weight:500;letter-spacing:0"></span></label>
+    <!-- NOTICIA-FOTO-1 (152.ª, Mario: «solo pueden ser vídeos, no me deja subir fotos»): una foto, sale grande arriba de la noticia -->
+    <label>FOTO (OPCIONAL)<input type="file" id="n-foto" accept="image/*"><span class="sub" id="n-foto-txt" style="font-weight:500;letter-spacing:0"></span></label>
     <label class="check"><input type="checkbox" id="n-avisar"> Avisar a todos <span class="sub" style="font-weight:500">(aviso en el móvil y en la campanita; como mucho una noticia avisada al día)</span></label>
     <div style="display:flex;justify-content:flex-end"><button class="btn" id="n-publicar">Publicar</button></div>
   </div>
-  <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo</th></tr></thead><tbody id="n-filas"></tbody></table></div>
+  <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo / foto</th></tr></thead><tbody id="n-filas"></tbody></table></div>
 </main>
 <!-- USO-APP-1 (28-oct, 129.ª · Mario: «hay que tener monitorizada la app para saber cuáles son lo que más visita o qué más
      mira la gente. Noticias, foro, todo»). Lee el registro que la app ya sube (app_registro, 90 días) con mc_admin_uso(p_dias)
@@ -1370,6 +1372,23 @@ async function subirVideoWeb(archivo, carpeta) {
   if (error) throw new Error(error.message || 'No se ha podido subir el vídeo')
   return ruta
 }
+// NOTICIA-FOTO-1 (152.ª): igual que subirFotoNoticia() de la app: reducida a 1600 px, a `route-photos/<admin>/noticias/` (público)
+async function subirFotoWeb(archivo) {
+  let blob = archivo
+  try {
+    const bmp = await createImageBitmap(archivo)
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k)
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height)
+    blob = (await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85))) || archivo
+  } catch (e) { /* si el navegador no la sabe leer, va tal cual */ }
+  const yo = (await sb.auth.getSession()).data.session?.user?.id
+  if (!yo) throw new Error('No hay sesión')
+  const ruta = `${yo}/noticias/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`
+  const { error } = await sb.storage.from('route-photos').upload(ruta, blob, { contentType: 'image/jpeg', upsert: false })
+  if (error) throw new Error(error.message || 'No se ha podido subir la foto')
+  return sb.storage.from('route-photos').getPublicUrl(ruta).data.publicUrl
+}
 async function urlVideoWeb(ruta) { try { const { data } = await sb.storage.from('videos').createSignedUrl(ruta, 3600); return data?.signedUrl || null } catch (e) { return null } }
 let GUIAS = [], gEditando = null
 async function cargarGuias() {
@@ -1422,7 +1441,9 @@ async function cargarNoticias() {
   if (!foYo) foYo = (await sb.auth.getSession()).data.session?.user?.id || null
   const { data: ats } = await sb.rpc('mc_admin_hilos_atendidos') // si falla, solo cuentan «abierta» y «contestada»
   const atendida = Object.fromEntries((ats || []).map(a => [a.thread_id, a.atendido_at]))
-  const { data, error } = await sb.from('threads').select('id, title, created_at, reply_count, video_url').eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
+  const pedir = (c) => sb.from('threads').select(c).eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
+  let { data, error } = await pedir('id, title, created_at, reply_count, video_url, foto_url') // NOTICIA-FOTO-1
+  if (error && error.code === '42703') ({ data, error } = await pedir('id, title, created_at, reply_count, video_url')) // sin el SQL aún
   if (error) return nAviso('No se han podido cargar las noticias: ' + esc(error.message))
   // PANEL-CONTESTAR-1 (Mario: «las opiniones a cero es mentira»): `reply_count` no se actualiza; se cuentan los comentarios de verdad.
   // Lo último arriba (publicada o comentada) y cada noticia se pincha para leerla y contestar en el Foro.
@@ -1440,23 +1461,27 @@ async function cargarNoticias() {
     const nuevo = !yo && (!hasta || new Date(u.created_at) > new Date(hasta))
     return { ...t, n: cs.length, ult: u ? u.created_at : t.created_at, nuevo }
   }).sort((a, b) => (b.nuevo - a.nuevo) || (a.nuevo ? (a.ult < b.ult ? 1 : -1) : (a.created_at < b.created_at ? 1 : -1)))
-  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button>${t.nuevo ? ' <span class="sub" style="font-size:12px;color:var(--od);font-weight:700">💬 comentario nuevo</span>' : ''}</td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
+  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button>${t.nuevo ? ' <span class="sub" style="font-size:12px;color:var(--od);font-weight:700">💬 comentario nuevo</span>' : ''}</td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}${t.foto_url ? '📷' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
 }
 $('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
+$('n-foto').onchange = () => { const f = $('n-foto').files[0]; $('n-foto-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' } // NOTICIA-FOTO-1
 $('n-publicar').onclick = async () => {
-  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0]
+  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0], ff = $('n-foto').files[0]
   if (titulo.length < 5 || texto.length < 20) return nAviso('Falta el título o el texto.')
   if (!confirm(avisar ? '¿Publicarla ya y avisar a todos?' : '¿Publicarla ya? La verá todo el mundo.')) return
   $('n-publicar').disabled = true
   try {
     let ruta = null
     if (f) { $('n-publicar').textContent = 'Subiendo el vídeo…'; ruta = await subirVideoWeb(f, 'noticias') } // si falla, no se publica nada
+    let foto = null
+    if (ff) { $('n-publicar').textContent = 'Subiendo la foto…'; foto = await subirFotoWeb(ff) } // NOTICIA-FOTO-1: igual, si falla no se publica
     $('n-publicar').textContent = 'Publicando…'
     const { data: id, error } = await sb.rpc('mc_publicar_noticia', { p_titulo: titulo, p_texto: texto, p_avisar: avisar })
     if (error || !id) throw new Error(error?.message || 'No se ha podido publicar')
     let extra = ''
     if (ruta) { const { error: ev } = await sb.rpc('mc_noticia_video', { p_thread: id, p_video: ruta }); if (ev) extra = ' Pero sin el vídeo: ' + esc(ev.message) }
-    $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; $('n-avisar').checked = false
+    if (foto) { const { error: ef } = await sb.rpc('mc_noticia_foto', { p_thread: id, p_foto: foto }); if (ef) extra += ' Pero sin la foto: ' + esc(ef.message) }
+    $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; $('n-foto').value = ''; $('n-foto-txt').textContent = ''; $('n-avisar').checked = false
     nAviso((avisar ? '✅ Noticia publicada y avisada a todos.' : '✅ Noticia publicada.') + extra, !extra)
     await cargarNoticias()
   } catch (e) { nAviso('No se ha podido publicar: ' + esc(e.message)) }
