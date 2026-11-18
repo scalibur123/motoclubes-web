@@ -1374,14 +1374,18 @@ async function subirVideoWeb(archivo, carpeta) {
 }
 // NOTICIA-FOTO-1 (152.ª): igual que subirFotoNoticia() de la app: reducida a 1600 px, a `route-photos/<admin>/noticias/` (público)
 async function subirFotoWeb(archivo) {
-  let blob = archivo
+  let blob = null
   try {
     const bmp = await createImageBitmap(archivo)
     const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
     const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k)
-    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height)
-    blob = (await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85))) || archivo
-  } catch (e) { /* si el navegador no la sabe leer, va tal cual */ }
+    const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height) // un PNG transparente, con fondo blanco
+    cx.drawImage(bmp, 0, 0, cv.width, cv.height); try { bmp.close() } catch (e) {}
+    blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85))
+  } catch (e) { /* abajo */ }
+  // FOTO-SIN-GPS-1 (revisión 152.ª): el almacén es público; si el navegador no la sabe leer (p. ej. una HEIC en Chrome), no se sube
+  // el original con su GPS: se avisa.
+  if (!blob) throw new Error('Este navegador no sabe leer esta foto. Pásala a JPG (o usa Safari) y vuelve a probar.')
   const yo = (await sb.auth.getSession()).data.session?.user?.id
   if (!yo) throw new Error('No hay sesión')
   const ruta = `${yo}/noticias/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`
