@@ -170,7 +170,7 @@ var VIDEO_3D = /[?&]video=3d(&|$)/.test(location.search) && !VIDEO_CORTO;
 function cargarVideo3D() {
   if (window.Video3D) return Promise.resolve();
   return new Promise(function (ok, mal) {
-    var s = document.createElement("script"); s.src = "video3d.js?v=6"; // el ?v= se sube con cada cambio de video3d.js
+    var s = document.createElement("script"); s.src = "video3d.js?v=7"; // el ?v= se sube con cada cambio de video3d.js
     s.onload = function () { ok(); }; s.onerror = function () { mal(new Error("video3d.js no carga")); };
     document.head.appendChild(s);
   });
@@ -603,6 +603,16 @@ function cargarMuxer() {
     document.head.appendChild(s);
   });
 }
+// 🆕 VIDEO-COMPARTIR-PESO-1 (152.ª, 18-nov · Fèlix en Windows con Chrome: «NotAllowedError … Permission denied» al compartir un
+// vídeo de 1 min 46 s, ~100 MB; Chrome no deja compartir archivos de más de 50 MB; Mario: «vale, haz lo que propones»). Los vídeos
+// largos se graban más ligeros para quedarse por debajo de ~40 MB (los cortos siguen a 8 Mb/s); nunca por debajo de 2,5 Mb/s. Lo
+// usa también video3d.js (window.bitsVideo).
+function bitsVideo(DUR, maximo) {
+  var max = maximo || 8000000, objetivo = 40 * 1024 * 1024 * 8; // bits para ~40 MB
+  var b = Math.floor(objetivo / Math.max(1, DUR || 0));
+  return Math.max(2500000, Math.min(max, b));
+}
+window.bitsVideo = bitsVideo;
 function codecH264(W, H, FPS) {
   if (!window.VideoEncoder || !window.VideoFrame) return Promise.resolve(null);
   var lista = ["avc1.640028", "avc1.4d0028", "avc1.42e028"], k = 0; // High, Main, Baseline · nivel 4 (cabe 1080×1920)
@@ -637,7 +647,9 @@ function grabarExacto(cv, cuadro, avisar, DUR) {
           if (!metaPrimero && meta && meta.decoderConfig) metaPrimero = meta;
           trozos.push({ d: d, tipo: ch.type, t: ch.timestamp, dur: ch.duration || Math.round(1e6 / FPS) });
         }, error: function (e) { fallo = e; } });
-        enc.configure({ codec: codec, width: W, height: H, bitrate: 8000000, framerate: FPS, avc: { format: "avc" } });
+        var bits = bitsVideo(DUR, 8000000); // VIDEO-COMPARTIR-PESO-1
+        console.log("[video] " + Math.round(bits / 1000) + " kb/s para " + Math.round(DUR) + " s");
+        enc.configure({ codec: codec, width: W, height: H, bitrate: bits, framerate: FPS, avc: { format: "avc" } });
       } catch (e) { console.warn("[video] WebCodecs no arranca, se graba como antes:", e); return null; }
       console.log("[video] grabación exacta " + codec);
       var total = Math.ceil(DUR * FPS), i = 0, primero = true;

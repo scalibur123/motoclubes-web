@@ -326,7 +326,9 @@
           mx.finalize();
           return new Blob([mx.target.buffer], { type: "video/mp4" });
         }
-        enc.configure({ codec: codec, width: W, height: H, bitrate: V3.BITRATE, framerate: FPS, avc: { format: "avc" } });
+        var bits3 = window.bitsVideo ? window.bitsVideo(G.DUR, V3.BITRATE) : V3.BITRATE; // VIDEO-COMPARTIR-PESO-1: los largos, más ligeros
+        console.log("[video3d] " + Math.round(bits3 / 1000) + " kb/s para " + Math.round(G.DUR) + " s");
+        enc.configure({ codec: codec, width: W, height: H, bitrate: bits3, framerate: FPS, avc: { format: "avc" } });
         console.log("[video3d] WebCodecs " + codec);
         var i = 0, primero = true;
         function paso() {

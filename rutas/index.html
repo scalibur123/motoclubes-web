@@ -951,7 +951,10 @@ function pintar(r) {
         // navegador no comparte, se dice en pantalla con su motivo (para saber la causa) y se manda a «Descargar vídeo». Antes se callaba.
         var noCompartio = function (e) {
           var motivo = (e && e.name ? e.name : "error") + (e && e.message ? ": " + e.message : "");
-          estado.textContent = "No se ha compartido (" + motivo + "). Si lo has cerrado tú, no pasa nada. Si no, pulsa «Descargar vídeo» y súbelo desde tu carpeta de Descargas.";
+          var mb = Math.round(fich.size / 1048576);
+          // VIDEO-COMPARTIR-PESO-1: Chrome no deja compartir más de 50 MB; si es eso, se dice claro
+          if (e && e.name === "NotAllowedError" && fich.size > 50 * 1048576) estado.textContent = "El vídeo pesa " + mb + " MB y este navegador solo deja compartir hasta 50 MB. Pulsa «Descargar vídeo» y súbelo desde tu carpeta de Descargas.";
+          else estado.textContent = "No se ha compartido (" + motivo + "). Si lo has cerrado tú, no pasa nada. Si no, pulsa «Descargar vídeo» y súbelo desde tu carpeta de Descargas.";
           if (window.console) console.warn("[video] compartir", motivo);
         };
         comp.addEventListener("click", function (ev) {
@@ -1094,7 +1097,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=36" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=38" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>
