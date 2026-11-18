@@ -848,7 +848,10 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           var q = pr({ x: mercX(pu.lng), y: mercY(pu.lat) });
           ctx.beginPath(); ctx.arc(q.x, q.y, 30, 0, 2 * Math.PI); ctx.fillStyle = "#7C3AED"; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
           ctx.font = "30px 'Apple Color Emoji','Segoe UI Emoji',sans-serif"; ctx.textBaseline = "middle"; escribir(ctx, "🏔️", q.x, q.y + 1, "center");
-          if (!VIDEO_V6 && detalle && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50) { // v6: el nombre va en el bocadillo
+          // 🆕 VIDEO-PUERTOS-ETIQUETAS-1 (152.ª, 18-nov · Fèlix, 15 puertos seguidos: «jo treuria les etiquetes blanques… i deixaria
+          // només les més grans»; Mario: «ok haz la 1»): sin «Parar en cada puerto», fuera la etiqueta blanca de cada puerto en el
+          // mapa (se amontonaban); quedan el icono, el nombre grande que sube (cartelPuerto) y la lista del final.
+          if (!VIDEO_V6 && avisar.pararPuertos !== false && detalle && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50) { // v6: el nombre va en el bocadillo
             var txt = recortar(pu.name, 26) + (pu.ele != null ? " · " + fmtMiles(pu.ele) + " m" : "");
             ctx.font = "700 32px Manrope, system-ui, sans-serif";
             var w = ctx.measureText(txt).width + 32, x = Math.max(20, Math.min(W - w - 20, q.x - w / 2));
