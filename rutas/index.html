@@ -947,7 +947,17 @@ function pintar(r) {
       var comp = document.getElementById("compVideo");
       if (navigator.canShare && navigator.canShare({ files: [fich] })) {
         comp.hidden = false;
-        comp.addEventListener("click", function (ev) { ev.preventDefault(); navigator.share({ files: [fich], title: r.title }).catch(function () {}); });
+        // 🆕 VIDEO-COMPARTIR-ERROR-1 (152.ª, 18-nov · Fèlix: en Windows 11 con Chrome y en su Xiaomi no hace nada; Mario: «sí»): si el
+        // navegador no comparte, se dice en pantalla con su motivo (para saber la causa) y se manda a «Descargar vídeo». Antes se callaba.
+        var noCompartio = function (e) {
+          var motivo = (e && e.name ? e.name : "error") + (e && e.message ? ": " + e.message : "");
+          estado.textContent = "No se ha compartido (" + motivo + "). Si lo has cerrado tú, no pasa nada. Si no, pulsa «Descargar vídeo» y súbelo desde tu carpeta de Descargas.";
+          if (window.console) console.warn("[video] compartir", motivo);
+        };
+        comp.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          try { navigator.share({ files: [fich], title: r.title }).catch(noCompartio); } catch (e) { noCompartio(e); }
+        });
       }
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     }).catch(function (err) {
