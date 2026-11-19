@@ -136,7 +136,7 @@
       <div class="gran">📬</div>
       <h1>Ja gairebé hi ets!</h1>
       <p id="hecho-confirmar">Mira el teu correu i prem <b>«Confirmar el meu correu»</b>.</p>
-      <p id="hecho-alta">Tan bon punt el confirmis et donem d’alta i et arriba la invitació per instal·lar-la.</p>
+      <p id="hecho-alta">Tan bon punt el confirmis et donem d’alta i t’arriba la invitació per instal·lar-la.</p>
       <p id="hecho-plat"></p>
       <p>No t’arriba en uns minuts? Mira a <b>Spam</b> o a <b>Promocions</b>: de vegades s’amaga allà.</p>
       <p style="margin-top:18px;font-size:14px">Algun problema per instal·lar-la? Escriu-nos a <a href="mailto:soporte@motoclubes.es" style="color:var(--naranja);font-weight:700">soporte@motoclubes.es</a></p>
@@ -173,7 +173,7 @@
     body: JSON.stringify({ t: 'clic', token: tk, que: q.get('ir') === 'play' ? 'play' : 'invitacion' }) }).catch(function () {}) : null;
   if (irA) {
     var TF = irA;
-    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Obrint la pàgina d’' + (q.get('ir') === 'play' ? 'Google Play' : 'Apple') + '…</p>' +
+    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Obrint la pàgina de ' + (q.get('ir') === 'play' ? 'Google Play' : 'Apple') + '…</p>' +
       '<p style="margin-top:14px"><a href="' + TF + '" style="color:var(--naranja);font-weight:700">Si no s’obre, prem aquí</a></p></section>';
     var ir = function () { location.replace(TF); };
     if (clic) { Promise.race([clic, new Promise(function (ok) { setTimeout(ok, 1200); })]).then(ir); } else ir();
@@ -184,13 +184,13 @@
   // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
   // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
   var lista = q.get('o') === 'lista';
-  var enlace = 'https://www.motoclubes.es/ca/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
+  var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
 
   if (q.get('compartir') === '1') {
     // ── El tester: compartir su enlace ──
     document.getElementById('vista-compartir').hidden = false;
     document.getElementById('enlace-ver').textContent = enlace.replace('https://', '');
-    var texto = 'Vine a provar MOTOCLUBes! És l’app per sortir en moto en grup: tothom al mapa i parlant per l’intercom del casc. Apunta’t aquí i et arriba un correu de MOTOCLUBes per confirmar (si no el veus, mira a spam): ' + enlace;
+    var texto = 'Vine a provar MOTOCLUBes! És l’app per sortir en moto en grup: tothom al mapa i parlant per l’intercom del casc. Apunta’t aquí i t’arriba un correu de MOTOCLUBes per confirmar (si no el veus, mira a spam): ' + enlace;
     document.getElementById('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
     var msg = document.getElementById('msg-compartir');
     // Un solo botón además de WhatsApp (Mario, 15-oct): el menú de compartir del teléfono, que ya trae «Copiar».
@@ -263,7 +263,7 @@
           document.getElementById('hecho-alta').hidden = true; // sin «en cuanto lo confirmes»: ya lo está
         }
         document.getElementById('hecho-plat').textContent = plat() === 'android'
-          ? 'Et arribarà un enllaç de Google Play. Obre’l al teu mòbil Android, a Chrome: el que té a Play Store el mateix Gmail que has posat aquí.'
+          ? 'T’arribarà un enllaç de Google Play. Obre’l al teu mòbil Android, a Chrome: el que té a Play Store el mateix Gmail que has posat aquí.'
           : 'En confirmar t’ensenyem com instal·lar-la al teu iPhone amb TestFlight, i també t’ho enviem per correu.';
         window.scrollTo(0, 0);
       } else if (r.status === 400) decir('Revisa el correu, sembla que no està ben escrit.');

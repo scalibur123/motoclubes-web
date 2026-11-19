@@ -42,7 +42,7 @@
 
     var ru = '';
     try { if (/^\/rutas\/?$/.test(location.pathname)) ru = new URLSearchParams(location.search).get('id') || ''; } catch (e) {}
-    enviar({ t: 'v', id: id, p: location.pathname, r: document.referrer || '', o: o, d: d, i: i, ru: ru });
+    enviar({ t: 'v', id: id, p: location.pathname, r: (function () { try { var rf = new URLSearchParams(location.search).get('rf'); if (rf && /^[a-z0-9.-]{3,80}$/i.test(rf)) return 'https://' + rf + '/'; } catch (e) {} return document.referrer || ''; })(), /* PROBAR-IDIOMAS-1: ?rf= al pasar de /probar/ a su idioma */ o: o, d: d, i: i, ru: ru });
     window.mcVisitaGpx = function () { enviar({ t: 'g', id: id }); };
 
     // Tiempo VISIBLE: solo corre mientras la pestaña se ve. Se manda cada vez que se oculta

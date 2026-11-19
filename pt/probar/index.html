@@ -184,7 +184,7 @@
   // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
   // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
   var lista = q.get('o') === 'lista';
-  var enlace = 'https://www.motoclubes.es/pt/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
+  var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
 
   if (q.get('compartir') === '1') {
     // ── El tester: compartir su enlace ──

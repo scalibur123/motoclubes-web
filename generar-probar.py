@@ -93,13 +93,13 @@ T = {
  'Quiero probarla': 'Vull provar-la',
  '¡Ya casi estás dentro!': 'Ja gairebé hi ets!',
  'Mira tu correo y pulsa <b>«Confirmar mi correo»</b>.': 'Mira el teu correu i prem <b>«Confirmar el meu correu»</b>.',
- 'En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.': 'Tan bon punt el confirmis et donem d’alta i et arriba la invitació per instal·lar-la.',
+ 'En cuanto lo confirmes te damos de alta y te llega la invitación para instalarla.': 'Tan bon punt el confirmis et donem d’alta i t’arriba la invitació per instal·lar-la.',
  '¿No te llega en unos minutos? Mira en <b>Spam</b> o en <b>Promociones</b>: a veces se esconde ahí.': 'No t’arriba en uns minuts? Mira a <b>Spam</b> o a <b>Promocions</b>: de vegades s’amaga allà.',
  '¿Algún problema para instalarla? Escríbenos a': 'Algun problema per instal·lar-la? Escriu-nos a',
- 'Abriendo la página de ': 'Obrint la pàgina d’',
+ 'Abriendo la página de ': 'Obrint la pàgina de ',
  'Si no se abre, pulsa aquí': 'Si no s’obre, prem aquí',
  '¡Vente a probar MOTOCLUBes! Es la app para salir en moto en grupo: todos en el mapa y hablando por el intercom del casco. Apúntate aquí y te llega un correo de MOTOCLUBes para confirmar (si no lo ves, mira en spam): ':
-   'Vine a provar MOTOCLUBes! És l’app per sortir en moto en grup: tothom al mapa i parlant per l’intercom del casc. Apunta’t aquí i et arriba un correu de MOTOCLUBes per confirmar (si no el veus, mira a spam): ',
+   'Vine a provar MOTOCLUBes! És l’app per sortir en moto en grup: tothom al mapa i parlant per l’intercom del casc. Apunta’t aquí i t’arriba un correu de MOTOCLUBes per confirmar (si no el veus, mira a spam): ',
  '✅ Enlace copiado. Pégalo en tu grupo.': '✅ Enllaç copiat. Enganxa’l al teu grup.',
  'Copiar el enlace': 'Copia l’enllaç',
  '<b></b> te invita a probar MOTOCLUBes': '<b></b> et convida a provar MOTOCLUBes',
@@ -114,7 +114,7 @@ T = {
  'Marca la casilla de privacidad para poder apuntarte.': 'Marca la casella de privacitat per poder apuntar-te.',
  'Te escribimos a ese correo con el siguiente paso.': 'T’escrivim a aquest correu amb el pas següent.',
  'Te llegará un enlace de Google Play. Ábrelo en tu móvil Android, en Chrome: el que tiene en Play Store el mismo Gmail que has puesto aquí.':
-   'Et arribarà un enllaç de Google Play. Obre’l al teu mòbil Android, a Chrome: el que té a Play Store el mateix Gmail que has posat aquí.',
+   'T’arribarà un enllaç de Google Play. Obre’l al teu mòbil Android, a Chrome: el que té a Play Store el mateix Gmail que has posat aquí.',
  'Al confirmar te enseñamos cómo instalarla en tu iPhone con TestFlight, y te lo mandamos también por correo.':
    'En confirmar t’ensenyem com instal·lar-la al teu iPhone amb TestFlight, i també t’ho enviem per correu.',
  'No se ha podido enviar. Inténtalo de nuevo en un momento.': 'No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.',
@@ -290,7 +290,7 @@ def generar(l, dic):
     s = s.replace('../img/', '/img/').replace('../assets/', '/assets/').replace('href="../"', f'href="/{l}/"')
     # El idioma que se manda al apuntarse (web-aviso lo guarda y escribe en ese idioma) y el enlace que se comparte.
     s = s.replace("i: 'es',", f"i: '{l}',")
-    s = s.replace("var enlace = 'https://www.motoclubes.es/probar/'", f"var enlace = 'https://www.motoclubes.es/{l}/probar/'")
+    # Revisión: el enlace que se comparte es siempre el castellano (/probar/?de=…): cada amigo pasa solo a su idioma.
     # La castellana manda a su idioma según el móvil; las traducidas no mandan a ningún sitio.
     s = re.sub(r'\n  // PROBAR-IDIOMAS-1 · ES-SOLO.*?// /ES-SOLO\n', '\n', s, flags=re.S)
     os.makedirs(f'{l}/probar', exist_ok=True)

@@ -175,7 +175,13 @@
   // comparte un tester) pasa a la suya, con lo mismo que traía el enlace. Nunca con ?ir= (botones del correo) ni si eligió él (?l=).
   if (!q.get('ir') && !q.get('l')) {
     var nl = String((navigator.languages && navigator.languages[0]) || navigator.language || '').slice(0, 2).toLowerCase();
-    if (['en', 'ca', 'fr', 'pt', 'it'].indexOf(nl) >= 0) { location.replace('/' + nl + '/probar/' + location.search); return; }
+    if (['en', 'ca', 'fr', 'pt', 'it'].indexOf(nl) >= 0) {
+      // Revisión: que la visita siga contando de dónde venía (Instagram, LinkedIn…): `rf` lo lee visita.js en vez del referrer.
+      var qs = new URLSearchParams(location.search);
+      try { if (document.referrer && !qs.get('rf')) qs.set('rf', new URL(document.referrer).hostname); } catch (e) {}
+      var sq = qs.toString();
+      location.replace('/' + nl + '/probar/' + (sq ? '?' + sq : '')); return;
+    }
   }
   // /ES-SOLO
   if (irA) {
