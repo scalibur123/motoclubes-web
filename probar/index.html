@@ -74,6 +74,9 @@
   .boton-borde { background: transparent; border: 1.5px solid var(--borde); color: var(--texto); }
   .pr-pie { text-align: center; color: var(--texto-3); font-size: 12.5px; margin-top: 18px; }
   [hidden] { display: none !important; }
+  .pr-idiomas { text-align: center; font-size: 13px; color: var(--texto-3); margin: -28px 0 36px; }
+  .pr-idiomas a { color: var(--texto-2); text-decoration: none; }
+  .pr-idiomas a.activo { color: var(--naranja); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -141,11 +144,24 @@
   </section>
 
 </main>
+<p class="pr-idiomas" id="idiomas"></p>
 
 <script>
 (function () {
   var U = 'https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-aviso';
   var q = new URLSearchParams(location.search);
+  // PROBAR-IDIOMAS-1 (155.ª): abajo, los 6 idiomas (con lo que traiga el enlace: ?de=, ?o=…). ?l=xx = lo eligió él.
+  (function () {
+    var cajaI = document.getElementById('idiomas'); if (!cajaI) return;
+    var resto = new URLSearchParams(location.search); resto.delete('l');
+    [['es', 'Español', '/probar/'], ['ca', 'Català', '/ca/probar/'], ['en', 'English', '/en/probar/'], ['fr', 'Français', '/fr/probar/'],
+     ['pt', 'Português', '/pt/probar/'], ['it', 'Italiano', '/it/probar/']].forEach(function (x, n) {
+      var a = document.createElement('a'); var r = new URLSearchParams(resto); r.set('l', x[0]);
+      a.href = x[2] + '?' + r.toString(); a.textContent = x[1]; a.hreflang = x[0];
+      if (document.documentElement.lang === x[0]) a.className = 'activo';
+      if (n) cajaI.appendChild(document.createTextNode(' · ')); cajaI.appendChild(a);
+    });
+  })();
   // INVITACION-SEGUIMIENTO-1 (109.ª, 15-oct): los botones del correo de invitación traen el token de la persona (&t=…). Se
   // apunta el clic (web-aviso, t:'clic') para que Mario sepa en la ficha que le llegó y la abrió. «ir=testflight» es el botón de
   // iPhone: apunta el clic y sigue a la página de Apple de siempre.
@@ -155,6 +171,13 @@
     : q.get('ir') === 'play' ? 'https://play.google.com/apps/internaltest/4701228085350749079' : null;
   var clic = /^[0-9a-f]{64}$/.test(tk) ? fetch(U, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
     body: JSON.stringify({ t: 'clic', token: tk, que: q.get('ir') === 'play' ? 'play' : 'invitacion' }) }).catch(function () {}) : null;
+  // PROBAR-IDIOMAS-1 · ES-SOLO (155.ª): quien llega a la castellana con el móvil en otro de los 5 idiomas (Instagram, el enlace que
+  // comparte un tester) pasa a la suya, con lo mismo que traía el enlace. Nunca con ?ir= (botones del correo) ni si eligió él (?l=).
+  if (!q.get('ir') && !q.get('l')) {
+    var nl = String((navigator.languages && navigator.languages[0]) || navigator.language || '').slice(0, 2).toLowerCase();
+    if (['en', 'ca', 'fr', 'pt', 'it'].indexOf(nl) >= 0) { location.replace('/' + nl + '/probar/' + location.search); return; }
+  }
+  // /ES-SOLO
   if (irA) {
     var TF = irA;
     document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Abriendo la página de ' + (q.get('ir') === 'play' ? 'Google Play' : 'Apple') + '…</p>' +

@@ -740,6 +740,7 @@ def generar(destino, dic, codigo, locale):
                   f'<a href="/{codigo}/" hreflang="{codigo}" class="activo">')
     # IDIOMAS-PT-IT-1: el menú «Por dentro» lleva a la página en el mismo idioma (antes, a la de castellano)
     s = s.replace('<a href="/por-dentro/"', f'<a href="/{codigo}/por-dentro/"')
+    s = s.replace('href="/probar/?o=web"', f'href="/{codigo}/probar/?o=web"')  # PROBAR-IDIOMAS-1 (155.ª): «Pruébala ya» a la suya
     io.open(destino, 'w', encoding='utf8').write(s)
     quedan = [es for es in dic if es in s and len(es) > 25]
     print(f'{destino}: escrito ({len(s)} car). Sin traducir: {len(quedan)}')

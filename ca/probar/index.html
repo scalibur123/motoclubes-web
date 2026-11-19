@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Prova MOTOCLUBes</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0E0E0E">
+<!-- WEB-MARKETING-1 (155.ª, 19-nov-2026): la vista previa al compartir el enlace (Instagram, LinkedIn, WhatsApp), con su imagen grande. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MOTOCLUBes">
+<meta property="og:url" content="https://www.motoclubes.es/ca/probar/">
+<meta property="og:title" content="Vine a provar MOTOCLUBes, l’app GPS per a moto">
+<meta property="og:description" content="Planifica, navega amb veu i surt en grup, amb SOS al grup. Apunta’t i t’enviem la invitació per a iPhone o Android.">
+<meta property="og:image" content="https://www.motoclubes.es/img/og-probar.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Vine a provar MOTOCLUBes, l’app GPS per a moto">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vine a provar MOTOCLUBes, l’app GPS per a moto">
+<meta name="twitter:description" content="Planifica, navega amb veu i surt en grup, amb SOS al grup. Apunta’t i t’enviem la invitació per a iPhone o Android.">
+<meta name="twitter:image" content="https://www.motoclubes.es/img/og-probar.png">
+<link rel="icon" type="image/png" href="/img/helmet-256.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/mc.css?v=19nov1">
+<!-- TESTERS-COMPANEROS-1 (109.ª, 15-oct-2026). Página de alta de los compañeros de un tester.
+     · ?de=<nickname>&compartir=1 → la abre el tester desde la carta de bienvenida: pantalla «Pásaselo a tu grupo»
+       (WhatsApp, copiar, otras apps). El enlace que comparte NO lleva compartir=1.
+     · ?de=<nickname>            → la abre el compañero: «<nickname> te invita…» y el formulario.
+     El alta va a web-aviso (la caja «Avísame») con probar=true, la plataforma, origen «probar-<nickname>» y f:'probar'
+     (correo de confirmar con el texto de tester; al confirmar, aviso a Mario para darle de alta).
+     noindex. Se llega desde la carta, y desde el 19-nov-2026 (WEB-MARKETING-1) también desde Instagram, LinkedIn y la portada
+     (?o=web). -->
+<style>
+  .pr { max-width: 480px; margin: 28px auto 48px; padding: 0 18px; }
+  .pr-caja { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 24px; padding: 28px 22px; }
+  .pr-casco { width: 72px; height: 72px; border-radius: 18px; background: #fff; padding: 6px; margin: 0 auto 16px; }
+  .pr h1 { font-size: 25px; line-height: 1.25; text-align: center; margin-bottom: 10px; letter-spacing: -.3px; }
+  .pr h1 b { color: var(--naranja); }
+  .pr .sub { color: var(--texto-2); font-size: 15.5px; text-align: center; margin-bottom: 22px; }
+  .pr .sub .pr-cuantos { display: inline-block; margin-top: 8px; color: var(--texto); font-weight: 700; } /* WEB-MARKETING-1 */
+  .pr-puntos { list-style: none; margin: 0 0 22px; display: grid; gap: 10px; }
+  .pr-puntos li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
+  .pr-puntos li span { font-size: 20px; line-height: 1.2; flex: none; }
+  .pr-titulo { font-weight: 800; font-size: 15px; margin: 4px 0 10px; }
+  .pr-movil { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .pr-movil label { cursor: pointer; }
+  .pr-movil input { position: absolute; opacity: 0; pointer-events: none; }
+  .pr-movil .op { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; border-radius: 16px;
+    border: 1.5px solid var(--borde); background: var(--fondo-2); font-weight: 700; font-size: 15px; transition: border-color .15s, background .15s; }
+  .pr-movil .op i { font-style: normal; font-size: 24px; }
+  .pr-movil input:checked + .op { border-color: var(--naranja); background: var(--naranja-suave); }
+  .pr-movil input:focus-visible + .op { outline: 2px solid var(--naranja); outline-offset: 2px; }
+  .pr input[type=email] { width: 100%; min-height: 52px; padding: 13px 15px; border-radius: 14px; border: 1.5px solid var(--borde);
+    background: var(--fondo-2); color: var(--texto); font: inherit; font-size: 16px; }
+  .pr input[type=email]:focus { outline: none; border-color: var(--naranja); }
+  .pr-ayuda { font-size: 13.5px; color: var(--texto-2); margin: 8px 2px 0; line-height: 1.5; }
+  .pr-casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--texto-2); margin: 16px 0 18px; line-height: 1.5; }
+  .pr-casilla input { margin-top: 3px; accent-color: var(--naranja); width: 18px; height: 18px; flex: none; }
+  .pr-casilla a { color: var(--texto); text-decoration: underline; }
+  .pr .boton { width: 100%; justify-content: center; min-height: 54px; font: inherit; font-weight: 800; font-size: 16.5px; cursor: pointer; }
+  .pr .boton[disabled] { opacity: .6; cursor: default; }
+  .pr-msg { min-height: 1em; margin-top: 12px; font-size: 14.5px; text-align: center; }
+  .pr-msg.error { color: #ff8a8a; }
+  .pr-hecho { text-align: center; }
+  .pr-hecho .gran { font-size: 46px; line-height: 1; margin-bottom: 12px; }
+  .pr-hecho p { color: var(--texto-2); font-size: 15.5px; margin-bottom: 10px; }
+  .pr-hecho p b { color: var(--texto); }
+  .pr-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .pr-enlace { display: block; background: var(--fondo-2); border: 1px dashed rgba(255,122,26,.5); border-radius: 14px; padding: 13px 14px;
+    font-size: 15px; text-align: center; color: var(--texto); word-break: break-all; margin: 0 0 16px; }
+  .pr-botones { display: grid; gap: 10px; }
+  .boton-wa { background: #25D366; border-color: #25D366; color: #0b2b15; }
+  .boton-borde { background: transparent; border: 1.5px solid var(--borde); color: var(--texto); }
+  .pr-pie { text-align: center; color: var(--texto-3); font-size: 12.5px; margin-top: 18px; }
+  [hidden] { display: none !important; }
+  .pr-idiomas { text-align: center; font-size: 13px; color: var(--texto-3); margin: -28px 0 36px; }
+  .pr-idiomas a { color: var(--texto-2); text-decoration: none; }
+  .pr-idiomas a.activo { color: var(--naranja); font-weight: 700; }
+</style>
+</head>
+<body>
+<header class="barra">
+  <div class="envoltura">
+    <a class="marca" href="/ca/">
+      <img src="/img/helmet-256.png" alt="MOTOCLUBes">
+      MOTOCLUB<span>es</span>
+    </a>
+  </div>
+</header>
+
+<main class="pr">
+
+  <!-- PANTALLA 1 · el tester (llega desde su carta) -->
+  <section class="pr-caja" id="vista-compartir" hidden>
+    <img class="pr-casco" src="/img/helmet-256.png" alt="">
+    <h1>Passa-ho al <b>teu grup</b></h1>
+    <p class="sub">Amb aquest enllaç els teus companys de ruta s’apunten en un minut i els enviem la invitació per instal·lar MOTOCLUBes, a iPhone o a Android.</p>
+    <span class="pr-enlace" id="enlace-ver"></span>
+    <div class="pr-botones">
+      <a class="boton boton-wa" id="b-wa" href="#">💬 Envia per WhatsApp</a>
+      <button class="boton boton-borde" id="b-otras" type="button">Comparteix d’una altra manera</button>
+    </div>
+    <p class="pr-msg" id="msg-compartir" role="status"></p>
+    <p class="pr-pie">Com més sortiu junts, millor es prova la ràdio del grup.</p>
+  </section>
+
+  <!-- PANTALLA 2 · el compañero -->
+  <section class="pr-caja" id="vista-alta" hidden>
+    <img class="pr-casco" src="/img/helmet-256.png" alt="">
+    <h1 id="titulo-alta">Vine a provar <b>MOTOCLUBes</b></h1>
+    <p class="sub">L’app per a motoristes, feta per motoristes. Prova-la abans que surti a les botigues.<br><b class="pr-cuantos">Ja som gairebé 170 motoristes provant-la a iPhone i Android.</b></p>
+    <ul class="pr-puntos">
+      <li><span>🗺️</span><div>Planifica les teves rutes amb revolts, ports i benzineres amb el preu d’avui.</div></li>
+      <li><span>🧭</span><div>Navega amb veu pel casc, a la pantalla de la moto amb CarPlay i Android Auto, i sense cobertura amb el mapa descarregat.</div></li>
+      <li><span>🏍️</span><div>Surt en grup: tothom al mapa i parlant per la ràdio del grup amb l’intercomunicador que ja portes.</div></li>
+      <li><span>🆘</span><div>SOS al grup: 3 segons amb el dit al mapa i tot el teu grup sap on ets.</div></li>
+    </ul>
+
+    <form id="form-alta" novalidate>
+      <p class="pr-titulo">Quin mòbil tens?</p>
+      <div class="pr-movil">
+        <label><input type="radio" name="plat" value="ios" checked><span class="op"><i>🍎</i>iPhone</span></label>
+        <label><input type="radio" name="plat" value="android"><span class="op"><i>🤖</i>Android</span></label>
+      </div>
+      <p class="pr-titulo" id="etiqueta-correo">El teu correu</p>
+      <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="tu@correu.cat" aria-labelledby="etiqueta-correo" required>
+      <p class="pr-ayuda" id="ayuda-correo"></p>
+      <label class="pr-casilla"><input type="checkbox" name="acepta"> <span>He llegit i accepto la <a href="/legal/privacidad/">política de privacitat</a></span></label>
+      <div class="pr-trampa" aria-hidden="true"><input type="text" name="web" tabindex="-1" autocomplete="off"></div>
+      <button class="boton boton-principal" type="submit">Vull provar-la</button>
+      <p class="pr-msg" id="msg-alta" role="status"></p>
+    </form>
+
+    <div class="pr-hecho" id="hecho" hidden>
+      <div class="gran">📬</div>
+      <h1>Ja gairebé hi ets!</h1>
+      <p id="hecho-confirmar">Mira el teu correu i prem <b>«Confirmar el meu correu»</b>.</p>
+      <p id="hecho-alta">Tan bon punt el confirmis et donem d’alta i et arriba la invitació per instal·lar-la.</p>
+      <p id="hecho-plat"></p>
+      <p>No t’arriba en uns minuts? Mira a <b>Spam</b> o a <b>Promocions</b>: de vegades s’amaga allà.</p>
+      <p style="margin-top:18px;font-size:14px">Algun problema per instal·lar-la? Escriu-nos a <a href="mailto:soporte@motoclubes.es" style="color:var(--naranja);font-weight:700">soporte@motoclubes.es</a></p>
+    </div>
+  </section>
+
+</main>
+<p class="pr-idiomas" id="idiomas"></p>
+
+<script>
+(function () {
+  var U = 'https://yxmirhpwmdmaxynlshdx.supabase.co/functions/v1/web-aviso';
+  var q = new URLSearchParams(location.search);
+  // PROBAR-IDIOMAS-1 (155.ª): abajo, los 6 idiomas (con lo que traiga el enlace: ?de=, ?o=…). ?l=xx = lo eligió él.
+  (function () {
+    var cajaI = document.getElementById('idiomas'); if (!cajaI) return;
+    var resto = new URLSearchParams(location.search); resto.delete('l');
+    [['es', 'Español', '/probar/'], ['ca', 'Català', '/ca/probar/'], ['en', 'English', '/en/probar/'], ['fr', 'Français', '/fr/probar/'],
+     ['pt', 'Português', '/pt/probar/'], ['it', 'Italiano', '/it/probar/']].forEach(function (x, n) {
+      var a = document.createElement('a'); var r = new URLSearchParams(resto); r.set('l', x[0]);
+      a.href = x[2] + '?' + r.toString(); a.textContent = x[1]; a.hreflang = x[0];
+      if (document.documentElement.lang === x[0]) a.className = 'activo';
+      if (n) cajaI.appendChild(document.createTextNode(' · ')); cajaI.appendChild(a);
+    });
+  })();
+  // INVITACION-SEGUIMIENTO-1 (109.ª, 15-oct): los botones del correo de invitación traen el token de la persona (&t=…). Se
+  // apunta el clic (web-aviso, t:'clic') para que Mario sepa en la ficha que le llegó y la abrió. «ir=testflight» es el botón de
+  // iPhone: apunta el clic y sigue a la página de Apple de siempre.
+  var tk = (q.get('t') || '').toLowerCase();
+  // ENLACE-PLAY-1: «ir=play» es el botón del correo con el enlace de Play (se apunta aparte: que:'play').
+  var irA = q.get('ir') === 'testflight' ? 'https://testflight.apple.com/join/VjFUgfMa'
+    : q.get('ir') === 'play' ? 'https://play.google.com/apps/internaltest/4701228085350749079' : null;
+  var clic = /^[0-9a-f]{64}$/.test(tk) ? fetch(U, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
+    body: JSON.stringify({ t: 'clic', token: tk, que: q.get('ir') === 'play' ? 'play' : 'invitacion' }) }).catch(function () {}) : null;
+  if (irA) {
+    var TF = irA;
+    document.querySelector('main').innerHTML = '<section style="padding:48px 20px;text-align:center"><p style="font-size:18px;font-weight:700">Obrint la pàgina d’' + (q.get('ir') === 'play' ? 'Google Play' : 'Apple') + '…</p>' +
+      '<p style="margin-top:14px"><a href="' + TF + '" style="color:var(--naranja);font-weight:700">Si no s’obre, prem aquí</a></p></section>';
+    var ir = function () { location.replace(TF); };
+    if (clic) { Promise.race([clic, new Promise(function (ok) { setTimeout(ok, 1200); })]).then(ir); } else ir();
+    return;
+  }
+  // El nickname de la app: letras, números y guion bajo (signup.tsx). Cualquier otra cosa se ignora.
+  var de = (q.get('de') || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 30);
+  // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
+  // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
+  var lista = q.get('o') === 'lista';
+  var enlace = 'https://www.motoclubes.es/ca/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
+
+  if (q.get('compartir') === '1') {
+    // ── El tester: compartir su enlace ──
+    document.getElementById('vista-compartir').hidden = false;
+    document.getElementById('enlace-ver').textContent = enlace.replace('https://', '');
+    var texto = 'Vine a provar MOTOCLUBes! És l’app per sortir en moto en grup: tothom al mapa i parlant per l’intercom del casc. Apunta’t aquí i et arriba un correu de MOTOCLUBes per confirmar (si no el veus, mira a spam): ' + enlace;
+    document.getElementById('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+    var msg = document.getElementById('msg-compartir');
+    // Un solo botón además de WhatsApp (Mario, 15-oct): el menú de compartir del teléfono, que ya trae «Copiar».
+    // Sin ese menú (algunos navegadores de ordenador), el botón copia el enlace.
+    var otras = document.getElementById('b-otras');
+    var copiar = function () {
+      var ok = function () { msg.className = 'pr-msg'; msg.textContent = '✅ Enllaç copiat. Enganxa’l al teu grup.'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(enlace).then(ok, function () { msg.textContent = enlace; });
+      } else { msg.textContent = enlace; }
+    };
+    if (navigator.share) {
+      otras.addEventListener('click', function () {
+        navigator.share({ title: 'MOTOCLUBes', text: texto.replace(' ' + enlace, ''), url: enlace }).catch(function () {});
+      });
+    } else {
+      otras.textContent = 'Copia l’enllaç';
+      otras.addEventListener('click', copiar);
+    }
+    return;
+  }
+
+  // ── El compañero: alta ──
+  document.getElementById('vista-alta').hidden = false;
+  if (de) document.getElementById('titulo-alta').innerHTML = '<b></b> et convida a provar MOTOCLUBes';
+  if (de) document.querySelector('#titulo-alta b').textContent = de;
+
+  var f = document.getElementById('form-alta');
+  var etiqueta = document.getElementById('etiqueta-correo');
+  var ayuda = document.getElementById('ayuda-correo');
+  var msgA = document.getElementById('msg-alta');
+  var plat = function () { return f.querySelector('input[name=plat]:checked').value; };
+  var pintar = function () {
+    if (plat() === 'android') {
+      etiqueta.textContent = 'El Gmail de la teva Play Store';
+      ayuda.textContent = 'Google només deixa instal·lar-la amb aquest compte. El veus a l’app de Play Store, tocant la teva foto a dalt a la dreta.';
+      f.email.placeholder = 'tu@gmail.com';
+    } else {
+      etiqueta.textContent = 'El teu correu';
+      ayuda.textContent = 'Allà t’enviem la invitació per instal·lar-la amb TestFlight, l’app d’Apple per provar apps abans que surtin a la botiga.';
+      f.email.placeholder = 'tu@correu.cat';
+    }
+  };
+  f.querySelectorAll('input[name=plat]').forEach(function (r) { r.addEventListener('change', pintar); });
+  if (q.get('plat') === 'android') f.querySelector('input[value=android]').checked = true;
+  pintar();
+
+  var decir = function (t) { msgA.className = 'pr-msg error'; msgA.textContent = t; };
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = f.email.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return decir('Revisa el correu, sembla que no està ben escrit.');
+    if (!f.acepta.checked) return decir('Marca la casella de privacitat per poder apuntar-te.');
+    var boton = f.querySelector('button');
+    boton.disabled = true; msgA.textContent = '';
+    fetch(U, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        t: 'alta', f: 'probar', email: email, i: 'ca', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : 'probar'),
+        probar: true, plat: plat(), acepta: true, web: f.web.value
+      })
+    }).then(function (r) {
+      if (r.ok) {
+        f.hidden = true;
+        document.getElementById('hecho').hidden = false;
+        document.getElementById('hecho-alta').hidden = plat() === 'ios'; // iPhone entra solo: no hay «te damos de alta»
+        if (lista) { // ya confirmado: el siguiente correo es el de la invitación (o, si ha puesto otro correo, el de confirmar)
+          document.getElementById('hecho-confirmar').innerHTML = 'T’escrivim a aquest correu amb el pas següent.';
+          document.getElementById('hecho-alta').hidden = true; // sin «en cuanto lo confirmes»: ya lo está
+        }
+        document.getElementById('hecho-plat').textContent = plat() === 'android'
+          ? 'Et arribarà un enllaç de Google Play. Obre’l al teu mòbil Android, a Chrome: el que té a Play Store el mateix Gmail que has posat aquí.'
+          : 'En confirmar t’ensenyem com instal·lar-la al teu iPhone amb TestFlight, i també t’ho enviem per correu.';
+        window.scrollTo(0, 0);
+      } else if (r.status === 400) decir('Revisa el correu, sembla que no està ben escrit.');
+      else decir('No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.');
+    }).catch(function () { decir('No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.'); })
+      .then(function () { boton.disabled = false; });
+  });
+})();
+</script>
+<script src="/assets/visita.js" defer></script>
+</body>
+</html>
