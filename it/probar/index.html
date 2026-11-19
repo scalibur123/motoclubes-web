@@ -38,7 +38,7 @@
   .pr h1 { font-size: 25px; line-height: 1.25; text-align: center; margin-bottom: 10px; letter-spacing: -.3px; }
   .pr h1 b { color: var(--naranja); }
   .pr .sub { color: var(--texto-2); font-size: 15.5px; text-align: center; margin-bottom: 22px; }
-  .pr .sub .pr-cuantos { display: inline-block; margin-top: 8px; color: var(--texto); font-weight: 700; } /* WEB-MARKETING-1 */
+  .pr .sub .pr-cuantos { display: inline-block; margin-top: 8px; color: var(--naranja); font-weight: 800; } /* WEB-MARKETING-1: en naranja y en negrita (Mario 11:37) */
   .pr-puntos { list-style: none; margin: 0 0 22px; display: grid; gap: 10px; }
   .pr-puntos li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
   .pr-puntos li span { font-size: 20px; line-height: 1.2; flex: none; }
@@ -77,6 +77,25 @@
   .pr-idiomas { text-align: center; font-size: 13px; color: var(--texto-3); margin: -28px 0 36px; }
   .pr-idiomas a { color: var(--texto-2); text-decoration: none; }
   .pr-idiomas a.activo { color: var(--naranja); font-weight: 700; }
+  /* PROBAR-CORTO-1 (155.ª, 19-nov-2026, Mario: «comprueba en un iPhone que Che telefono hai? se ve en la primera pantalla»):
+     en el móvil, todo más junto para que la pregunta y los dos botones salgan sin bajar. En el iPhone pequeño, sin el casco grande
+     (ya está arriba, en la barra). */
+  @media (max-width: 480px) {
+    .pr { margin-top: 12px; padding: 0 12px; }
+    .pr-caja { padding: 18px 16px; }
+    .pr-casco { width: 52px; height: 52px; border-radius: 14px; padding: 4px; margin-bottom: 10px; }
+    .pr h1 { font-size: 23px; margin-bottom: 8px; }
+    .pr .sub { font-size: 14.5px; line-height: 1.45; margin-bottom: 14px; }
+    .pr .sub .pr-cuantos { margin-top: 6px; }
+    .pr-puntos { gap: 6px; margin-bottom: 14px; }
+    .pr-puntos li { font-size: 14.5px; line-height: 1.4; gap: 10px; }
+    .pr-puntos li span { font-size: 18px; }
+    .pr-titulo { margin: 0 0 8px; }
+    .pr-movil .op { padding: 10px 8px; }
+  }
+  @media (max-width: 480px) and (max-height: 620px) {
+    .pr-casco { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -109,12 +128,13 @@
   <section class="pr-caja" id="vista-alta" hidden>
     <img class="pr-casco" src="/img/helmet-256.png" alt="">
     <h1 id="titulo-alta">Vieni a provare <b>MOTOCLUBes</b></h1>
-    <p class="sub">L’app per motociclisti, fatta da motociclisti. Provala prima che arrivi negli store.<br><b class="pr-cuantos">Siamo già quasi 170 motociclisti a provarla su iPhone e Android.</b></p>
+    <!-- WEB-MARKETING-1 (155.ª, Mario 11:37: «en el móvil quedaba largo»): frases cortas, para que «Che telefono hai?» se vea sin bajar. -->
+    <p class="sub">L’app GPS per la moto, fatta da motociclisti. Provala prima che arrivi negli store.<br><b class="pr-cuantos">Siamo già quasi 170 motociclisti a provarla.</b></p>
     <ul class="pr-puntos">
-      <li><span>🗺️</span><div>Pianifica i tuoi percorsi con curve, passi e distributori con il prezzo di oggi.</div></li>
-      <li><span>🧭</span><div>Naviga con la voce nel casco, sullo schermo della moto con CarPlay e Android Auto, e senza campo con la mappa scaricata.</div></li>
-      <li><span>🏍️</span><div>Esci in gruppo: tutti sulla mappa e a parlare con la radio del gruppo con l’interfono che hai già.</div></li>
-      <li><span>🆘</span><div>SOS al gruppo: 3 secondi con il dito sulla mappa e tutto il tuo gruppo sa dove sei.</div></li>
+      <li><span>🗺️</span><div>Pianifica percorsi con curve, passi e distributori.</div></li>
+      <li><span>🧭</span><div>Naviga con la voce, sullo schermo della moto e senza campo.</div></li>
+      <li><span>🏍️</span><div>Esci in gruppo: tutti sulla mappa e a parlare via radio.</div></li>
+      <li><span>🆘</span><div>SOS al gruppo: 3 secondi sulla mappa e il tuo gruppo sa dove sei.</div></li>
     </ul>
 
     <form id="form-alta" novalidate>

@@ -14,6 +14,12 @@ ES = io.open('probar/index.html', encoding='utf8').read()
 # Las de toda la página. Las largas primero (una sola pasada, como generar-idiomas.py).
 T = {
 'en': {
+ 'La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.': 'The motorcycle GPS app, made by riders. Try it before it hits the stores.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Ya somos casi 170 moteros probándola.': 'Almost 170 riders are already testing it.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Planifica rutas con curvas, puertos y gasolineras.': 'Plan routes with corners, mountain passes and fuel stations.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Navega con voz, en la pantalla de la moto y sin cobertura.': 'Navigate with voice, on the bike’s screen and with no signal.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Sal en grupo: todos en el mapa y hablando por la radio.': 'Ride as a group: everyone on the map and talking over the radio.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.': 'SOS to the group: 3 seconds on the map and your group knows where you are.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
  '<title>Prueba MOTOCLUBes</title>': '<title>Try MOTOCLUBes</title>',
  'Vente a probar MOTOCLUBes, la app GPS para moto': 'Come and try MOTOCLUBes, the motorcycle GPS app',
  'Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.':
@@ -67,6 +73,12 @@ T = {
  'No se ha podido enviar. Inténtalo de nuevo en un momento.': 'It couldn’t be sent. Try again in a moment.',
 },
 'ca': {
+ 'La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.': 'L’app GPS per a moto, feta per motoristes. Prova-la abans que surti a les botigues.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Ya somos casi 170 moteros probándola.': 'Ja som gairebé 170 motoristes provant-la.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Planifica rutas con curvas, puertos y gasolineras.': 'Planifica rutes amb revolts, ports i benzineres.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Navega con voz, en la pantalla de la moto y sin cobertura.': 'Navega amb veu, a la pantalla de la moto i sense cobertura.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Sal en grupo: todos en el mapa y hablando por la radio.': 'Surt en grup: tothom al mapa i parlant per la ràdio.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.': 'SOS al grup: 3 segons al mapa i el teu grup sap on ets.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
  '<title>Prueba MOTOCLUBes</title>': '<title>Prova MOTOCLUBes</title>',
  'Vente a probar MOTOCLUBes, la app GPS para moto': 'Vine a provar MOTOCLUBes, l’app GPS per a moto',
  'Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.':
@@ -120,6 +132,12 @@ T = {
  'No se ha podido enviar. Inténtalo de nuevo en un momento.': 'No s’ha pogut enviar. Torna-ho a provar d’aquí a un moment.',
 },
 'fr': {
+ 'La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.': 'L’app GPS pour la moto, faite par des motards. Essayez-la avant sa sortie dans les stores.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Ya somos casi 170 moteros probándola.': 'Nous sommes déjà près de 170 motards à la tester.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Planifica rutas con curvas, puertos y gasolineras.': 'Préparez des itinéraires avec virages, cols et stations-service.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Navega con voz, en la pantalla de la moto y sin cobertura.': 'Naviguez avec la voix, sur l’écran de la moto et sans réseau.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Sal en grupo: todos en el mapa y hablando por la radio.': 'Roulez en groupe : tout le monde sur la carte et à la radio.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.': 'SOS au groupe : 3 secondes sur la carte et votre groupe sait où vous êtes.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
  '<title>Prueba MOTOCLUBes</title>': '<title>Essayez MOTOCLUBes</title>',
  'Vente a probar MOTOCLUBes, la app GPS para moto': 'Venez essayer MOTOCLUBes, l’app GPS pour la moto',
  'Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.':
@@ -173,6 +191,12 @@ T = {
  'No se ha podido enviar. Inténtalo de nuevo en un momento.': 'L’envoi a échoué. Réessayez dans un instant.',
 },
 'pt': {
+ 'La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.': 'A app GPS para mota, feita por motociclistas. Experimenta-a antes de sair nas lojas.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Ya somos casi 170 moteros probándola.': 'Já somos quase 170 motociclistas a testá-la.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Planifica rutas con curvas, puertos y gasolineras.': 'Planeia rotas com curvas, passos de montanha e bombas.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Navega con voz, en la pantalla de la moto y sin cobertura.': 'Navega com voz, no ecrã da mota e sem rede.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Sal en grupo: todos en el mapa y hablando por la radio.': 'Sai em grupo: todos no mapa e a falar pelo rádio.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.': 'SOS ao grupo: 3 segundos no mapa e o teu grupo sabe onde estás.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
  '<title>Prueba MOTOCLUBes</title>': '<title>Experimenta o MOTOCLUBes</title>',
  'Vente a probar MOTOCLUBes, la app GPS para moto': 'Vem experimentar o MOTOCLUBes, a app GPS para mota',
  'Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.':
@@ -226,6 +250,12 @@ T = {
  'No se ha podido enviar. Inténtalo de nuevo en un momento.': 'Não foi possível enviar. Tenta de novo daqui a pouco.',
 },
 'it': {
+ 'La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.': 'L’app GPS per la moto, fatta da motociclisti. Provala prima che arrivi negli store.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Ya somos casi 170 moteros probándola.': 'Siamo già quasi 170 motociclisti a provarla.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Planifica rutas con curvas, puertos y gasolineras.': 'Pianifica percorsi con curve, passi e distributori.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Navega con voz, en la pantalla de la moto y sin cobertura.': 'Naviga con la voce, sullo schermo della moto e senza campo.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'Sal en grupo: todos en el mapa y hablando por la radio.': 'Esci in gruppo: tutti sulla mappa e a parlare via radio.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
+ 'SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.': 'SOS al gruppo: 3 secondi sulla mappa e il tuo gruppo sa dove sei.',  # WEB-MARKETING-1 (155.ª, 11:37): frase corta
  '<title>Prueba MOTOCLUBes</title>': '<title>Prova MOTOCLUBes</title>',
  'Vente a probar MOTOCLUBes, la app GPS para moto': 'Vieni a provare MOTOCLUBes, l’app GPS per la moto',
  'Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.':
