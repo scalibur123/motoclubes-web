@@ -699,6 +699,13 @@ _WM_TR = {
 }
 for _d, _c in ((FR, "fr"), (PT, "pt"), (IT, "it")):
     _d.update({_WM[k]: v for k, v in _WM_TR[_c].items()})
+# PORTADA-BOTONES-1 (155.ª, 19-nov): el enlace pequeño de planificar va sin el dibujo del ordenador.
+FR[">Planifica en el ordenador<"] = ">Planifier sur ordinateur<"
+PT[">Planifica en el ordenador<"] = ">Planeia no computador<"
+IT[">Planifica en el ordenador<"] = ">Pianifica dal computer<"
+# En francés, más cortos, para que quepan en una línea en el móvil.
+FR['<a href="#funciones">Ver qué hace</a><span>'] = '<a href="#funciones">Ce qu\'elle fait</a><span>'
+FR['<a href="negocio/">Soy un negocio</a><span>'] = '<a href="/negocio/">Espace pro</a><span>'
 
 def generar(destino, dic, codigo, locale):
     s = io.open('index.html', encoding='utf8').read()

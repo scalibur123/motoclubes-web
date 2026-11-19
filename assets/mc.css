@@ -107,7 +107,7 @@ img{max-width:100%;display:block}
 @keyframes mc-humo{0%{opacity:0;transform:translateX(0) scale(.6)}15%{opacity:.55}100%{opacity:0;transform:translateX(-90px) scale(1.7)}}
 @keyframes mc-sube{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){
-  .escena img,.humo,.portada h1,.lema,.acciones,.aviso-beta{animation:none!important;opacity:1!important;transform:none!important}
+  .escena img,.humo,.portada h1,.lema,.acciones,.acciones-mas,.aviso-beta{animation:none!important;opacity:1!important;transform:none!important}
 }
 
 .portada h1{
@@ -121,6 +121,11 @@ img{max-width:100%;display:block}
 }
 .lema strong{color:var(--texto);font-weight:700}
 .acciones{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px;animation:mc-sube .5s ease-out 1.35s both}
+/* PORTADA-BOTONES-1 (155.ª, 19-nov): «Ver qué hace», «Soy un negocio» y «Planifica en el ordenador», enlaces pequeños en una línea */
+.acciones-mas{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 6px;margin:16px -14px 0;font-size:12.5px;animation:mc-sube .5s ease-out 1.35s both}
+.acciones-mas a{color:var(--texto-2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.acciones-mas a:hover{color:var(--naranja)}
+.acciones-mas span{color:var(--texto-3)}
 .aviso-beta{
   margin-top:22px;font-size:14px;color:var(--texto-2); /* 83.ª: más visible (antes 13px, texto-3) */
   animation:mc-sube .5s ease-out 1.5s both;
