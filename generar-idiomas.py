@@ -650,6 +650,56 @@ FR.update({_SOS_T: "SOS au groupe", _SOS_P: "Besoin d'aide ? Gardez le doigt 3 s
 PT.update({_SOS_T: "SOS ao grupo", _SOS_P: "Se precisares de ajuda, mantém o dedo 3 segundos no mapa: todo o teu grupo recebe o aviso com o sítio onde estás, e quem vai a rodar ouve-o no capacete."})
 IT.update({_SOS_T: "SOS al gruppo", _SOS_P: "Se hai bisogno di aiuto, tieni il dito 3 secondi sulla mappa: tutto il gruppo riceve l'avviso con la tua posizione, e chi sta guidando lo sente nel casco."})
 
+# WEB-MARKETING-1 (155.ª, 19-nov-2026): lema GPS, «Pruébala ya», texto de los botones, capturas en la portada, mapas sin conexión
+# y la pregunta de la batería (cifras medidas con `bateria_medida`, 30 días: bolsillo ~5 %/h, pantalla encendida ~20 %/h).
+_WM = {
+ "lema": "La app GPS para moto: planifica, navega y sal en grupo.",
+ "boton": ">Pruébala ya<",
+ "beta": "Estamos rodando la app con casi 170 moteros antes de abrirla al público. Pruébala ya como tester, o déjanos tu correo y te avisamos el día que salga.",
+ "c1t": "Todo a mano al abrir", "c1p": "Tus grupos, tus últimas rutas y lo que publica la comunidad.",
+ "c2p": "Individuales, de grupo y de varios días, con sus etapas.",
+ "c3t": "Gasolineras con precio", "c3p": "Las de tu alrededor, con el precio de hoy y las baratas en verde.",
+ "c4t": "Cada ruta, medida", "c4p": "Kilómetros, tiempo, altitud, curvas contadas y los puertos que cruzas.",
+ "mas": "Ver más pantallas →",
+ "offt": "Mapas sin conexión", "offp": "Descárgate el mapa de tu ruta y navégala aunque en la montaña no haya cobertura.",
+ "batq": "¿Gasta mucha batería?",
+ "batp": "Menos de lo que parece: MOTOCLUBes solo trabaja mientras navegas o grabas. Con el móvil en el bolsillo y la pantalla apagada gasta unos 5 % por hora, y con la pantalla siempre encendida, unos 20 %. En Android, quita el ahorro de batería para MOTOCLUBes: la primera vez que navegas, la app te lleva a los ajustes.",
+}
+_WM_TR = {
+ "fr": {"lema": "L'app GPS pour la moto : préparez, naviguez et roulez en groupe.", "boton": ">Essayez-la<",
+   "beta": "Nous testons l'app sur la route avec près de 170 motards avant de l'ouvrir au public. Essayez-la dès maintenant comme testeur, ou laissez-nous votre e-mail et nous vous préviendrons le jour de sa sortie.",
+   "c1t": "Tout sous la main", "c1p": "Vos groupes, vos derniers itinéraires et ce que publie la communauté.",
+   "c2p": "Solo, en groupe et sur plusieurs jours, avec leurs étapes.",
+   "c3t": "Des stations avec les prix", "c3p": "Celles autour de vous, au prix du jour, les moins chères en vert.",
+   "c4t": "Chaque itinéraire, mesuré", "c4p": "Kilomètres, durée, altitude, virages comptés et les cols que vous franchissez.",
+   "mas": "Voir plus d'écrans →",
+   "offt": "Cartes hors ligne", "offp": "Téléchargez la carte de votre itinéraire et suivez-le même là où il n'y a pas de réseau en montagne.",
+   "batq": "Est-ce qu'elle consomme beaucoup de batterie ?",
+   "batp": "Moins qu'on ne le croit : MOTOCLUBes ne travaille que pendant que vous naviguez ou enregistrez. Avec le téléphone dans la poche et l'écran éteint, elle consomme environ 5 % par heure, et avec l'écran toujours allumé, environ 20 %. Sur Android, désactivez l'économie de batterie pour MOTOCLUBes : la première fois que vous naviguez, l'app vous emmène dans les réglages."},
+ "pt": {"lema": "A app GPS para mota: planeia, navega e sai em grupo.", "boton": ">Experimenta já<",
+   "beta": "Estamos a testar a app na estrada com quase 170 motociclistas antes de a abrir ao público. Experimenta-a já como tester, ou deixa-nos o teu e-mail e avisamos-te no dia em que sair.",
+   "c1t": "Tudo à mão ao abrir", "c1p": "Os teus grupos, as tuas últimas rotas e o que a comunidade publica.",
+   "c2p": "Individuais, de grupo e de vários dias, com as suas etapas.",
+   "c3t": "Bombas com preço", "c3p": "As que tens à volta, com o preço de hoje e as baratas a verde.",
+   "c4t": "Cada rota, medida", "c4p": "Quilómetros, tempo, altitude, curvas contadas e os portos que atravessas.",
+   "mas": "Ver mais ecrãs →",
+   "offt": "Mapas sem ligação", "offp": "Descarrega o mapa da tua rota e navega-a mesmo onde não há rede na montanha.",
+   "batq": "Gasta muita bateria?",
+   "batp": "Menos do que parece: o MOTOCLUBes só trabalha enquanto navegas ou gravas. Com o telemóvel no bolso e o ecrã apagado gasta cerca de 5 % por hora, e com o ecrã sempre ligado, cerca de 20 %. No Android, tira a poupança de bateria ao MOTOCLUBes: na primeira vez que navegas, a app leva-te às definições."},
+ "it": {"lema": "L'app GPS per la moto: pianifica, naviga ed esci in gruppo.", "boton": ">Provala subito<",
+   "beta": "Stiamo provando l'app su strada con quasi 170 motociclisti prima di aprirla al pubblico. Provala subito come tester, oppure lasciaci la tua email e ti avvisiamo il giorno in cui esce.",
+   "c1t": "Tutto a portata di mano appena apri", "c1p": "I tuoi gruppi, i tuoi ultimi percorsi e quello che pubblica la community.",
+   "c2p": "In solitaria, di gruppo e di più giorni, con le loro tappe.",
+   "c3t": "Distributori con il prezzo", "c3p": "Quelli intorno a te, con il prezzo di oggi e i più economici in verde.",
+   "c4t": "Ogni percorso, misurato", "c4p": "Chilometri, tempo, altitudine, curve contate e i passi che attraversi.",
+   "mas": "Vedi altre schermate →",
+   "offt": "Mappe offline", "offp": "Scarica la mappa del tuo percorso e seguilo anche dove in montagna non c'è campo.",
+   "batq": "Consuma molta batteria?",
+   "batp": "Meno di quanto sembri: MOTOCLUBes lavora solo mentre navighi o registri. Con il telefono in tasca e lo schermo spento consuma circa il 5 % all'ora, e con lo schermo sempre acceso circa il 20 %. Su Android, togli il risparmio batteria per MOTOCLUBes: la prima volta che navighi, l'app ti porta alle impostazioni."},
+}
+for _d, _c in ((FR, "fr"), (PT, "pt"), (IT, "it")):
+    _d.update({_WM[k]: v for k, v in _WM_TR[_c].items()})
+
 def generar(destino, dic, codigo, locale):
     s = io.open('index.html', encoding='utf8').read()
     # Las cadenas largas primero: si no, una corta rompe una larga que la contiene.

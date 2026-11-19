@@ -6,19 +6,31 @@
 <title>Prueba MOTOCLUBes</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0E0E0E">
-<meta property="og:title" content="Vente a probar MOTOCLUBes">
-<meta property="og:description" content="La app para salir en moto en grupo: todos en el mapa y hablando por el intercom del casco. Apúntate y te mandamos la invitación.">
-<meta property="og:image" content="https://www.motoclubes.es/img/helmet-256.png">
+<!-- WEB-MARKETING-1 (155.ª, 19-nov-2026): la vista previa al compartir el enlace (Instagram, LinkedIn, WhatsApp), con su imagen grande. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MOTOCLUBes">
+<meta property="og:url" content="https://www.motoclubes.es/probar/">
+<meta property="og:title" content="Vente a probar MOTOCLUBes, la app GPS para moto">
+<meta property="og:description" content="Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.">
+<meta property="og:image" content="https://www.motoclubes.es/img/og-probar.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Vente a probar MOTOCLUBes, la app GPS para moto">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vente a probar MOTOCLUBes, la app GPS para moto">
+<meta name="twitter:description" content="Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.">
+<meta name="twitter:image" content="https://www.motoclubes.es/img/og-probar.png">
 <link rel="icon" type="image/png" href="../img/helmet-256.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/mc.css?v=15oct1">
+<link rel="stylesheet" href="../assets/mc.css?v=19nov1">
 <!-- TESTERS-COMPANEROS-1 (109.ª, 15-oct-2026). Página de alta de los compañeros de un tester.
      · ?de=<nickname>&compartir=1 → la abre el tester desde la carta de bienvenida: pantalla «Pásaselo a tu grupo»
        (WhatsApp, copiar, otras apps). El enlace que comparte NO lleva compartir=1.
      · ?de=<nickname>            → la abre el compañero: «<nickname> te invita…» y el formulario.
      El alta va a web-aviso (la caja «Avísame») con probar=true, la plataforma, origen «probar-<nickname>» y f:'probar'
      (correo de confirmar con el texto de tester; al confirmar, aviso a Mario para darle de alta).
-     noindex: no la enlaza la web; solo llega desde la carta. -->
+     noindex. Se llega desde la carta, y desde el 19-nov-2026 (WEB-MARKETING-1) también desde Instagram, LinkedIn y la portada
+     (?o=web). -->
 <style>
   .pr { max-width: 480px; margin: 28px auto 48px; padding: 0 18px; }
   .pr-caja { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 24px; padding: 28px 22px; }
@@ -26,6 +38,7 @@
   .pr h1 { font-size: 25px; line-height: 1.25; text-align: center; margin-bottom: 10px; letter-spacing: -.3px; }
   .pr h1 b { color: var(--naranja); }
   .pr .sub { color: var(--texto-2); font-size: 15.5px; text-align: center; margin-bottom: 22px; }
+  .pr .sub .pr-cuantos { display: inline-block; margin-top: 8px; color: var(--texto); font-weight: 700; } /* WEB-MARKETING-1 */
   .pr-puntos { list-style: none; margin: 0 0 22px; display: grid; gap: 10px; }
   .pr-puntos li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
   .pr-puntos li span { font-size: 20px; line-height: 1.2; flex: none; }
@@ -93,11 +106,12 @@
   <section class="pr-caja" id="vista-alta" hidden>
     <img class="pr-casco" src="../img/helmet-256.png" alt="">
     <h1 id="titulo-alta">Vente a probar <b>MOTOCLUBes</b></h1>
-    <p class="sub">La app para moteros, hecha por moteros. Pruébala antes de que salga en las tiendas.</p>
+    <p class="sub">La app para moteros, hecha por moteros. Pruébala antes de que salga en las tiendas.<br><b class="pr-cuantos">Ya somos casi 170 moteros probándola en iPhone y Android.</b></p>
     <ul class="pr-puntos">
       <li><span>🗺️</span><div>Planifica tus rutas con curvas, puertos y gasolineras con el precio de hoy.</div></li>
-      <li><span>🏍️</span><div>Sal en grupo y ve a todos en el mapa, cada uno con su casco de color.</div></li>
-      <li><span>🎙️</span><div>Habla con tu grupo por el intercomunicador del casco con la radio del grupo.</div></li>
+      <li><span>🧭</span><div>Navega con voz por el casco, en la pantalla de la moto con CarPlay y Android Auto, y sin cobertura con el mapa descargado.</div></li>
+      <li><span>🏍️</span><div>Sal en grupo: todos en el mapa y hablando por la radio del grupo con el intercomunicador que ya llevas.</div></li>
+      <li><span>🆘</span><div>SOS al grupo: 3 segundos con el dedo en el mapa y todo tu grupo sabe dónde estás.</div></li>
     </ul>
 
     <form id="form-alta" novalidate>

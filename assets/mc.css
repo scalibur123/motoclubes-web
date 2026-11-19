@@ -386,3 +386,12 @@ h1,h2,h3,.ruta-cab h1{overflow-wrap:break-word}
 .avisame-msg{margin-top:14px;font-size:14px;min-height:1em}
 .avisame-msg.ok{color:#7BD88F}.avisame-msg.error{color:#FF8A7A}
 .aviso-beta a{color:var(--naranja);font-weight:700;white-space:nowrap}
+
+/* WEB-MARKETING-1 (155.ª, 19-nov-2026): cuatro capturas en la portada, debajo de «Qué es». En el ordenador, las cuatro en fila;
+   en el móvil, una fila que se desliza de lado (con la siguiente asomando), para no apilar cuatro pantallas altas. */
+.tira-portada{grid-template-columns:repeat(4,1fr);margin-top:30px}
+@media (max-width:900px){
+  .tira-portada{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding-bottom:8px;
+    margin-left:-22px;margin-right:-22px;padding-left:22px;padding-right:22px;scroll-padding-inline:22px;-webkit-overflow-scrolling:touch}
+  .tira-portada .captura{flex:0 0 72%;scroll-snap-align:start}
+}
