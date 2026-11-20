@@ -410,7 +410,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <div class="opc" id="at-a"></div>
     <div class="sub" id="at-cuantos"></div>
     <label>TÍTULO<input type="text" id="at-titulo" maxlength="80" placeholder="Hasta 80 letras"></label>
-    <label>TEXTO<textarea id="at-texto" rows="5" maxlength="1200" placeholder="Hasta 1.200 letras"></textarea></label>
+    <label>TEXTO<textarea id="at-texto" rows="5" maxlength="1000" placeholder="Hasta 1.000 letras"></textarea></label>
     <div class="sub">A un aviso no se puede contestar: acaba diciéndoles cómo escribiros (p. ej. desde «Te escuchamos» en Perfil).</div>
     <div id="at-aviso"></div>
     <div id="at-trad" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -751,14 +751,14 @@ let TESTERS = [], QUITADOS = [], ULTIMO = [] // TESTERS-LIMPIEZA-1
 // 2) «Ver cómo queda» trae la traducción a los 6 idiomas; 3) se manda ESO (si cambias el texto, hay que volver a verlo).
 const AT_IDI = { es: 'Castellano', ca: 'Catalán', en: 'Inglés', fr: 'Francés', pt: 'Portugués', it: 'Italiano' }
 const AT_A = { todos: 'Todos', ios: 'Solo iPhone', android: 'Solo Android', yo: 'Prueba a ti' }
-let AT = { a: 'todos', n: null, trad: null, visto: '' }
+let AT = { a: 'todos', n: null, trad: null, visto: '', enviando: false }
 const atClave = () => $('at-titulo').value.trim() + '\n' + $('at-texto').value.trim()
 function atBotones() {
-  const listo = !!AT.trad && AT.visto === atClave(), c = AT.n && AT.n[AT.a]
+  const listo = !!AT.trad && AT.visto === atClave() && !AT.enviando, c = AT.n && AT.n[AT.a] // revisión 1: mientras sale, nada se enciende
   $('at-prueba').disabled = !listo
   $('at-mandar').disabled = !listo || !c || !c.riders
   $('at-mandar').textContent = c ? `Mandar a ${c.riders} rider${c.riders === 1 ? '' : 's'}` : 'Mandar'
-  if (AT.trad && !listo) $('at-trad').innerHTML = '<div class="aviso mal">Has cambiado el texto: pulsa otra vez «Ver cómo queda en los 6 idiomas».</div>'
+  if (AT.trad && !AT.enviando && AT.visto !== atClave()) $('at-trad').innerHTML = '<div class="aviso mal">Has cambiado el texto: pulsa otra vez «Ver cómo queda en los 6 idiomas».</div>'
 }
 function atPintarA() {
   const n = AT.n, b = (k) => `<button type="button" data-ata="${k}" class="${AT.a === k ? 'sel' : ''}">${AT_A[k]}${n ? ' · ' + n[k].riders : ''}</button>`
@@ -781,7 +781,7 @@ async function atContar() {
   AT.n = { todos: r.todos, ios: r.ios, android: r.android }; atPintarA(); atLista(r.avisos || [])
 }
 async function abrirAvisoTodos() {
-  AT = { a: 'todos', n: null, trad: null, visto: '' }
+  AT = { a: 'todos', n: null, trad: null, visto: '', enviando: false }
   $('at-titulo').value = ''; $('at-texto').value = ''; $('at-trad').innerHTML = ''; $('at-aviso').innerHTML = ''
   $('at-cerrar').textContent = 'Cancelar'
   $('at-lista').innerHTML = '<div class="sub">Cargando los avisos mandados…</div>'
@@ -790,19 +790,20 @@ async function abrirAvisoTodos() {
 }
 async function atMandar(prueba) {
   const btn = prueba ? $('at-prueba') : $('at-mandar'), antes = btn.textContent
-  $('at-prueba').disabled = $('at-mandar').disabled = $('at-ver').disabled = true; btn.textContent = 'Mandando…'; $('at-aviso').innerHTML = ''
+  AT.enviando = true; $('at-prueba').disabled = $('at-mandar').disabled = $('at-ver').disabled = true; btn.textContent = 'Mandando…'; $('at-aviso').innerHTML = ''
   try {
     let r
     try { r = await invitar({ modo: 'aviso_todos', paso: 'mandar', a: AT.a, trad: AT.trad, prueba }) } catch (e) { r = { ok: false, error: e.message } }
-    if (r.avisados && !prueba) { AT.trad = null; AT.visto = ''; $('at-trad').innerHTML = ''; $('at-cerrar').textContent = 'Salir' } // ya salió: no se puede mandar dos veces
+    if (r.avisados && !prueba) { AT.trad = null; AT.visto = ''; $('at-trad').innerHTML = ''; $('at-titulo').value = ''; $('at-texto').value = ''; $('at-cerrar').textContent = 'Salir' } // ya salió: no se puede mandar dos veces (y como el teléfono, se vacía)
     $('at-aviso').innerHTML = r.ok
       ? `<div class="aviso ok">${prueba ? '✅ Te lo hemos mandado a ti: mira el móvil y la campanita.' : `✅ Mandado a ${r.avisados} riders (${r.con_push} con las notificaciones puestas).`}</div>`
       : `<div class="aviso mal">${r.avisados ? `Ha salido a ${r.avisados} de ${r.riders}. ` : 'No ha salido. '}${esc(r.error || '')}</div>`
+    if (r.sin_apuntar) $('at-aviso').innerHTML += `<div class="aviso mal" style="margin-top:8px">A ${r.sin_apuntar} les ha llegado pero no ha quedado apuntado en su ficha ni en la lista. Díselo a Claude.</div>` // revisión 3
     try { await atContar() } catch (e) { /* la lista se queda como estaba */ }
-  } finally { btn.textContent = antes; $('at-ver').disabled = false; atBotones() }
+  } finally { AT.enviando = false; btn.textContent = antes; $('at-ver').disabled = false; atBotones() }
 }
 $('r-aviso-todos').onclick = () => void abrirAvisoTodos()
-$('at-a').onclick = (ev) => { const b = ev.target.closest('[data-ata]'); if (!b) return; AT.a = b.dataset.ata; atPintarA() }
+$('at-a').onclick = (ev) => { const b = ev.target.closest('[data-ata]'); if (!b || AT.enviando) return; AT.a = b.dataset.ata; atPintarA() }
 $('at-titulo').oninput = $('at-texto').oninput = atBotones
 $('at-cerrar').onclick = () => $('at-capa').classList.add('oculto')
 $('at-prueba').onclick = () => void atMandar(true)
@@ -818,6 +819,7 @@ $('at-ver').onclick = async () => {
     AT.trad = r.trad; AT.visto = titulo + '\n' + texto
     $('at-trad').innerHTML = Object.keys(AT_IDI).map(l => `<div class="card" style="padding:12px 14px;box-shadow:none;border:1px solid var(--line)"><div class="sub"><b>${AT_IDI[l]}</b></div>
       <div style="font-weight:700;margin-top:4px">${esc(r.trad[l].titulo)}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(r.trad[l].texto)}</div></div>`).join('')
+      + ((r.cortados || []).length ? `<div class="aviso mal">En ${r.cortados.map(l => AT_IDI[l] || l).join(', ')} es demasiado largo y en la campanita se cortaría al final. Acórtalo un poco y vuelve a pulsar «Ver cómo queda».</div>` : '') // revisión 5
   } catch (e) { $('at-aviso').innerHTML = `<div class="aviso mal">${esc(e.message)}</div>` }
   finally { $('at-ver').disabled = false; $('at-ver').textContent = 'Ver cómo queda en los 6 idiomas'; atBotones() }
 }
