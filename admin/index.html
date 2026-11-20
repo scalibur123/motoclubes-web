@@ -253,7 +253,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="cifras" id="r-cifras" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div><!-- RIDERS-RESUMEN-1 -->
   <div class="sub" id="r-cifras-nota" style="font-size:12px"></div>
   <div id="r-aviso"></div>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><input type="text" id="r-buscar" placeholder="🔍 Buscar rider o correo" style="flex:1;min-width:220px;max-width:340px"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div></div><!-- PERIODO-1 · QUIEN-INVITA-1 · RIDERS-BUSCAR-1 -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><input type="text" id="r-buscar" placeholder="🔍 Buscar rider o correo" style="flex:1;min-width:220px;max-width:340px"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div><button type="button" class="btn" id="r-aviso-todos" style="padding:9px 18px">📣 Aviso a todos</button></div><!-- PERIODO-1 · QUIEN-INVITA-1 · RIDERS-BUSCAR-1 · AVISO-TODOS-ADMIN-1 -->
   <div class="card tabla oculto" id="r-inv"></div>
   <div class="card tabla" id="r-tabla"><table><thead id="r-cab"><tr><th data-k="rider">Rider</th><th data-k="email">Correo</th><th data-k="movil">Móvil</th><th data-k="version">Versión</th><th data-k="abrio">Abrió la app</th><th data-k="envio">Último envío</th><th data-k="alta">Alta</th><th data-k="origen">De dónde</th><th></th></tr></thead><tbody id="r-filas"></tbody></table></div>
 </main>
@@ -399,6 +399,28 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label class="check"><input type="checkbox" id="push-correo"> Mandarlo también por correo</label><!-- AVISO-CORREO-1 · AVISO-CORREO-2 (135.ª, Mario 20:35): desmarcada de serie; el correo solo si Mario la marca -->
     <div id="push-aviso"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn2" id="push-cancelar">Cancelar</button><button class="btn" id="push-enviar">Mandar aviso</button></div>
+  </div>
+</div>
+<!-- AVISO-TODOS-ADMIN-1 (157.ª, 20-nov · Mario 19-nov 20:33-20:34, sí 20-nov 09:19): un aviso a todos los móviles, en el idioma
+     de cada rider, a todos / solo iPhone / solo Android, y en la campanita. Lo mismo en el teléfono (Panel de administrador, A80). -->
+<div id="at-capa" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px">
+  <div class="card" style="max-width:660px;width:100%;max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:12px">
+    <div style="font-weight:800;font-size:18px">📣 Aviso a todos los móviles</div>
+    <div class="sub">A cada rider le llega como notificación al móvil, en el idioma de su app, y se le queda en la campanita. Escríbelo en castellano: la traducción la ves antes de mandarlo.</div>
+    <div class="opc" id="at-a"></div>
+    <div class="sub" id="at-cuantos"></div>
+    <label>TÍTULO<input type="text" id="at-titulo" maxlength="80" placeholder="Hasta 80 letras"></label>
+    <label>TEXTO<textarea id="at-texto" rows="5" maxlength="1200" placeholder="Hasta 1.200 letras"></textarea></label>
+    <div class="sub">A un aviso no se puede contestar: acaba diciéndoles cómo escribiros (p. ej. desde «Te escuchamos» en Perfil).</div>
+    <div id="at-aviso"></div>
+    <div id="at-trad" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn2" id="at-cerrar">Cancelar</button>
+      <button class="btn2" id="at-ver">Ver cómo queda en los 6 idiomas</button>
+      <button class="btn2" id="at-prueba" disabled>Mandármelo a mí primero</button>
+      <button class="btn" id="at-mandar" disabled>Mandar</button>
+    </div>
+    <div id="at-lista"></div>
   </div>
 </div>
 <!-- INCIDENCIA-CONTESTAR-1 (17-oct, 113.ª · Mario: «desde aquí no le puedo contestar, ¿no?»): lo que escribes le llega tal cual,
@@ -724,6 +746,81 @@ async function invitar(cuerpo) {
   return data
 }
 let TESTERS = [], QUITADOS = [], ULTIMO = [] // TESTERS-LIMPIEZA-1
+// ── AVISO-TODOS-ADMIN-1 (157.ª, 20-nov) · el aviso a todos los móviles (web-invitar-testers, {modo:'aviso_todos'}) ──
+// 1) al abrir, a cuántos llega (Todos / Solo iPhone / Solo Android, a la vista antes de tocar nada) y los avisos ya mandados;
+// 2) «Ver cómo queda» trae la traducción a los 6 idiomas; 3) se manda ESO (si cambias el texto, hay que volver a verlo).
+const AT_IDI = { es: 'Castellano', ca: 'Catalán', en: 'Inglés', fr: 'Francés', pt: 'Portugués', it: 'Italiano' }
+const AT_A = { todos: 'Todos', ios: 'Solo iPhone', android: 'Solo Android', yo: 'Prueba a ti' }
+let AT = { a: 'todos', n: null, trad: null, visto: '' }
+const atClave = () => $('at-titulo').value.trim() + '\n' + $('at-texto').value.trim()
+function atBotones() {
+  const listo = !!AT.trad && AT.visto === atClave(), c = AT.n && AT.n[AT.a]
+  $('at-prueba').disabled = !listo
+  $('at-mandar').disabled = !listo || !c || !c.riders
+  $('at-mandar').textContent = c ? `Mandar a ${c.riders} rider${c.riders === 1 ? '' : 's'}` : 'Mandar'
+  if (AT.trad && !listo) $('at-trad').innerHTML = '<div class="aviso mal">Has cambiado el texto: pulsa otra vez «Ver cómo queda en los 6 idiomas».</div>'
+}
+function atPintarA() {
+  const n = AT.n, b = (k) => `<button type="button" data-ata="${k}" class="${AT.a === k ? 'sel' : ''}">${AT_A[k]}${n ? ' · ' + n[k].riders : ''}</button>`
+  $('at-a').innerHTML = b('todos') + b('ios') + b('android')
+  const c = n && n[AT.a]
+  $('at-cuantos').innerHTML = !n ? 'Contando a los riders…' : !c.riders ? 'No hay ningún rider ahí.'
+    : `Le llega a <b>${c.riders}</b>: ${c.con_push} con las notificaciones puestas; a los demás se les queda en la campanita. `
+      + Object.entries(c.idiomas).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${AT_IDI[k] || k} ${v}`).join(' · ')
+  atBotones()
+}
+function atLista(av) {
+  $('at-lista').innerHTML = !av.length ? '<div class="sub">Aún no has mandado ningún aviso a todos.</div>'
+    : `<div style="font-weight:800;margin-top:6px">Avisos mandados</div><div class="tabla"><table><thead><tr><th>Cuándo</th><th>Título</th><th>A quién</th><th>Riders</th><th>Móviles</th></tr></thead><tbody>`
+      + av.map(x => `<tr><td class="sub" style="white-space:nowrap">${esc(new Date(x.creado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</td><td>${esc(x.titulo)}</td><td>${x.prueba ? 'Prueba a ti' : esc(AT_A[x.a] || x.a)}</td><td>${x.riders}</td><td>📱 ${x.moviles}</td></tr>`).join('')
+      + '</tbody></table></div>'
+}
+async function atContar() {
+  const r = await invitar({ modo: 'aviso_todos', paso: 'cuantos' })
+  if (!r.ok) throw new Error(r.error || 'no se ha podido contar')
+  AT.n = { todos: r.todos, ios: r.ios, android: r.android }; atPintarA(); atLista(r.avisos || [])
+}
+async function abrirAvisoTodos() {
+  AT = { a: 'todos', n: null, trad: null, visto: '' }
+  $('at-titulo').value = ''; $('at-texto').value = ''; $('at-trad').innerHTML = ''; $('at-aviso').innerHTML = ''
+  $('at-cerrar').textContent = 'Cancelar'
+  $('at-lista').innerHTML = '<div class="sub">Cargando los avisos mandados…</div>'
+  $('at-capa').classList.remove('oculto'); atPintarA(); $('at-titulo').focus()
+  try { await atContar() } catch (e) { $('at-cuantos').innerHTML = ''; $('at-lista').innerHTML = ''; $('at-aviso').innerHTML = `<div class="aviso mal">No se ha podido contar a los riders: ${esc(e.message)}</div>` }
+}
+async function atMandar(prueba) {
+  const btn = prueba ? $('at-prueba') : $('at-mandar'), antes = btn.textContent
+  $('at-prueba').disabled = $('at-mandar').disabled = $('at-ver').disabled = true; btn.textContent = 'Mandando…'; $('at-aviso').innerHTML = ''
+  try {
+    let r
+    try { r = await invitar({ modo: 'aviso_todos', paso: 'mandar', a: AT.a, trad: AT.trad, prueba }) } catch (e) { r = { ok: false, error: e.message } }
+    if (r.avisados && !prueba) { AT.trad = null; AT.visto = ''; $('at-trad').innerHTML = ''; $('at-cerrar').textContent = 'Salir' } // ya salió: no se puede mandar dos veces
+    $('at-aviso').innerHTML = r.ok
+      ? `<div class="aviso ok">${prueba ? '✅ Te lo hemos mandado a ti: mira el móvil y la campanita.' : `✅ Mandado a ${r.avisados} riders (${r.con_push} con las notificaciones puestas).`}</div>`
+      : `<div class="aviso mal">${r.avisados ? `Ha salido a ${r.avisados} de ${r.riders}. ` : 'No ha salido. '}${esc(r.error || '')}</div>`
+    try { await atContar() } catch (e) { /* la lista se queda como estaba */ }
+  } finally { btn.textContent = antes; $('at-ver').disabled = false; atBotones() }
+}
+$('r-aviso-todos').onclick = () => void abrirAvisoTodos()
+$('at-a').onclick = (ev) => { const b = ev.target.closest('[data-ata]'); if (!b) return; AT.a = b.dataset.ata; atPintarA() }
+$('at-titulo').oninput = $('at-texto').oninput = atBotones
+$('at-cerrar').onclick = () => $('at-capa').classList.add('oculto')
+$('at-prueba').onclick = () => void atMandar(true)
+$('at-mandar').onclick = () => void atMandar(false)
+$('at-ver').onclick = async () => {
+  const titulo = $('at-titulo').value.trim(), texto = $('at-texto').value.trim()
+  if (!titulo || !texto) { $('at-aviso').innerHTML = '<div class="aviso mal">Pon el título y el texto.</div>'; return }
+  $('at-ver').disabled = true; $('at-ver').textContent = 'Traduciendo… (unos segundos)'; $('at-aviso').innerHTML = ''; $('at-trad').innerHTML = ''
+  AT.trad = null
+  try {
+    const r = await invitar({ modo: 'aviso_todos', paso: 'ver', titulo, texto })
+    if (!r.ok) throw new Error(r.error || 'no se ha podido traducir')
+    AT.trad = r.trad; AT.visto = titulo + '\n' + texto
+    $('at-trad').innerHTML = Object.keys(AT_IDI).map(l => `<div class="card" style="padding:12px 14px;box-shadow:none;border:1px solid var(--line)"><div class="sub"><b>${AT_IDI[l]}</b></div>
+      <div style="font-weight:700;margin-top:4px">${esc(r.trad[l].titulo)}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(r.trad[l].texto)}</div></div>`).join('')
+  } catch (e) { $('at-aviso').innerHTML = `<div class="aviso mal">${esc(e.message)}</div>` }
+  finally { $('at-ver').disabled = false; $('at-ver').textContent = 'Ver cómo queda en los 6 idiomas'; atBotones() }
+}
 // ── TESTERS-AVISOS-1 (17-oct-2026, 112.ª) · Mario: «me cuesta bastante seguirlo […] cuántas solicitudes hay sin haber hecho nada,
 // cuántas ya están tramitadas […] y de esos cuántos han entrado». Cuatro números que se pulsan (Te toca a ti · Dentro · A medias ·
 // Sin pulsar), la fase la da la función (faseTester, la misma regla que el envío automático), «Recordar» y «Mandar ayuda» a uno o
@@ -2374,7 +2471,15 @@ async function cargarHecho() {
   }
   if (n !== hePet) return
   const L = [], quien = (uid) => uid === foOficial ? 'como MOTOCLUBes' : 'con tu cuenta'
+  const atN = {} // AVISO-TODOS-ADMIN-1: el aviso a todos son ~110 filas (una por rider); en Hecho, una línea
+  for (const x of env.envios || []) if (x.masivo) { const g = atN[x.masivo] || (atN[x.masivo] = { n: 0, push: 0 }); g.n++; g.push += x.push || 0 }
   for (const x of env.envios || []) {
+    if (x.masivo) {
+      const g = atN[x.masivo]; if (g.puesto) continue; g.puesto = true
+      L.push({ en: x.creado, cat: heCatEnvio(x, false), que: x.a === 'yo' ? 'Aviso a todos (prueba a ti)' : '📣 Aviso a todos · ' + (AT_A[x.a] || 'Todos'), aQuien: x.a === 'yo' ? 'Tú' : g.n + ' riders',
+        detalle: '«' + (x.titulo_es || x.titulo || '') + '»', res: `<span class="chip verde">📱 ${g.push}</span>`, abrir: { t: 'aviso_todos' } })
+      continue
+    }
     const neg = x.destino === 'negocio', fuera = x.fuera === 'true'
     const res = fuera ? '<span class="chip gris">Apuntado (lo mandaste por fuera)</span>'
       : [x.push ? `<span class="chip verde">📱 ${x.push}</span>` : '', x.correo === 'enviado' ? '<span class="chip verde">✅ Correo enviado</span>' : x.correo === 'fallo' ? '<span class="chip rojo">No salió</span>' : x.correo === 'baja' ? '<span class="chip rojo">Se dio de baja</span>' : ''].filter(Boolean).join(' ') || '<span class="sub">—</span>'
@@ -2423,6 +2528,7 @@ $('h-filas').onclick = (ev) => {
   else if (a.t === 'con') { const c = CONTACTOS.find(x => x.id === a.id); verPestana('con'); if (c) abrirContacto(c) }
   else if (a.t === 'hilo') { verPestana('for'); foAviso(''); abrirHilo(a.id); void cargarForo() }
   else if (a.t === 'altas') $('p-altas').click()
+  else if (a.t === 'aviso_todos') { verPestana('rid'); void abrirAvisoTodos() } // AVISO-TODOS-ADMIN-1
 }
 $('p-hec').onclick = () => { verPestana('hec'); cargarHecho() }
 $('h-dias').onchange = () => cargarHecho()
@@ -2665,7 +2771,7 @@ const ocupado = () => {
   const a = document.activeElement
   if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true
   if (enCamino > 0 || escrito()) return true
-  return !$('push-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('co-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
+  return !$('push-capa').classList.contains('oculto') || !$('at-capa').classList.contains('oculto') || !$('res-capa').classList.contains('oculto') || !$('mail-capa').classList.contains('oculto') || !$('ver-capa').classList.contains('oculto') || !$('co-capa').classList.contains('oculto') || !$('form').classList.contains('oculto') || !$('c-ficha').classList.contains('oculto')
 }
 // ── PANEL-BUSCAR-1 (31-oct-2026, 133.ª) · Mario (30-oct): «el panel cuesta» → un buscador arriba: escribes parte de un apodo, un
 // correo, un negocio o un contacto y te lleva a su ficha, esté en la pestaña que esté. Busca en lo que el panel ya tiene cargado
@@ -2689,7 +2795,7 @@ function gResultados(texto) {
 // Lo mismo que mira la recarga sola (`ocupado`), sin contar los buscadores: una ventana abierta o algo escrito sin guardar.
 // Revisión: solo cuentan los campos que se VEN (el correo y la clave del inicio, o una pantalla ya cerrada, no bloquean el buscador).
 function gOcupado() {
-  const capa = ['push-capa', 'res-capa', 'mail-capa', 'ver-capa', 'co-capa', 'form'].some(id => $(id) && !$(id).classList.contains('oculto'))
+  const capa = ['push-capa', 'at-capa', 'res-capa', 'mail-capa', 'ver-capa', 'co-capa', 'form'].some(id => $(id) && !$(id).classList.contains('oculto'))
   const tecleado = [...document.querySelectorAll('[data-tecleado]')].some(e => !/buscar$/.test(e.id || '') && !/^l-/.test(e.id || '') && (e.offsetParent !== null || /^f2-/.test(e.id || '')) && !e.disabled /* la ficha de un negocio escrita y sin guardar cuenta aunque te hayas ido a otra pestaña: abrir otra la machacaría */ && e.value.trim() !== '' && e.value !== e.defaultValue)
   return capa || tecleado
 }
