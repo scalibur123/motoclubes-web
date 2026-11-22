@@ -788,11 +788,15 @@ function pintar(r) {
           '<small class="ligero" hidden>En este ordenador va en modo ligero, para no forzar la tarjeta gráfica: tarda más.</small></span></button>' +
       '</div>' +
       '<label class="elige-puertos" hidden><input type="checkbox" id="paraPuertos" checked> 🏔️ Parar en cada puerto</label>' + // VIDEO-PUERTOS-ELEGIR-1
+      // 🆕 VIDEO-FOTOS-ELEGIR-1 (22-nov, Mario: «debes poder elegir cuando publicas el vídeo si quieres que salgan las fotos o no»):
+      // la casilla solo si la ruta tiene fotos; quitada, el vídeo sale sin ellas (lo mismo que «&fotos=0» en el enlace, que sigue valiendo).
+      '<label class="elige-puertos elige-fotos" hidden><input type="checkbox" id="conFotos" checked> 📷 Con las fotos de la salida</label>' +
       '</div>';
     document.body.appendChild(capa);
     capa.querySelector(".cerrar-x").addEventListener("click", function () { capa.remove(); });
     // VIDEO-PUERTOS-ELEGIR-1: la casilla solo si la ruta tiene puertos
-    puertosListos.then(function (ps) { var lb = capa.querySelector(".elige-puertos"); if (lb && ps && ps.length) lb.hidden = false; });
+    puertosListos.then(function (ps) { var lb = capa.querySelector(".elige-puertos:not(.elige-fotos)"); if (lb && ps && ps.length) lb.hidden = false; });
+    if (Array.isArray(r.fotos) && r.fotos.length > 0 && !/[?&]fotos=0(&|$)/.test(location.search)) capa.querySelector(".elige-fotos").hidden = false; // VIDEO-FOTOS-ELEGIR-1
     var ritmo = "despacio"; // VIDEO-PUBLICAR-RITMO-1: por defecto, despacio
     Array.prototype.forEach.call(capa.querySelectorAll(".elige-ritmo button"), function (b) {
       b.addEventListener("click", function () {
@@ -805,7 +809,8 @@ function pintar(r) {
     Array.prototype.forEach.call(capa.querySelectorAll(".elige-video button"), function (b) {
       b.addEventListener("click", function () {
         var cb = document.getElementById("paraPuertos"), parar = cb ? cb.checked : true; // VIDEO-PUERTOS-ELEGIR-1
-        capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1", parar, ritmo);
+        var cf = document.getElementById("conFotos"), sinFotos = !!(cf && !cf.closest("label").hidden && !cf.checked); // VIDEO-FOTOS-ELEGIR-1
+        capa.remove(); arrancarVideo(b.getAttribute("data-tresd") === "1", parar, ritmo, sinFotos);
       });
     });
     // VIDEO-3D-LIGERO-1: si la gráfica es floja (o no se sabe), se avisa ANTES de elegir
@@ -813,7 +818,7 @@ function pintar(r) {
       if (window.Video3D && Video3D.graficaFloja && Video3D.graficaFloja()) { var l = capa.querySelector(".ligero"); if (l) l.hidden = false; }
     }).catch(function () {});
   }
-  function arrancarVideo(tresD, pararPuertos, ritmo) {
+  function arrancarVideo(tresD, pararPuertos, ritmo, sinFotos) {
     // VIDEO-PUBLICAR-RITMO-1: sin elegir (enlace con «&video=3d» o «&corto=1»), el del enlace («&ritmo=normal») o despacio
     if (!ritmo) ritmo = (location.search.match(/[?&]ritmo=(despacio|normal|rapido)(?:&|$)/) || [])[1] || "despacio";
     var capa = document.createElement("div");
@@ -877,6 +882,7 @@ function pintar(r) {
     document.getElementById("xVideo").addEventListener("click", cerrar);
     puertosListos.then(function (ps) {
       return hacerVideoRuta(r, pts, paradas, ps, {
+        sinFotos: !!sinFotos, // VIDEO-FOTOS-ELEGIR-1
         cargando: function (n, de) { ponerFase("cargar"); avance(15 * n / Math.max(1, de), "Preparando"); },
         preparando: function (n, de) { con3D = true; ponerFase("preparar"); avance(15 + 30 * n / Math.max(1, de), "Cargando el mapa en 3D"); }, // VIDEO-3D-ESPERA-1
         lienzo: function (cv) { cv.classList.add("detras"); vista.appendChild(cv); }, // VIDEO-ESPERA-1: debajo de la espera, no se ve
@@ -970,7 +976,7 @@ function pintar(r) {
       acc.innerHTML = (tresD ? '<a class="boton boton-principal" href="#" id="enPlano">🗺️ Hacerlo en plano</a>' : "") + // VIDEO-3D-LIGERO-1
         '<a class="boton boton-suave" href="#" id="cerrarVideo">Cerrar</a>';
       var ep = document.getElementById("enPlano");
-      if (ep) ep.addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); arrancarVideo(false, pararPuertos, ritmo); });
+      if (ep) ep.addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); arrancarVideo(false, pararPuertos, ritmo, sinFotos); }); // VIDEO-FOTOS-ELEGIR-1: también sin fotos
       document.getElementById("cerrarVideo").addEventListener("click", function (ev) { ev.preventDefault(); cerrar(); });
     });
   }
@@ -1097,7 +1103,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=38" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=39" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>
