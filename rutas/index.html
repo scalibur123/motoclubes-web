@@ -109,6 +109,7 @@
   /* VIDEO-PUERTOS-ELEGIR-1 (132.ª): la casilla de parar en los puertos, a la vista antes de elegir */
   .elige-puertos{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;font-size:15px;color:var(--texto);cursor:pointer}
   .elige-puertos input{width:22px;height:22px;accent-color:#FF7A1A}
+  .elige-puertos[hidden]{display:none} /* VIDEO-FOTOS-ELEGIR-1 (revisión): con «display:flex» el «hidden» no escondía la casilla (tampoco la de los puertos) */
   /* VIDEO-PUBLICAR-RITMO-1: el ritmo del vídeo, a la vista antes de elegir plano o 3D */
   .elige-ritmo{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:12px 0 4px;font-size:15px;color:var(--texto)}
   .elige-ritmo button{border:1px solid var(--borde);background:transparent;color:var(--texto);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
