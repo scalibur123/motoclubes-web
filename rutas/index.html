@@ -630,6 +630,18 @@ function dentroDeApp() {
   return /Instagram/i.test(n) ? "Instagram" : /^FB/i.test(n) ? "Facebook" : /Barcelona/i.test(n) ? "Threads"
        : /TikTok|musical_ly/i.test(n) ? "TikTok" : /LinkedIn/i.test(n) ? "LinkedIn" : "Esta app";
 }
+/* 🆕 WEB-ABRIR-APP-2 (23-nov-2026, Albert desde Instagram: «no me deja abrir la ruta»). Quien no tiene la app va a /probar/ (la
+   página de apuntarse, que se pone sola en el idioma de su móvil: PROBAR-IDIOMAS-1), con el origen para contarlo: el ?o= que
+   traiga esta página o, si se abrió dentro de una app, esa app (instagram, facebook…); si no, «rutas». */
+function urlProbar() {
+  var o = "";
+  try { o = (new URLSearchParams(location.search).get("o") || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30); } catch (e) {}
+  if (!o) {
+    var app = dentroDeApp();
+    o = app && app !== "Esta app" ? app.toLowerCase() : "rutas";
+  }
+  return "/probar/?o=" + encodeURIComponent(o);
+}
 function enlaceNavegador() {
   var ua = navigator.userAgent || "", u = location.href;
   if (/iPhone|iPad|iPod/i.test(ua)) return "x-safari-" + u;                       // https://… → x-safari-https://…
@@ -723,7 +735,7 @@ function pintar(r) {
     '<div class="acciones" style="justify-content:flex-start;margin-top:30px">' +
       (pts.length ? '<a class="boton boton-suave" id="bajar" href="#">⬇ Descargar GPX</a>' : "") +
       '<a class="boton boton-suave" id="abrirApp" href="' + (esMovil() ? "motoclubes://ruta/" + esc(r.id) : "#") + '">Abrir en la app</a>' + // WEB-ABRIR-APP-1
-      '<a class="boton boton-suave" href="../#descarga">No tengo la app</a>' +
+      '<a class="boton boton-suave" id="noTengoApp" href="' + esc(urlProbar()) + '">No tengo la app</a>' + // WEB-ABRIR-APP-2: a /probar/
       '<a class="boton boton-suave" id="hacerVideo" href="#">🎬 Vídeo para publicar</a>' + // VIDEO-RUTA-1 · a la vista de todos desde el 25-sep; «para publicar» y no «para Instagram» (Mario: vale para TikTok o cualquier red)
     "</div>" +
     '<div id="alMovil" class="al-movil" hidden></div>' + // WEB-ABRIR-APP-1: en el ordenador, cómo llevarla al teléfono
@@ -982,7 +994,19 @@ function pintar(r) {
   var ab = document.getElementById("abrirApp");
   if (ab) ab.addEventListener("click", function (e) {
     if (esMovil()) {
-      setTimeout(function () { if (!document.hidden) location.href = "../#descarga"; }, 1500);
+      // WEB-ABRIR-APP-2 (23-nov): si en 2 s la app no se ha abierto (la página sigue delante), a /probar/. Si la página se oculta
+      // (se abrió la app), nada. Si sale un aviso del sistema («¿Abrir en MOTOCLUBes?» o «dirección no válida»), se espera a que
+      // se cierre: al volver a la página sin que la app se haya abierto, a /probar/.
+      var seFue = false, esperando = true;
+      var irAProbar = function () { if (esperando && !seFue && !document.hidden) { esperando = false; location.href = urlProbar(); } };
+      var alOcultar = function () { if (document.hidden) seFue = true; };
+      document.addEventListener("visibilitychange", alOcultar);
+      window.addEventListener("pagehide", function () { seFue = true; }, { once: true });
+      setTimeout(function () {
+        if (seFue || !esperando) return;
+        if (document.hasFocus()) { irAProbar(); return; }
+        window.addEventListener("focus", function () { setTimeout(irAProbar, 300); }, { once: true });
+      }, 2000);
       return;
     }
     // Mario (25-sep): «si tengo la app [...] lo que debe decir es ábrelo o envíate el enlace al teléfono». En el ordenador,
