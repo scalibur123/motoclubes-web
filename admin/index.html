@@ -927,7 +927,7 @@ function estadoFila(t) {
   if (t.fase === 'te_toca') return t.bloqueado ? `<span class="chip gris">Por invitar</span>${bloq}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   if (t.fase === 'a_medias') {
     const donde = t.plataforma === 'android'
-      ? `<span class="chip amar">Enlace de Play el ${fecha(t.play_enviado_at)}</span> <span class="chip ${t.play_clic_at ? 'verde' : 'gris'}">${t.play_clic_at ? 'Lo pulsó el ' + fecha(t.play_clic_at) : 'No lo ha pulsado'}</span>`
+      ? `<span class="chip amar">Enlace de Play el ${fecha(t.play_enviado_at)}</span> <span class="chip ${t.play_clic_at ? 'verde' : 'gris'}">${t.play_clic_at ? 'Lo pulsó el ' + fecha(t.play_clic_at) : 'No lo ha pulsado'}</span>${t.email_play ? ` <span class="chip gris">Gmail de Play: ${esc(t.email_play)}</span>` : ''}` // MISMA-PERSONA-3 (revisión, menor 5)
       : t.clic_at ? `<span class="chip amar">Pulsó el ${fecha(t.clic_at)}</span>` : `<span class="chip amar">TestFlight por «Probar» el ${fecha(t.desde)}</span>`
     return `${donde} ${chipEnvio(t.ayuda_at, t.ayuda_mano, t.bloqueado ? null : tandaAuto(t.desde, 2), 'Ayuda')}${t.bloqueado ? bloq : btn('t-ayuda', 'Mandar ayuda')}`
   }
@@ -1173,6 +1173,8 @@ async function mandarPlay(email, gmail = '') {
   if (!confirm(`¿Ya has añadido ${a} en Play Console («Prueba Android») y guardado? Entonces le mando el correo con el enlace de Play a ${a}.`)) return false
   try {
     const r = await invitar({ modo: 'play', email, ...(g ? { gmail: g } : {}) })
+    // Revisión (menor 4): si la función publicada aún es la de antes, no sabe del Gmail y lo manda a su correo de la lista: se dice.
+    if (g && !r?.a) { tAviso(`⚠️ El enlace de Play ha salido a ${esc(email)}, no a ${esc(g)}: falta publicar la función nueva del servidor. Avisa a Claude.`); return true }
     tAviso(`✅ Enlace de Play enviado a ${esc(r?.a || a)}.${g ? ' Su Gmail queda guardado: cuando entre con él, cuenta como dentro.' : ''}`, true); return true
   } catch (e) { tAviso('No se ha podido mandar el enlace de Play: ' + esc(e.message)); return false }
 }
