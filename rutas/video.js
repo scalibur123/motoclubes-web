@@ -691,7 +691,7 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
 
   // 0) las fotos de la salida (FOTOS-SALIDA-1): las que no carguen, fuera
   // Como mucho 12 fotos en el vídeo, repartidas entre los días (con 10 por persona y día podrían ser muchas más).
-  var fotosR = VIDEO_SIN_FOTOS ? [] : (function () {
+  var fotosR = VIDEO_SIN_FOTOS || (avisar && avisar.sinFotos) ? [] : (function () { // VIDEO-FOTOS-ELEGIR-1: o la casilla quitada
     // TRANSPI-PORTADA-1 (15-oct): la madre puede llevar de portada fotos que también están en su etapa: sin repetir (por URL).
     // FOTOS-PARADA-1 (revisión): de las repetidas se queda la que tiene parada o texto y, si no, la del día más alto (la de la etapa)
     var vistas = {}, orden = [];
