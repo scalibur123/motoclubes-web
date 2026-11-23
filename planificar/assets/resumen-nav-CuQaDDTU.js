@@ -1,0 +1,1 @@
+const r="mc_nav_resumen";let t=null;function n(e){t=e;try{return sessionStorage.setItem(r,JSON.stringify(e)),!0}catch{try{sessionStorage.removeItem(r)}catch{}return!1}}function s(){if(t)return t;try{const e=sessionStorage.getItem(r);return e?JSON.parse(e):null}catch{return null}}export{s as l,n as p};
