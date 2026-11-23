@@ -684,7 +684,10 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
   var titulo = r.title || "Ruta en MOTOCLUBes";
   var kmRuta = r.km != null ? Number(r.km) : null; // sin km en la ruta, se toma el del trazado cuando esté el guion
   var dias = ""; // se calcula con el guion, cuando ya están las fotos
-  var minutos = r.moving_time_minutes != null ? r.moving_time_minutes : r.duration_minutes;
+  // WEB-TIEMPO-CERO-1 (23-nov): igual que la ficha: en marcha si lo hay; si no, el de la ruta; sin ninguno, 0 (y sin fila «Tiempo»).
+  var minutos = Number(r.moving_time_minutes) > 0 ? Number(r.moving_time_minutes) : Number(r.duration_minutes) > 0 ? Number(r.duration_minutes) : 0;
+  // Sin tiempo guardado: estimado con los km a ritmo de moto, como la ficha (minutosMotoPorKm), con «≈».
+  var minutosEstim = minutos ? 0 : (Number(r.km) > 0 ? Math.max(1, Math.round(Number(r.km) * 1.2 * 0.75)) : 0);
   var conAlt = puertos.filter(function (p) { return p.ele != null; });
   var alto = conAlt.reduce(function (a, b) { return !a || b.ele > a.ele ? b : a; }, null);
   var paradasVideo = paradas.filter(function (p) { return !p.inicio && !p.fin && p.w.waypointType && p.w.waypointType !== "puerto" && p.w.waypointType !== "gasolinera"; }); // VIDEO-SIN-GASOLINERAS-1
@@ -1120,11 +1123,12 @@ function hacerVideoRuta(r, pts, paradas, puertos, avisar) {
           var filas = [
             ["Distancia", fmtMiles(kmRuta) + " km"],
             ["Días", String(G.dias > 1 ? G.dias : 1)],
-            ["Tiempo", minutos ? Math.floor(minutos / 60) + " h " + (Math.round(minutos % 60) ? Math.round(minutos % 60) + " min" : "") : "—"],
+            (minutos || minutosEstim) ? ["Tiempo", (minutos ? "" : "≈ ") + Math.floor((minutos || minutosEstim) / 60) + " h " + (Math.round((minutos || minutosEstim) % 60) ? Math.round((minutos || minutosEstim) % 60) + " min" : "")] : null, // WEB-TIEMPO-CERO-1
             ["Desnivel", r.elevation_gain_m != null ? fmtMiles(r.elevation_gain_m) + " m" : "—"],
             ["Puertos", String(puertos.length)],
             ["El más alto", alto ? fmtMiles(alto.ele) + " m" : "—", alto ? alto.name : "", true]
           ];
+          filas = filas.filter(Boolean); // WEB-TIEMPO-CERO-1: sin tiempo, sin fila
           if (DRr.bajo) filas.push(["El más bajo", fmtMiles(DRr.bajo.ele) + " m", DRr.bajo.name]);
           DRr.cuentas.forEach(function (c) { filas.push(c); });
           var conNombre = filas.filter(function (fl) { return fl[2]; }).length;

@@ -564,6 +564,12 @@ function esMovil() {
   return /iPhone|iPad|iPod|Android/i.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
 }
 
+/* WEB-TIEMPO-CERO-1: una ruta sin tiempo guardado, estimada con sus km a ritmo de moto: los 50 km/h que la app usa cuando no hay
+   tiempo (ruta-cuchillo.ts, GPX) × el ritmo de moto de Curvas (TIEMPO-MOTO-1, 0,75) → ~67 km/h en marcha (380 km ≈ 5 h 42). */
+function minutosMotoPorKm(km) {
+  var k = Number(km);
+  return k > 0 ? Math.max(1, Math.round(k * 1.2 * 0.75)) : 0;
+}
 function duracion(min) {
   if (!min && min !== 0) return "—";
   var h = Math.floor(min / 60), m = Math.round(min % 60);
@@ -714,13 +720,17 @@ function pintar(r) {
   var tramo = origen && destino ? esc(origen) + " → " + esc(destino) : esc(origen || destino);
   var autor = r.autor ? "Compartida por " + esc(r.autor) : "Compartida en MOTOCLUBes";
 
+  // 🆕 WEB-TIEMPO-CERO-1 (23-nov, Mario: «no pongas cero»): el tiempo en marcha si lo hay; si no, el de la ruta; si ninguno (0 o
+  // vacío, p. ej. la copia pública sin horas 58b43071), se estima con los km a ritmo de moto, con «≈». Sin km, sin casilla.
+  var minutosRuta = Number(r.moving_time_minutes) > 0 ? Number(r.moving_time_minutes) : Number(r.duration_minutes) > 0 ? Number(r.duration_minutes) : 0;
+  var minutosEstim = minutosRuta ? 0 : minutosMotoPorKm(r.km);
   var datos = [
     [r.km != null ? Number(r.km).toFixed(0) + " km" : "—", "Distancia"],
-    [duracion(r.moving_time_minutes != null ? r.moving_time_minutes : r.duration_minutes), "Tiempo"],
+    minutosRuta ? [duracion(minutosRuta), "Tiempo"] : minutosEstim ? ["≈ " + duracion(minutosEstim), "Tiempo"] : null,
     [r.curves_count ? r.curves_count : "—", "Curvas"],
     [r.elevation_gain_m != null ? r.elevation_gain_m + " m" : "—", "Desnivel"],
     [r.dias && r.dias > 1 ? r.dias + " días" : "1 día", "Duración"]
-  ].map(function (x) {
+  ].filter(Boolean).map(function (x) {
     return '<div class="dato"><b>' + esc(x[0]) + "</b><span>" + esc(x[1]) + "</span></div>";
   }).join("");
 
@@ -1121,7 +1131,7 @@ if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
     });
 }
 </script>
-<script src="video.js?v=38" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
+<script src="video.js?v=39" defer></script><!-- VIDEO-RUTA-1 · el ?v= se sube con cada cambio de video.js: la página y el script
      tienen que ir a juego, y GitHub Pages los guarda 10 min por separado (visto el 25-sep: «Grabando… NaN s de NaN») -->
 <script src="/assets/visita.js" defer></script>
 </body>
