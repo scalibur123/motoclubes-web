@@ -902,9 +902,16 @@ function chipEnvio(at, mano, programado, que) { // que: 'Recordatorio' | 'Ayuda'
 }
 // ENVIOS-FICHA-1 (17-oct, Mario: «lo último que se toca es lo primero que aparece»): lo más reciente de esa persona
 const toqueT = (t) => [t.apuntado, t.invitado_at, t.clic_at, t.recordatorio_at, t.ayuda_at, t.play_enviado_at, t.play_clic_at, t.desde].map(x => x || '').sort().pop()
+// 🆕 MISMA-PERSONA-3 (23-nov, sí de Mario 14:31): el Gmail que te manda para Play se escribe AQUÍ, a la vista, al lado de «Mandar
+// enlace de Play» (si su correo de la lista no es de Gmail). El enlace le llega a ese Gmail, se guarda, y cuando entre en la app con
+// él ya cuenta como dentro (no le llega el «Último aviso» ni sale de la lista). La regla, en el servidor (_shared/misma-persona.ts).
+const campoGmail = (t) => t.plataforma === 'android' && !esGmail(t.email)
+  ? `<input type="email" class="t-gmail" data-email="${esc(t.email)}" value="${esc(t.email_play || '')}" placeholder="Su Gmail de Play" style="width:190px;padding:5px 8px;margin-right:4px"> ` : ''
+const CUENTA_POR = { unida: 'unida a mano', gmail_play: 'con su Gmail de Play', mismo_nombre: 'con otro correo del mismo nombre' }
+const chipOtroCorreo = (t) => CUENTA_POR[t.cuenta_por] ? ` <span class="chip gris" title="Entró en la app con otro correo">Dentro ${CUENTA_POR[t.cuenta_por]}</span>` : ''
 function estadoFila(t) {
   const btn = (cls, txt) => ` <button class="btn3 ${cls}" data-email="${esc(t.email)}" style="margin-left:4px;padding:5px 12px">${txt}</button>`
-  if (t.fase === 'dentro') return '<span class="chip verde">Ya tiene la app</span>' + chipsUso(t.abrio, t.rodadas)
+  if (t.fase === 'dentro') return '<span class="chip verde">Ya tiene la app</span>' + chipOtroCorreo(t) + chipsUso(t.abrio, t.rodadas) // MISMA-PERSONA-3
   // Correo bloqueado (baja de los correos, rebote o spam): no le sale nada, ni a mano ni automático; no se promete ningún envío
   const bloq = t.bloqueado ? ' <span class="chip rojo">Correo bloqueado: no le sale nada</span>' : ''
   // TESTERS-LIMPIEZA-1: el último aviso, cuándo y si sale de la lista (o «No quitar»)
@@ -916,7 +923,7 @@ function estadoFila(t) {
   // ANDROID-PLAY-DIRECTO-1 (17-oct, Mario: «que me ponga invitar, si lo que está esperando es el enlace, no sé qué pinta»):
   // a un Android sin enlace de Play no se le invita: le das de alta en Play Console y le mandas el enlace desde aquí.
   if (t.fase === 'te_toca' && t.plataforma === 'android') return t.bloqueado ? `<span class="chip gris">Por dar de alta en Play</span>${bloq}`
-    : `<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button>`
+    : `${campoGmail(t)}<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button>` // MISMA-PERSONA-3: con su Gmail a la vista
   if (t.fase === 'te_toca') return t.bloqueado ? `<span class="chip gris">Por invitar</span>${bloq}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   if (t.fase === 'a_medias') {
     const donde = t.plataforma === 'android'
@@ -1156,12 +1163,18 @@ const pasoFormulario = (t) => t.plataforma === 'android' && t.estado !== 'tiene_
 // PLAY-SIN-INVITAR-1 (15-oct, Mario: «¿cómo puede ser?»): a quien ya le mandaste el enlace de Play no le hace falta la invitación
 // de la lista: ni «Por invitar», ni su botón, ni entra en «Enviar invitación a N».
 function porInvitar(t) { return t.fase ? t.fase === 'te_toca' && t.motivo === 'invitar' && t.plataforma !== 'android' && !t.bloqueado : t.estado === 'por_invitar' && !t.play_enviado_at } // TESTERS-AVISOS-1
-const playChip = (t) => t.play_enviado_at ? `<span class="chip verde">Enlace de Play el ${fecha(t.play_enviado_at)}</span>${t.play_clic_at ? ' <span class="chip verde">Lo pulsó</span>' : ''} `
-  : pasoFormulario(t) ? `<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button> ` : ''
-async function mandarPlay(email) {
-  if (!confirm(`¿Ya has añadido ${email} en Play Console («Prueba Android») y guardado? Entonces le mando el correo con el enlace de Play.`)) return false
-  try { await invitar({ modo: 'play', email }); tAviso(`✅ Enlace de Play enviado a ${esc(email)}.`, true); return true }
-  catch (e) { tAviso('No se ha podido mandar el enlace de Play: ' + esc(e.message)); return false }
+const playChip = (t) => t.play_enviado_at ? `<span class="chip verde">Enlace de Play el ${fecha(t.play_enviado_at)}</span>${t.play_clic_at ? ' <span class="chip verde">Lo pulsó</span>' : ''}${t.email_play ? ` <span class="chip gris">Gmail de Play: ${esc(t.email_play)}</span>` : ''} `
+  : pasoFormulario(t) ? `${campoGmail(t)}<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button> ` : ''
+// MISMA-PERSONA-3: `gmail` = el que escribiste al lado del botón (vacío = a su correo de la lista, como siempre).
+async function mandarPlay(email, gmail = '') {
+  const g = String(gmail || '').trim().toLowerCase()
+  if (g && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g)) { tAviso('Ese Gmail no está bien escrito.'); return false }
+  const a = g || email
+  if (!confirm(`¿Ya has añadido ${a} en Play Console («Prueba Android») y guardado? Entonces le mando el correo con el enlace de Play a ${a}.`)) return false
+  try {
+    const r = await invitar({ modo: 'play', email, ...(g ? { gmail: g } : {}) })
+    tAviso(`✅ Enlace de Play enviado a ${esc(r?.a || a)}.${g ? ' Su Gmail queda guardado: cuando entre con él, cuenta como dentro.' : ''}`, true); return true
+  } catch (e) { tAviso('No se ha podido mandar el enlace de Play: ' + esc(e.message)); return false }
 }
 // PERIODO-1 (15-oct, Mario): «necesito poder verlos por nuevos en días, semanas, etc.». Botones encima de Testers (por el día en
 // que se apuntaron) y de Riders (por el día del alta), cada uno con cuántos hay. «Hoy» y «Ayer» son días de calendario; el resto,
@@ -1627,6 +1640,10 @@ async function verFicha(email, vuelve) {
       (w.invitado_at ? dato('El correo', correoTxt(f.correo_invitacion)) + dato('Pulsó el botón del correo', w.invitacion_clic_at ? '✅ ' + fechaHora(w.invitacion_clic_at) : 'Aún no') : '') +
       (w.recordatorio_at ? dato('Recordatorio', fechaHora(w.recordatorio_at)) : '') +
       (w.plataforma === 'android' ? dato('Enlace de Play', w.play_enviado_at ? 'Enviado el ' + fechaHora(w.play_enviado_at) + (w.play_clic_at ? ' · ✅ lo pulsó el ' + fechaHora(w.play_clic_at) : ' · aún sin pulsar') : 'Sin enviar') +
+        // 🆕 MISMA-PERSONA-3: su Gmail de Play, a la vista y para cambiarlo. Con él, el enlace va a ese Gmail y, al entrar, cuenta como dentro.
+        ('email_play' in w ? `<div style="margin-top:10px"><label class="sub" style="display:block;margin-bottom:4px">Gmail de Play (el que te mandó, si no es el de la lista)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><input type="email" id="f-gmail" value="${esc(w.email_play || '')}" placeholder="${esGmail(w.email) ? 'Su Gmail es el de la lista' : 'Su Gmail de Play'}" style="flex-grow:1;min-width:200px">
+          <button class="btn3" id="f-gmail-guardar">Guardar</button></div></div>` : '') +
         ((!c || !p?.app_version_at) /* PLAY-CUENTA-WEB-1 (145.ª): cuenta hecha en el planificador de la web, sin la app: también */ && w.confirmado_at && w.quiere_probar && !w.baja_at && !w.quitado_at ? `<div style="text-align:right;margin-top:10px"><button class="btn" id="f-play">${w.play_enviado_at ? 'Volver a mandar el enlace de Play' : 'Mandar enlace de Play'}</button></div>` : '') : '') +
       dato('De dónde vino', esc(deDonde(w.origen))) + (w.baja_at ? dato('Se dio de baja', fechaHora(w.baja_at)) : '') +
       // QUITAR-LISTA-1 (131.ª, Mario 11:15): quitarlo de la lista con un motivo (no se borra, no cuenta en las cifras, se puede volver a poner)
@@ -1706,9 +1723,17 @@ async function verFicha(email, vuelve) {
 }
 let FICHA = null
 $('f-cuerpo').onclick = (ev) => {
+  if (ev.target.closest('#f-gmail-guardar') && FICHA) { // MISMA-PERSONA-3: guardar (o borrar, si lo dejas vacío) su Gmail de Play
+    const g = ($('f-gmail')?.value || '').trim().toLowerCase(), b = ev.target
+    if (g && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g)) { $('f-aviso').innerHTML = '<div class="aviso mal">Ese Gmail no está bien escrito.</div>'; return }
+    b.disabled = true
+    invitar({ modo: 'email_play', email: FICHA.email, gmail: g }).then(async () => { await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = `<div class="aviso ok">✅ ${g ? 'Gmail de Play guardado: cuando entre con él, cuenta como dentro.' : 'Gmail de Play quitado.'}</div>` })
+      .catch((e) => { $('f-aviso').innerHTML = `<div class="aviso mal">No se ha podido guardar: ${esc(e.message)}</div>`; b.disabled = false })
+    return
+  }
   if (ev.target.closest('#f-play') && FICHA) {
     ev.target.disabled = true
-    mandarPlay(FICHA.email).then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
+    mandarPlay(FICHA.email, $('f-gmail') ? $('f-gmail').value : '').then(async (ok) => { const msg = $('f-aviso').innerHTML; await verFicha(FICHA.email, fichaVuelve); $('f-aviso').innerHTML = msg })
     return
   }
   const sug = ev.target.closest('.fq-sug'); if (sug && $('fq-motivo')) { $('fq-motivo').value = sug.dataset.m; $('fq-motivo').focus(); return } // QUITAR-LISTA-1: rellena; se puede cambiar
@@ -1765,7 +1790,10 @@ $('t-filas').addEventListener('change', (ev) => { // TESTERS-LIMPIEZA-2
 })
 $('t-filas').onclick = async (ev) => {
   const fi = ev.target.closest('.t-ficha'); if (fi) return verFicha(fi.dataset.email, 'test')
-  const pl = ev.target.closest('.t-play'); if (pl) { pl.disabled = true; await mandarPlay(pl.dataset.email); return cargarTesters() }
+  const pl = ev.target.closest('.t-play'); if (pl) { // MISMA-PERSONA-3: con el Gmail escrito al lado, si lo hay
+    const campo = [...document.querySelectorAll('.t-gmail')].find((x) => x.dataset.email === pl.dataset.email)
+    pl.disabled = true; await mandarPlay(pl.dataset.email, campo ? campo.value : ''); return cargarTesters()
+  }
   // TESTERS-AVISOS-1: «Recordar» y «Mandar ayuda» de una fila
   const av = ev.target.closest('.t-recordar, .t-ayuda')
   if (av) {
