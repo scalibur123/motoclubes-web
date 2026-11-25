@@ -324,6 +324,10 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div class="card" id="u-ultimos" style="padding:16px 22px"><div class="sub">Cargando lo último…</div></div>
   <div id="u-aviso"></div>
   <div class="cifras" id="u-cifras"></div>
+  <!-- ADMIN-VIDEOS-1 (25-nov · Mario 17:15: «un recuento semanal… los que más han visto vídeos y los que menos, para que cuando me
+       pregunten les pueda redirigir: mírate el vídeo»). Lee mc_admin_videos(p_dias) (db/admin_videos_2_hacer.sql). Lo mismo en el
+       móvil: Panel de administrador → «Quién ve los vídeos» (regla 18). -->
+  <div class="card" id="u-videos" style="padding:16px 22px"></div>
   <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
 </main>
 <!-- PANEL-HECHO-1 (30-oct, 131.ª). Mario: «echo de menos una visión general de todo lo hecho en el portal». Todo en una lista, de lo último a lo primero. -->
@@ -1717,6 +1721,7 @@ async function verFicha(email, vuelve) {
       dato('Abrió la app por última vez', (p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') + chipDormido(p?.nickname, p?.app_version_at)) +
       (vieja(p?.app_platform, p?.app_version) ? dato('Al día', '<span class="chip amar">Versión vieja</span>') : '') +
       dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + dato('Idioma de la app', esc(idiomaTxt(DE_DONDE?.get(p?.nickname)?.idioma))) /* RIDERS-ORIGEN-1 */ + dato('País', paisTxt(DE_DONDE?.get(p?.nickname)?.pais)) + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
+      + (p?.id ? dato('Vídeos vistos (30 días)', '<span id="f-videos" class="sub">…</span>') : '') /* ADMIN-VIDEOS-1: se rellena al abrir la ficha */
     : '<div class="sub">Todavía no tiene cuenta en la app.</div>'
   const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}${u.en_recientes ? cifra(u.en_recientes, 'En Recientes (arranques y recados, 15 días)') : ''}
       ${cifra(u.salidas_grupo, `Salidas en grupo · ${u.km_grupo} km`)}${cifra(u.grupos, 'Grupos')}${cifra(u.radio_veces, `Veces con la radio · ${u.radio_min} min`)}
@@ -1768,6 +1773,15 @@ async function verFicha(email, vuelve) {
       <div class="card tabla"><div style="font-weight:800;padding:18px 22px 6px">Ha invitado a · desde sus grupos</div>${c ? invG : '<div class="sub" style="padding:16px">—</div>'}</div></div>
     <div class="col"><div class="card"><div style="font-weight:800;margin-bottom:6px">En la web</div>${web}</div>
       <div class="card"><div style="font-weight:800;margin-bottom:6px">En la app</div>${app}</div></div></div>`
+  // ADMIN-VIDEOS-1 (25-nov): qué vídeos ha visto este rider en 30 días (mc_admin_videos con su id). Si tarda y ya miras otra ficha, no pinta.
+  if (p?.id) sb.rpc('mc_admin_videos', { p_dias: 30, p_user: p.id }).then(({ data, error }) => {
+    const el = $('f-videos'); if (!el || FICHA !== f) return
+    const r = data?.rider
+    el.className = ''
+    el.innerHTML = error ? '<span class="sub">—</span>' : !r || !r.videos ? 'Ninguno'
+      : `${r.videos} (${r.guias} de la guía) · ${r.enteros} ${r.enteros === 1 ? 'entero' : 'enteros'} · el último, ${fecha(r.ultimo)}`
+        + (Array.isArray(r.titulos) && r.titulos.length ? `<div class="sub" style="font-weight:400;font-size:12px">${esc(r.titulos.join(', '))}</div>` : '')
+  })
 }
 let FICHA = null
 $('f-cuerpo').onclick = (ev) => {
@@ -2388,7 +2402,51 @@ function pintarUso() {
 }
 $('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
 $('u-dias').onchange = () => cargarUso()
-$('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos() }
+$('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos(); cargarVideos() }
+// ── ADMIN-VIDEOS-1 (25-nov): «🎬 Quién ve los vídeos», en Uso. Esta semana o este mes; va aparte de los días de arriba. ──
+let VID = null, VID_DIAS = 7, vidPet = 0, vidTodos = false
+async function cargarVideos() {
+  const n = ++vidPet
+  $('u-videos').innerHTML = '<div class="sub">Cargando quién ve los vídeos…</div>'
+  const { data, error } = await sb.rpc('mc_admin_videos', { p_dias: VID_DIAS })
+  if (n !== vidPet) return
+  if (error) {
+    $('u-videos').innerHTML = /mc_admin_videos|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || ''))
+      ? '<div class="aviso mal">«Quién ve los vídeos»: aún no está creada la función en la base. Falta ejecutar <b>db/admin_videos_2_hacer.sql</b> en Supabase.</div>'
+      : `<div class="aviso mal">No se ha podido cargar quién ve los vídeos: ${esc(error.message)}</div>`
+    return
+  }
+  VID = data || null; vidTodos = false
+  pintarVideos()
+}
+function pintarVideos() {
+  const v = VID || { dias: VID_DIAS, activos: 0, con_video: 0, guias_con_video: 0, top: [], sin_video: [], sin_video_total: 0 }
+  const top = Array.isArray(v.top) ? v.top : [], sin = Array.isArray(v.sin_video) ? v.sin_video : []
+  const pct = v.activos > 0 ? Math.round((100 * v.con_video) / v.activos) : 0
+  const boton = (d, t) => `<button type="button" class="${VID_DIAS === d ? 'btn' : 'btn3'}" data-vdias="${d}" style="padding:6px 14px">${t}</button>`
+  const filasTop = top.map(t => `<tr><td class="partir"><b>${esc(t.nick || 'Sin nick')}</b></td><td><b>${t.videos}</b></td><td>${t.guias}</td><td>${t.enteros}</td><td>${t.veces}</td><td class="sub">${t.ultimo ? fecha(t.ultimo) : '—'}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="sub">Nadie todavía.</td></tr>'
+  const verSin = vidTodos ? sin : sin.slice(0, 40)
+  const listaSin = verSin.map(s => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border:1px solid #EFEAE3;border-radius:999px;font-size:13px"><b>${esc(s.nick || 'Sin nick')}</b> <span class="sub">· ${s.ultimo ? fecha(s.ultimo) : '—'}</span></span>`).join('')
+    || '<div class="sub">Ninguno: todos los que han abierto la app han visto algún vídeo.</div>'
+  const masSin = !vidTodos && sin.length > 40 ? `<div style="margin-top:4px"><button type="button" class="btn3" id="u-videos-todos" style="padding:4px 12px">Ver los ${sin.length}</button></div>` : ''
+  const restoSin = v.sin_video_total > sin.length && (vidTodos || sin.length <= 40) ? `<div class="sub" style="margin-top:4px">Y ${v.sin_video_total - sin.length} más que hace más que no la abren.</div>` : ''
+  $('u-videos').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div class="partir" style="flex:1 1 300px"><div style="font-weight:800;font-size:18px">🎬 Quién ve los vídeos</div>
+        <div class="sub">De la guía y de las noticias. Para saber a quién decirle «mírate el vídeo».</div></div>
+      <div style="display:flex;gap:6px">${boton(7, 'Esta semana')}${boton(30, 'Este mes')}</div></div>
+    <div style="margin:12px 0 14px"><b style="font-size:22px">${v.con_video}</b> de <b>${v.activos}</b> riders con la app abierta ${VID_DIAS === 7 ? 'esta semana' : 'este mes'} han visto algún vídeo (${pct} %). Hay ${v.guias_con_video} guías con vídeo.</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <div style="flex:1 1 360px"><div style="font-weight:800;margin-bottom:6px">Los que más han visto</div>
+        <div class="tabla"><table><thead><tr><th>Rider</th><th>Vídeos</th><th>De la guía</th><th>Enteros</th><th>Veces</th><th>Último</th></tr></thead><tbody>${filasTop}</tbody></table></div></div>
+      <div style="flex:1 1 300px"><div style="font-weight:800;margin-bottom:6px">Abren la app y no han visto ninguno (${v.sin_video_total})</div>
+        <div class="sub" style="margin-bottom:8px">Con el último día que la usaron; los más recientes, primero.</div>${listaSin}${masSin}${restoSin}</div></div>`
+}
+$('u-videos').onclick = (ev) => {
+  const b = ev.target.closest('[data-vdias]')
+  if (b) { const d = Number(b.dataset.vdias); if (d !== VID_DIAS) { VID_DIAS = d; cargarVideos() } return }
+  if (ev.target.closest('#u-videos-todos')) { vidTodos = true; pintarVideos() }
+}
 // ── ADMIN-ULTIMOS-1 (151.ª): «Lo último», arriba de Uso. Las 10 últimas cosas de la app, de la más nueva a la más vieja. ──
 const ULT_TIPO = { alta: 'Alta', entrada: 'Entra en la app', ruta: 'Ruta', publica: 'Ruta pública', foto: 'Foto', comentario: 'Comentario',
   aplauso: 'Aplauso', favorita: 'Favorita', hilo: 'Comunidad', respuesta: 'Comunidad', salida: 'Salida en grupo', grupo: 'Grupo',
