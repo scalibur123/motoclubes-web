@@ -130,7 +130,7 @@ PAGINAS = [
             ("vuela", "Vuélala antes de hacerla", "Vista aérea de todo el recorrido, para ver por dónde vas a pasar sin salir de casa."),
             ("fotos", "Compártela y hazle un vídeo", "Tu ruta en una página que cualquiera puede ver, y un vídeo vertical del recorrido para tus redes."),
             # REPASO-WEB-25NOV-1 (25-nov, sí de Mario): «El tiempo en la ruta» (publicado en la 1.26.1122, también en el planificador web).
-            ("tiempo", "El tiempo en tu ruta", "Pon el día y la hora de salida y ves el tiempo de cada tramo a la hora a la que pasas, hasta 14 días antes. También en el ordenador."),
+            ("tiempo", "El tiempo en tu ruta", "Pon el día y la hora de salida y ves el tiempo en la salida, las paradas, los puertos y la llegada, a la hora a la que pasas, hasta 14 días antes. También en el ordenador."),
         ],
         "boton_extra": ("/planificar/", "🖥️ Planifica en el ordenador"),
         "faq": [

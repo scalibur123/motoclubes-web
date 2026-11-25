@@ -937,7 +937,7 @@ function estadoFila(t) {
   return `<span class="chip gris">Invitado el ${fecha(t.invitado_at)}</span>${malo} ${rec}${sinRespuesta(t) ? ' <span class="chip rojo">Sin respuesta</span>' : ''}${t.bloqueado ? bloq : btn('t-recordar', 'Recordar')}`
 }
 // De dónde vienen: el origen que guarda la web (WEB-ORIGEN-1, desde el 15-oct), agrupado.
-const REDES = ['facebook', 'linkedin', 'tiktok', 'youtube', 'x']
+const REDES = ['facebook', 'linkedin', 'tiktok', 'youtube', 'x', 'threads']
 function grupoOrigen(o) {
   o = String(o || '')
   // REPASO-WEB-25NOV-1 (25-nov): desde hoy /probar/ guarda también el canal, «probar.instagram», «probar.web»…: cuenta en su canal.
@@ -1093,7 +1093,7 @@ const hace = (iso) => {
   return m < 60 ? `hace ${Math.max(m, 1)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`
 }
 const movilTxt = (p) => p === 'ios' ? 'iPhone' : p === 'android' ? 'Android' : '—'
-const ORIG = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', google: 'Google', bmwmotos: 'Foro BMW', youtube: 'YouTube', tiktok: 'TikTok', whatsapp: 'WhatsApp', directo: 'Directo', web: 'La web' }
+const ORIG = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', google: 'Google', bmwmotos: 'Foro BMW', youtube: 'YouTube', tiktok: 'TikTok', threads: 'Threads', whatsapp: 'WhatsApp', directo: 'Directo', web: 'La web' }
 function deDonde(o) {
   if (!o) return '—'
   if (o === 'probar-lista') return 'Invitación a la lista de la web'

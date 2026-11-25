@@ -709,10 +709,11 @@ FR['<a href="negocio/">Soy un negocio</a><span>'] = '<a href="/negocio/">Espace 
 
 # REPASO-WEB-25NOV-1 (chat de marketing, 25-nov-2026, sí de Mario 09:24): la portada al día con lo que ya tienen los riders en la
 # versión publicada (iPhone 1.26.1122 · Android 1.26.11224): el tiempo en la ruta hasta 14 días, el SOS yendo solo, las cámaras de
-# semáforo, esconder el principio y el final al publicar, los países del ranking y el foro traducido.
+# semáforo, esconder el principio y el final al publicar, los países del ranking y el foro traducido. Revisión independiente (10:0x): el tiempo
+# sale en la salida, las paradas (3), los puertos y la llegada (meteo-ruta), no «en cada tramo»; y el aviso del día antes, solo si guardas «¿Cuándo sales?».
 _R25_ES = [
  "El tiempo en tu ruta, hasta 14 días antes",
- "Pon el día y la hora de salida y ves el tiempo en cada tramo, a la hora a la que pasas por allí: lluvia, temperatura, viento y rachas. Y el día antes y esa misma mañana te lo recordamos.",
+ "Pon el día y la hora de salida y ves el tiempo en la salida, las paradas, los puertos y la llegada, a la hora a la que pasas por allí: lluvia, temperatura, viento y rachas. Y si guardas cuándo sales, el día antes y esa misma mañana te avisamos.",
  "SOS, en grupo y yendo solo",
  _SOS_P + " Y si sales solo, avisa a tus contactos de emergencia con tu ubicación.",
  "Te avisa de los radares fijos, de tramo y de semáforo, y del límite antes de que baje, con ruta o sin ella. En Francia, las zonas de peligro, como marca su ley.",
@@ -724,7 +725,7 @@ _R25_ES = [
 _R25_TR = {
  "fr": [
   "La météo sur votre itinéraire, jusqu'à 14 jours avant",
-  "Indiquez le jour et l'heure du départ et voyez la météo sur chaque tronçon, à l'heure où vous y passez : pluie, température, vent et rafales. Et la veille et le matin même, on vous le rappelle.",
+  "Indiquez le jour et l'heure du départ et voyez la météo au départ, aux arrêts, sur les cols et à l'arrivée, à l'heure où vous y passez : pluie, température, vent et rafales. Et si vous enregistrez votre départ, on vous prévient la veille et le matin même.",
   "SOS, en groupe et en solo",
   FR[_SOS_P] + " Et si vous roulez seul, elle prévient vos contacts d'urgence avec votre position.",
   "Vous prévient des radars fixes, de tronçon et de feu rouge, et de la limite avant qu'elle ne baisse, avec ou sans itinéraire. En France, les zones de danger, comme le veut la loi.",
@@ -735,7 +736,7 @@ _R25_TR = {
  ],
  "pt": [
   "O tempo na tua rota, até 14 dias antes",
-  "Põe o dia e a hora de saída e vês o tempo em cada troço, à hora a que passas por lá: chuva, temperatura, vento e rajadas. E na véspera e nessa mesma manhã lembramos-te.",
+  "Põe o dia e a hora de saída e vês o tempo na saída, nas paragens, nos passos de montanha e na chegada, à hora a que passas por lá: chuva, temperatura, vento e rajadas. E se guardares quando sais, avisamos-te na véspera e nessa mesma manhã.",
   "SOS, em grupo e sozinho",
   PT[_SOS_P] + " E se sais sozinho, avisa os teus contactos de emergência com a tua localização.",
   "Avisa-te dos radares fixos, de troço e de semáforo, e do limite antes de baixar, com ou sem rota. Em França, as zonas de perigo, como manda a lei.",
@@ -746,7 +747,7 @@ _R25_TR = {
  ],
  "it": [
   "Il meteo sul tuo percorso, fino a 14 giorni prima",
-  "Imposta il giorno e l'ora di partenza e vedi il meteo su ogni tratto, all'ora in cui ci passi: pioggia, temperatura, vento e raffiche. E il giorno prima e la mattina stessa te lo ricordiamo.",
+  "Imposta il giorno e l'ora di partenza e vedi il meteo alla partenza, alle soste, sui passi e all'arrivo, all'ora in cui ci passi: pioggia, temperatura, vento e raffiche. E se salvi quando parti, ti avvisiamo il giorno prima e la mattina stessa.",
   "SOS, in gruppo e da solo",
   IT[_SOS_P] + " E se esci da solo, avvisa i tuoi contatti di emergenza con la tua posizione.",
   "Ti avvisa degli autovelox fissi, dei Tutor e dei T-Red, e del limite prima che si abbassi, con o senza percorso. In Francia, le zone di pericolo, come prevede la legge francese.",
