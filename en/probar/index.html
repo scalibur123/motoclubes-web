@@ -11,14 +11,14 @@
 <meta property="og:site_name" content="MOTOCLUBes">
 <meta property="og:url" content="https://www.motoclubes.es/en/probar/">
 <meta property="og:title" content="Come and try MOTOCLUBes, the motorcycle GPS app">
-<meta property="og:description" content="Plan, navigate with voice and ride as a group, with SOS to the group. Sign up and we’ll send you the invitation for iPhone or Android.">
+<meta property="og:description" content="Plan, navigate with voice and ride as a group, with SOS in a group or riding solo. Sign up and we’ll send you the invitation for iPhone or Android.">
 <meta property="og:image" content="https://www.motoclubes.es/img/og-probar.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Come and try MOTOCLUBes, the motorcycle GPS app">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Come and try MOTOCLUBes, the motorcycle GPS app">
-<meta name="twitter:description" content="Plan, navigate with voice and ride as a group, with SOS to the group. Sign up and we’ll send you the invitation for iPhone or Android.">
+<meta name="twitter:description" content="Plan, navigate with voice and ride as a group, with SOS in a group or riding solo. Sign up and we’ll send you the invitation for iPhone or Android.">
 <meta name="twitter:image" content="https://www.motoclubes.es/img/og-probar.png">
 <link rel="icon" type="image/png" href="/img/helmet-256.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -129,12 +129,12 @@
     <img class="pr-casco" src="/img/helmet-256.png" alt="">
     <h1 id="titulo-alta">Come and try <b>MOTOCLUBes</b></h1>
     <!-- WEB-MARKETING-1 (155.ª, Mario 11:37: «en el móvil quedaba largo»): frases cortas, para que «What phone do you have?» se vea sin bajar. -->
-    <p class="sub">The motorcycle GPS app, made by riders. Try it before it hits the stores.<br><b class="pr-cuantos">Almost 170 riders are already testing it.</b></p>
+    <p class="sub">The motorcycle GPS app, made by riders. Try it before it hits the stores.<br><b class="pr-cuantos">Almost 185 riders are already testing it.</b></p>
     <ul class="pr-puntos">
-      <li><span>🗺️</span><div>Plan routes with corners, mountain passes and fuel stations.</div></li>
+      <li><span>🗺️</span><div>Plan routes with corners, mountain passes, fuel stations and the weather.</div></li>
       <li><span>🧭</span><div>Navigate with voice, on the bike’s screen and with no signal.</div></li>
       <li><span>🏍️</span><div>Ride as a group: everyone on the map and talking over the radio.</div></li>
-      <li><span>🆘</span><div>SOS to the group: 3 seconds on the map and your group knows where you are.</div></li>
+      <li><span>🆘</span><div>SOS in a group or riding solo: 3 seconds on the map and your people know where you are.</div></li>
     </ul>
 
     <form id="form-alta" novalidate>
@@ -204,6 +204,11 @@
   // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
   // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
   var lista = q.get('o') === 'lista';
+  // REPASO-WEB-25NOV-1 (Mario, 25-nov 09:25: «saber de dónde vienen las altas, si de Instagram o de otro sitio»): el canal del
+  // enlace (?o=instagram, linkedin, web, rutas…) se guarda con un punto, «probar.instagram». Con guion no: «probar-<apodo>» quiere
+  // decir «le invita ese rider» (QUIEN-INVITA-1). web-aviso deja pasar a-z 0-9 . _ - (40 letras) y todo lo que empieza por
+  // «probar» sigue siendo el alta de tester (iPhone con TestFlight solo al confirmar).
+  var canal = (q.get('o') || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
   var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
 
   if (q.get('compartir') === '1') {
@@ -270,7 +275,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        t: 'alta', f: 'probar', email: email, i: 'en', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : 'probar'),
+        t: 'alta', f: 'probar', email: email, i: 'en', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : (canal ? 'probar.' + canal : 'probar')),
         probar: true, plat: plat(), acepta: true, web: f.web.value
       })
     }).then(function (r) {

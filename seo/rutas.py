@@ -225,7 +225,7 @@ def cabeza(title, desc, url):
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/mc.css?v=15oct1">
+<link rel="stylesheet" href="/assets/mc.css?v=19nov2">
 <style>
 .ruta-mapa{{background:#141414;border:1px solid var(--borde);border-radius:18px;padding:14px;margin:26px 0 8px}}
 .ruta-nota{{font-size:13px;color:var(--texto-2);margin:0 0 26px}}

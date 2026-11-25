@@ -310,6 +310,38 @@ T = {
 },
 }
 
+# REPASO-WEB-25NOV-1 (chat de marketing, 25-nov-2026, sí de Mario 09:24): casi 185 moteros (cifra de Mario), el tiempo de la ruta
+# dentro de la línea de planificar (sin quinta línea: el 19-nov se acortó para que «¿Qué móvil tienes?» se vea sin bajar) y el SOS
+# también yendo solo (versión publicada 1.26.1119).
+_R25 = {
+ 'Ya somos casi 185 moteros probándola.': {
+   'en': 'Almost 185 riders are already testing it.', 'ca': 'Ja som gairebé 185 motoristes provant-la.',
+   'fr': 'Nous sommes déjà près de 185 motards à la tester.', 'pt': 'Já somos quase 185 motociclistas a testá-la.',
+   'it': 'Siamo già quasi 185 motociclisti a provarla.'},
+ 'Planifica rutas con curvas, puertos, gasolineras y el tiempo.': {
+   'en': 'Plan routes with corners, mountain passes, fuel stations and the weather.',
+   'ca': 'Planifica rutes amb revolts, ports, benzineres i el temps.',
+   'fr': 'Préparez des itinéraires avec virages, cols, stations-service et la météo.',
+   'pt': 'Planeia rotas com curvas, passos de montanha, bombas e o tempo.',
+   'it': 'Pianifica percorsi con curve, passi, distributori e il meteo.'},
+ 'SOS en grupo o yendo solo: 3 segundos en el mapa y tu gente sabe dónde estás.': {
+   'en': 'SOS in a group or riding solo: 3 seconds on the map and your people know where you are.',
+   'ca': 'SOS en grup o anant sol: 3 segons al mapa i la teva gent sap on ets.',
+   'fr': 'SOS en groupe ou en solo : 3 secondes sur la carte et vos proches savent où vous êtes.',
+   'pt': 'SOS em grupo ou sozinho: 3 segundos no mapa e a tua gente sabe onde estás.',
+   'it': 'SOS in gruppo o da solo: 3 secondi sulla mappa e i tuoi sanno dove sei.'},
+ 'Planifica, navega con voz y sal en grupo, con SOS en grupo o yendo solo. Apúntate y te mandamos la invitación para iPhone o Android.': {
+   'en': 'Plan, navigate with voice and ride as a group, with SOS in a group or riding solo. Sign up and we’ll send you the invitation for iPhone or Android.',
+   'ca': 'Planifica, navega amb veu i surt en grup, amb SOS en grup o anant sol. Apunta’t i t’enviem la invitació per a iPhone o Android.',
+   'fr': 'Préparez, naviguez avec la voix et roulez en groupe, avec le SOS en groupe ou en solo. Inscrivez-vous et nous vous envoyons l’invitation pour iPhone ou Android.',
+   'pt': 'Planeia, navega com voz e sai em grupo, com SOS em grupo ou sozinho. Inscreve-te e enviamos-te o convite para iPhone ou Android.',
+   'it': 'Pianifica, naviga con la voce ed esci in gruppo, con l’SOS in gruppo o da solo. Iscriviti e ti mandiamo l’invito per iPhone o Android.'},
+}
+for _k, _v in _R25.items():
+    for _l, _t in _v.items():
+        T[_l][_k] = _t
+
+
 def generar(l, dic):
     s = ES
     # El botón del correo de confirmar se llama como en web-aviso (T[idioma].boton): el correo de /probar/ va en su idioma.

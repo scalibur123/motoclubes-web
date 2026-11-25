@@ -114,7 +114,7 @@ FR = {
  "MOTOCLUBes nace de ahí. No de añadir una app más, sino de que planificar la ruta, navegarla y rodarla con tu gente dejen de ser tres cosas separadas. Lo construimos moteros, se prueba en carretera, y seguimos en ello.":
    "MOTOCLUBes est née de là. Pas pour ajouter une app de plus, mais pour que préparer l'itinéraire, le naviguer et le rouler avec les siens cessent d'être trois choses séparées. Ce sont des motards qui la construisent, elle se teste sur la route, et ça continue.",
  "El equipo de MOTOCLUBes":"L'équipe MOTOCLUBes",
- "Moteros · MOTOCLUBES TECH S.L., Barcelona":"Des motards · MOTOCLUBES TECH S.L., Barcelone",
+ "Moteros · MOTOCLUBES TECH S.L.U., Barcelona":"Des motards · MOTOCLUBES TECH S.L.U., Barcelone",
  "¿Tienes un bar, un hotel o un taller?":"Vous avez un bar, un hôtel ou un garage ?",
  "Los moteros paran donde se les trata bien. El portal Rider Friendly te deja darte de alta, publicar tus ofertas y validarlas con un código cuando el rider llega a tu puerta.":
    "Les motards s'arrêtent là où on les traite bien. Le portail Rider Friendly vous permet de vous inscrire, de publier vos offres et de les valider par un code quand le motard arrive chez vous.",
@@ -142,8 +142,8 @@ FR = {
  "Da igual. La app es nativa en las dos plataformas y todo funciona entre ellas: el grupo, la salida, el mapa y la voz.":
    "Aucune importance. L'app est native sur les deux plateformes et tout fonctionne entre elles : le groupe, la sortie, la carte et la voix.",
  "¿Quién está detrás de esto?":"Qui est derrière tout ça ?",
- "MOTOCLUBES TECH S.L., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.":
-   "MOTOCLUBES TECH S.L., une entreprise basée à Barcelone. Produit maison, infrastructure maison et développement continu. Nous ne sommes le projet secondaire de personne.",
+ "MOTOCLUBES TECH S.L.U., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.":
+   "MOTOCLUBES TECH S.L.U., une entreprise basée à Barcelone. Produit maison, infrastructure maison et développement continu. Nous ne sommes le projet secondaire de personne.",
  "Próximamente en las dos tiendas":"Bientôt sur les deux stores",
  "La app está terminando su fase de pruebas. Cuando esté publicada, aquí estarán los dos enlaces.":
    "L'app termine sa phase de tests. Une fois publiée, les deux liens seront ici.",
@@ -311,7 +311,7 @@ PT = {
  "MOTOCLUBes nace de ahí. No de añadir una app más, sino de que planificar la ruta, navegarla y rodarla con tu gente dejen de ser tres cosas separadas. Lo construimos moteros, se prueba en carretera, y seguimos en ello.":
    "A MOTOCLUBes nasce daí. Não de acrescentar mais uma app, mas de fazer com que planear a rota, navegá-la e andá-la com a tua gente deixem de ser três coisas separadas. Construímo-la nós, motards, testa-se na estrada, e continuamos.",
  "El equipo de MOTOCLUBes":"A equipa MOTOCLUBes",
- "Moteros · MOTOCLUBES TECH S.L., Barcelona":"Motards · MOTOCLUBES TECH S.L., Barcelona",
+ "Moteros · MOTOCLUBES TECH S.L.U., Barcelona":"Motociclistas · MOTOCLUBES TECH S.L.U., Barcelona",
  "¿Tienes un bar, un hotel o un taller?":"Tens um bar, um hotel ou uma oficina?",
  "Los moteros paran donde se les trata bien. El portal Rider Friendly te deja darte de alta, publicar tus ofertas y validarlas con un código cuando el rider llega a tu puerta.":
    "Os motards param onde são bem tratados. O portal Rider Friendly deixa-te inscrever, publicar as tuas ofertas e validá-las com um código quando o motard chega à tua porta.",
@@ -339,8 +339,8 @@ PT = {
  "Da igual. La app es nativa en las dos plataformas y todo funciona entre ellas: el grupo, la salida, el mapa y la voz.":
    "Tanto faz. A app é nativa nas duas plataformas e tudo funciona entre elas: o grupo, a saída, o mapa e a voz.",
  "¿Quién está detrás de esto?":"Quem está por trás disto?",
- "MOTOCLUBES TECH S.L., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.":
-   "MOTOCLUBES TECH S.L., uma empresa com sede em Barcelona. Produto próprio, infraestrutura própria e desenvolvimento contínuo. Não somos o projeto paralelo de ninguém.",
+ "MOTOCLUBES TECH S.L.U., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.":
+   "MOTOCLUBES TECH S.L.U., uma empresa com sede em Barcelona. Produto próprio, infraestrutura própria e desenvolvimento contínuo. Não somos o projeto paralelo de ninguém.",
  "Próximamente en las dos tiendas":"Em breve nas duas lojas",
  "La app está terminando su fase de pruebas. Cuando esté publicada, aquí estarán los dos enlaces.":
    "A app está a terminar a fase de testes. Quando estiver publicada, os dois links estarão aqui.",
@@ -547,7 +547,7 @@ IT = {
  "Quien viaja en moto lo conoce: la ruta en una app, la quedada en un grupo de WhatsApp, la voz en un intercomunicador que no se habla con el del de al lado, y a mitad de camino nadie sabe dónde está el resto. Cinco herramientas para una sola salida.": "Chi viaggia in moto lo sa: il percorso in un'app, il ritrovo in un gruppo WhatsApp, la voce in un interfono che non parla con quello di chi ti sta accanto, e a metà strada nessuno sa dove sono gli altri. Cinque strumenti per una sola uscita.",
  "MOTOCLUBes nace de ahí. No de añadir una app más, sino de que planificar la ruta, navegarla y rodarla con tu gente dejen de ser tres cosas separadas. Lo construimos moteros, se prueba en carretera, y seguimos en ello.": "MOTOCLUBes nasce da qui. Non per aggiungere un'app in più, ma perché pianificare il percorso, navigarlo e farlo con la tua gente smettano di essere tre cose separate. La costruiamo noi biker, si prova su strada, e andiamo avanti.",
  "El equipo de MOTOCLUBes": "Il team di MOTOCLUBes",
- "Moteros · MOTOCLUBES TECH S.L., Barcelona": "Biker · MOTOCLUBES TECH S.L., Barcellona",
+ "Moteros · MOTOCLUBES TECH S.L.U., Barcelona": "Biker · MOTOCLUBES TECH S.L.U., Barcellona",
  "¿Tienes un bar, un hotel o un taller?": "Hai un bar, un hotel o un'officina?",
  "Los moteros paran donde se les trata bien. El portal Rider Friendly te deja darte de alta, publicar tus ofertas y validarlas con un código cuando el rider llega a tu puerta.": "I biker si fermano dove vengono trattati bene. Il portale Rider Friendly ti permette di registrarti, pubblicare le tue offerte e convalidarle con un codice quando il biker arriva alla tua porta.",
  "Entrar al portal de negocios": "Entra nel portale per le attività",
@@ -568,7 +568,7 @@ IT = {
  "¿Y si mi grupo va con iPhone y con Android?": "E se nel mio gruppo c'è chi ha iPhone e chi Android?",
  "Da igual. La app es nativa en las dos plataformas y todo funciona entre ellas: el grupo, la salida, el mapa y la voz.": "Non importa. L'app è nativa su entrambe le piattaforme e tutto funziona tra l'una e l'altra: il gruppo, l'uscita, la mappa e la voce.",
  "¿Quién está detrás de esto?": "Chi c'è dietro?",
- "MOTOCLUBES TECH S.L., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.": "MOTOCLUBES TECH S.L., un'azienda con sede a Barcellona. Prodotto proprio, infrastruttura propria e sviluppo continuo. Non siamo il progetto secondario di nessuno.",
+ "MOTOCLUBES TECH S.L.U., una empresa con sede en Barcelona. Producto propio, infraestructura propia y desarrollo continuo. No somos el proyecto paralelo de nadie.": "MOTOCLUBES TECH S.L.U., un'azienda con sede a Barcellona. Prodotto proprio, infrastruttura propria e sviluppo continuo. Non siamo il progetto secondario di nessuno.",
  "Próximamente en las dos tiendas": "Presto su entrambi gli store",
  "La app está terminando su fase de pruebas. Cuando esté publicada, aquí estarán los dos enlaces.": "L'app sta finendo la fase di test. Quando sarà pubblicata, qui troverai i due link.",
  "Próximamente en": "Presto su",
@@ -655,7 +655,7 @@ IT.update({_SOS_T: "SOS al gruppo", _SOS_P: "Se hai bisogno di aiuto, tieni il d
 _WM = {
  "lema": "La app GPS para moto: planifica, navega y sal en grupo.",
  "boton": ">Pruébala ya<",
- "beta": "Estamos rodando la app con casi 170 moteros antes de abrirla al público. Pruébala ya como tester, o déjanos tu correo y te avisamos el día que salga.",
+ "beta": "Estamos rodando la app con casi 185 moteros antes de abrirla al público. Pruébala ya como tester, o déjanos tu correo y te avisamos el día que salga.",
  "c1t": "Todo a mano al abrir", "c1p": "Tus grupos, tus últimas rutas y lo que publica la comunidad.",
  "c2p": "Individuales, de grupo y de varios días, con sus etapas.",
  "c3t": "Gasolineras con precio", "c3p": "Las de tu alrededor, con el precio de hoy y las baratas en verde.",
@@ -667,7 +667,7 @@ _WM = {
 }
 _WM_TR = {
  "fr": {"lema": "L'app GPS pour la moto : préparez, naviguez et roulez en groupe.", "boton": ">Essayez-la<",
-   "beta": "Nous testons l'app sur la route avec près de 170 motards avant de l'ouvrir au public. Essayez-la dès maintenant comme testeur, ou laissez-nous votre e-mail et nous vous préviendrons le jour de sa sortie.",
+   "beta": "Nous testons l'app sur la route avec près de 185 motards avant de l'ouvrir au public. Essayez-la dès maintenant comme testeur, ou laissez-nous votre e-mail et nous vous préviendrons le jour de sa sortie.",
    "c1t": "Tout sous la main", "c1p": "Vos groupes, vos derniers itinéraires et ce que publie la communauté.",
    "c2p": "Solo, en groupe et sur plusieurs jours, avec leurs étapes.",
    "c3t": "Des stations avec les prix", "c3p": "Celles autour de vous, au prix du jour, les moins chères en vert.",
@@ -677,7 +677,7 @@ _WM_TR = {
    "batq": "Est-ce qu'elle consomme beaucoup de batterie ?",
    "batp": "Moins qu'on ne le croit : MOTOCLUBes ne travaille que pendant que vous naviguez ou enregistrez. Avec le téléphone dans la poche et l'écran éteint, elle consomme environ 5 % par heure, et avec l'écran toujours allumé, environ 20 %. Sur Android, désactivez l'économie de batterie pour MOTOCLUBes : la première fois que vous naviguez, l'app vous emmène dans les réglages."},
  "pt": {"lema": "A app GPS para mota: planeia, navega e sai em grupo.", "boton": ">Experimenta já<",
-   "beta": "Estamos a testar a app na estrada com quase 170 motociclistas antes de a abrir ao público. Experimenta-a já como tester, ou deixa-nos o teu e-mail e avisamos-te no dia em que sair.",
+   "beta": "Estamos a testar a app na estrada com quase 185 motociclistas antes de a abrir ao público. Experimenta-a já como tester, ou deixa-nos o teu e-mail e avisamos-te no dia em que sair.",
    "c1t": "Tudo à mão ao abrir", "c1p": "Os teus grupos, as tuas últimas rotas e o que a comunidade publica.",
    "c2p": "Individuais, de grupo e de vários dias, com as suas etapas.",
    "c3t": "Bombas com preço", "c3p": "As que tens à volta, com o preço de hoje e as baratas a verde.",
@@ -687,7 +687,7 @@ _WM_TR = {
    "batq": "Gasta muita bateria?",
    "batp": "Menos do que parece: o MOTOCLUBes só trabalha enquanto navegas ou gravas. Com o telemóvel no bolso e o ecrã apagado gasta cerca de 5 % por hora, e com o ecrã sempre ligado, cerca de 20 %. No Android, tira a poupança de bateria ao MOTOCLUBes: na primeira vez que navegas, a app leva-te às definições."},
  "it": {"lema": "L'app GPS per la moto: pianifica, naviga ed esci in gruppo.", "boton": ">Provala subito<",
-   "beta": "Stiamo provando l'app su strada con quasi 170 motociclisti prima di aprirla al pubblico. Provala subito come tester, oppure lasciaci la tua email e ti avvisiamo il giorno in cui esce.",
+   "beta": "Stiamo provando l'app su strada con quasi 185 motociclisti prima di aprirla al pubblico. Provala subito come tester, oppure lasciaci la tua email e ti avvisiamo il giorno in cui esce.",
    "c1t": "Tutto a portata di mano appena apri", "c1p": "I tuoi gruppi, i tuoi ultimi percorsi e quello che pubblica la community.",
    "c2p": "In solitaria, di gruppo e di più giorni, con le loro tappe.",
    "c3t": "Distributori con il prezzo", "c3p": "Quelli intorno a te, con il prezzo di oggi e i più economici in verde.",
@@ -706,6 +706,59 @@ IT[">Planifica en el ordenador<"] = ">Pianifica dal computer<"
 # En francés, más cortos, para que quepan en una línea en el móvil.
 FR['<a href="#funciones">Ver qué hace</a><span>'] = '<a href="#funciones">Ce qu\'elle fait</a><span>'
 FR['<a href="negocio/">Soy un negocio</a><span>'] = '<a href="/negocio/">Espace pro</a><span>'
+
+# REPASO-WEB-25NOV-1 (chat de marketing, 25-nov-2026, sí de Mario 09:24): la portada al día con lo que ya tienen los riders en la
+# versión publicada (iPhone 1.26.1122 · Android 1.26.11224): el tiempo en la ruta hasta 14 días, el SOS yendo solo, las cámaras de
+# semáforo, esconder el principio y el final al publicar, los países del ranking y el foro traducido.
+_R25_ES = [
+ "El tiempo en tu ruta, hasta 14 días antes",
+ "Pon el día y la hora de salida y ves el tiempo en cada tramo, a la hora a la que pasas por allí: lluvia, temperatura, viento y rachas. Y el día antes y esa misma mañana te lo recordamos.",
+ "SOS, en grupo y yendo solo",
+ _SOS_P + " Y si sales solo, avisa a tus contactos de emergencia con tu ubicación.",
+ "Te avisa de los radares fijos, de tramo y de semáforo, y del límite antes de que baje, con ruta o sin ella. En Francia, las zonas de peligro, como marca su ley.",
+ "Cada ruta se publica o se queda para ti, y lo puedes cambiar cuando quieras. Al publicarla, puedes esconder el principio y el final para que nadie sepa dónde vives.",
+ "Kilómetros, curvas, provincias, países, puertos, motos y grupos: el ranking del mes y el de siempre, con sus hitos.",
+ "Preguntas, rutas recomendadas y lo que salga, con moderación de verdad. Y lo lees en tu idioma.",
+ "No. Solo te ven los compañeros de tu salida, y solo mientras dura. Y si no quieres compartir tu posición, lo apagas en tu perfil. Y cuando publicas una ruta, puedes esconder dónde empieza y dónde acaba.",
+]
+_R25_TR = {
+ "fr": [
+  "La météo sur votre itinéraire, jusqu'à 14 jours avant",
+  "Indiquez le jour et l'heure du départ et voyez la météo sur chaque tronçon, à l'heure où vous y passez : pluie, température, vent et rafales. Et la veille et le matin même, on vous le rappelle.",
+  "SOS, en groupe et en solo",
+  FR[_SOS_P] + " Et si vous roulez seul, elle prévient vos contacts d'urgence avec votre position.",
+  "Vous prévient des radars fixes, de tronçon et de feu rouge, et de la limite avant qu'elle ne baisse, avec ou sans itinéraire. En France, les zones de danger, comme le veut la loi.",
+  "Chaque itinéraire est publié ou reste pour vous, et vous pouvez changer d'avis quand vous voulez. En le publiant, vous pouvez masquer le départ et l'arrivée pour que personne ne sache où vous habitez.",
+  "Kilomètres, virages, provinces, pays, cols, motos et groupes : le classement du mois et celui de toujours, avec leurs paliers.",
+  "Questions, itinéraires recommandés et tout ce qui vient, avec une vraie modération. Et vous le lisez dans votre langue.",
+  "Non. Seuls les membres de votre sortie vous voient, et seulement pendant qu’elle dure. Et si vous ne voulez pas partager votre position, vous la désactivez dans votre profil. Et quand vous publiez un itinéraire, vous pouvez masquer où il commence et où il se termine.",
+ ],
+ "pt": [
+  "O tempo na tua rota, até 14 dias antes",
+  "Põe o dia e a hora de saída e vês o tempo em cada troço, à hora a que passas por lá: chuva, temperatura, vento e rajadas. E na véspera e nessa mesma manhã lembramos-te.",
+  "SOS, em grupo e sozinho",
+  PT[_SOS_P] + " E se sais sozinho, avisa os teus contactos de emergência com a tua localização.",
+  "Avisa-te dos radares fixos, de troço e de semáforo, e do limite antes de baixar, com ou sem rota. Em França, as zonas de perigo, como manda a lei.",
+  "Cada rota é publicada ou fica só para ti, e podes mudar quando quiseres. Ao publicá-la, podes esconder o início e o fim para que ninguém saiba onde vives.",
+  "Quilómetros, curvas, províncias, países, passos de montanha, motas e grupos: o ranking do mês e o de sempre, com as suas metas.",
+  "Perguntas, rotas recomendadas e o que aparecer, com moderação a sério. E lês tudo na tua língua.",
+  "Não. Só te veem os companheiros da tua saída, e só enquanto dura. E se não quiseres partilhar a tua posição, desligas no teu perfil. E quando publicas uma rota, podes esconder onde começa e onde acaba.",
+ ],
+ "it": [
+  "Il meteo sul tuo percorso, fino a 14 giorni prima",
+  "Imposta il giorno e l'ora di partenza e vedi il meteo su ogni tratto, all'ora in cui ci passi: pioggia, temperatura, vento e raffiche. E il giorno prima e la mattina stessa te lo ricordiamo.",
+  "SOS, in gruppo e da solo",
+  IT[_SOS_P] + " E se esci da solo, avvisa i tuoi contatti di emergenza con la tua posizione.",
+  "Ti avvisa degli autovelox fissi, dei Tutor e dei T-Red, e del limite prima che si abbassi, con o senza percorso. In Francia, le zone di pericolo, come prevede la legge francese.",
+  "Ogni percorso si pubblica o resta solo tuo, e puoi cambiare idea quando vuoi. Quando lo pubblichi, puoi nascondere l'inizio e la fine perché nessuno sappia dove abiti.",
+  "Chilometri, curve, province, paesi, passi, moto e gruppi: la classifica del mese e quella di sempre, con i loro obiettivi.",
+  "Domande, percorsi consigliati e tutto quello che viene, con una moderazione vera. E lo leggi nella tua lingua.",
+  "No. Ti vedono solo i compagni della tua uscita, e solo finché dura. E se non vuoi condividere la tua posizione, la disattivi nel tuo profilo. E quando pubblichi un percorso, puoi nascondere dove inizia e dove finisce.",
+ ],
+}
+for _d, _c in ((FR, "fr"), (PT, "pt"), (IT, "it")):
+    _d.update(dict(zip(_R25_ES, _R25_TR[_c])))
+
 
 def generar(destino, dic, codigo, locale):
     s = io.open('index.html', encoding='utf8').read()

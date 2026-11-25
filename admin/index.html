@@ -940,6 +940,8 @@ function estadoFila(t) {
 const REDES = ['facebook', 'linkedin', 'tiktok', 'youtube', 'x']
 function grupoOrigen(o) {
   o = String(o || '')
+  // REPASO-WEB-25NOV-1 (25-nov): desde hoy /probar/ guarda también el canal, «probar.instagram», «probar.web»…: cuenta en su canal.
+  if (o.startsWith('probar.')) return grupoOrigen(o.slice(7) === 'rutas' ? 'web' : o.slice(7))
   if (o === 'instagram') return ['instagram', 'Instagram']
   if (o.startsWith('probar-') && o !== 'probar-lista') return ['riders', 'Invitados por otros riders']
   if (o.startsWith('personal')) return ['persona', 'En persona (tú)']
@@ -1097,6 +1099,7 @@ function deDonde(o) {
   if (o === 'probar-lista') return 'Invitación a la lista de la web'
   if (o.startsWith('probar-')) return 'Invitado por ' + o.slice(7)
   if (o === 'probar') return 'Página «Probar»'
+  if (o.startsWith('probar.')) { const c = o.slice(7); return 'Página «Probar» · ' + (c === 'rutas' ? 'desde una ruta de la web' : (ORIG[c] || c)) } // REPASO-WEB-25NOV-1
   if (o.startsWith('personal')) return 'En persona' + (o.length > 9 ? ' · ' + o.slice(9).replace(/-/g, ' ').replace(/(^| )\S/g, (x) => x.toUpperCase()) : '')
   return ORIG[o] || o
 }

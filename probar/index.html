@@ -11,14 +11,14 @@
 <meta property="og:site_name" content="MOTOCLUBes">
 <meta property="og:url" content="https://www.motoclubes.es/probar/">
 <meta property="og:title" content="Vente a probar MOTOCLUBes, la app GPS para moto">
-<meta property="og:description" content="Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.">
+<meta property="og:description" content="Planifica, navega con voz y sal en grupo, con SOS en grupo o yendo solo. Apúntate y te mandamos la invitación para iPhone o Android.">
 <meta property="og:image" content="https://www.motoclubes.es/img/og-probar.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Vente a probar MOTOCLUBes, la app GPS para moto">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Vente a probar MOTOCLUBes, la app GPS para moto">
-<meta name="twitter:description" content="Planifica, navega con voz y sal en grupo, con SOS al grupo. Apúntate y te mandamos la invitación para iPhone o Android.">
+<meta name="twitter:description" content="Planifica, navega con voz y sal en grupo, con SOS en grupo o yendo solo. Apúntate y te mandamos la invitación para iPhone o Android.">
 <meta name="twitter:image" content="https://www.motoclubes.es/img/og-probar.png">
 <link rel="icon" type="image/png" href="../img/helmet-256.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -129,12 +129,12 @@
     <img class="pr-casco" src="../img/helmet-256.png" alt="">
     <h1 id="titulo-alta">Vente a probar <b>MOTOCLUBes</b></h1>
     <!-- WEB-MARKETING-1 (155.ª, Mario 11:37: «en el móvil quedaba largo»): frases cortas, para que «¿Qué móvil tienes?» se vea sin bajar. -->
-    <p class="sub">La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.<br><b class="pr-cuantos">Ya somos casi 170 moteros probándola.</b></p>
+    <p class="sub">La app GPS para moto, hecha por moteros. Pruébala antes de que salga en las tiendas.<br><b class="pr-cuantos">Ya somos casi 185 moteros probándola.</b></p>
     <ul class="pr-puntos">
-      <li><span>🗺️</span><div>Planifica rutas con curvas, puertos y gasolineras.</div></li>
+      <li><span>🗺️</span><div>Planifica rutas con curvas, puertos, gasolineras y el tiempo.</div></li>
       <li><span>🧭</span><div>Navega con voz, en la pantalla de la moto y sin cobertura.</div></li>
       <li><span>🏍️</span><div>Sal en grupo: todos en el mapa y hablando por la radio.</div></li>
-      <li><span>🆘</span><div>SOS al grupo: 3 segundos en el mapa y tu grupo sabe dónde estás.</div></li>
+      <li><span>🆘</span><div>SOS en grupo o yendo solo: 3 segundos en el mapa y tu gente sabe dónde estás.</div></li>
     </ul>
 
     <form id="form-alta" novalidate>
@@ -217,6 +217,11 @@
   // INVITAR-LISTA-1 (109.ª): ?o=lista viene de la invitación a la lista «Avísame» de la web (web-invitar-testers): su correo
   // ya está confirmado, así que no se les dice «pulsa Confirmar» (si ponen otro correo distinto, sí les llega ese paso).
   var lista = q.get('o') === 'lista';
+  // REPASO-WEB-25NOV-1 (Mario, 25-nov 09:25: «saber de dónde vienen las altas, si de Instagram o de otro sitio»): el canal del
+  // enlace (?o=instagram, linkedin, web, rutas…) se guarda con un punto, «probar.instagram». Con guion no: «probar-<apodo>» quiere
+  // decir «le invita ese rider» (QUIEN-INVITA-1). web-aviso deja pasar a-z 0-9 . _ - (40 letras) y todo lo que empieza por
+  // «probar» sigue siendo el alta de tester (iPhone con TestFlight solo al confirmar).
+  var canal = (q.get('o') || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
   var enlace = 'https://www.motoclubes.es/probar/' + (de ? '?de=' + encodeURIComponent(de) : '');
 
   if (q.get('compartir') === '1') {
@@ -283,7 +288,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        t: 'alta', f: 'probar', email: email, i: 'es', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : 'probar'),
+        t: 'alta', f: 'probar', email: email, i: 'es', o: de ? 'probar-' + de.toLowerCase() : (lista ? 'probar-lista' : (canal ? 'probar.' + canal : 'probar')),
         probar: true, plat: plat(), acepta: true, web: f.web.value
       })
     }).then(function (r) {

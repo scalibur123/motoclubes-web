@@ -33,7 +33,8 @@ ICO = {
     "vuela": I["Vuela la ruta antes de hacerla"], "voz": I["Radio del grupo"], "vivo": I["Seguimiento en vivo"],
     "gasolina": I["Gasolineras de cuatro países"], "lugar": I["Tus lugares"], "coche": I["CarPlay y Android Auto"],
     "candado": I["Pública o privada, tú decides"], "fotos": I["Las fotos de la salida"], "retos": I["Ranking, logros y retos"],
-    "foro": I["Foro de la comunidad"], "rf": I["Rider Friendly"], "sos": I["SOS al grupo"],
+    "foro": I["Foro de la comunidad"], "rf": I["Rider Friendly"], "sos": I["SOS, en grupo y yendo solo"],
+    "tiempo": I["El tiempo en tu ruta, hasta 14 días antes"],  # REPASO-WEB-25NOV-1: los títulos de la portada cambiaron
 }
 
 PREGUNTA_DESCARGA = ("¿Cuándo la puedo descargar?",
@@ -54,12 +55,14 @@ PAGINAS = [
             ("brujula", "Elige cómo quieres rodar", "Rápida, por curvas o por pista, con o sin peajes. Y a mitad de camino, «desde aquí, rápida» si se te hace tarde."),
             ("voz", "La voz, en el casco", "Indicaciones cortas y claras por tu intercomunicador, también mientras escuchas música."),
             ("vivo", "Con el móvil bloqueado", "La navegación sigue con el GPS activo aunque el teléfono vaya en el bolsillo o con la pantalla apagada."),
-            ("pin", "Radares y límite de velocidad", "Te avisa de los radares fijos y de tramo de tu ruta, y del límite antes de que baje. En Francia, las zonas de peligro, como marca su ley."),
+            ("pin", "Radares y límite de velocidad", "Te avisa de los radares fijos, de tramo y de semáforo de tu ruta, y del límite antes de que baje. En Francia, las zonas de peligro, como marca su ley."),
             ("gasolina", "Gasolineras con precio", "Más de 24.000 en España, Francia, Portugal y Andorra, con el precio de cada mañana. Las baratas, en verde."),
             ("mapa", "Recalcula al momento", "Si te sales de la ruta, vuelve a calcular en un par de segundos y te devuelve a tu carretera."),
             ("lugar", "Sin cobertura, también", "La ruta se queda guardada en el móvil y la navegación sigue aunque te quedes sin señal, que en la montaña pasa."),
             ("coche", "En la pantalla de la moto", "Con CarPlay o Android Auto, la ruta, los giros, las paradas, los radares y tus compañeros salen en la pantalla de la moto o del coche."),
             ("retos", "Todo lo que ruedas, guardado", "Cada salida queda grabada con su recorrido real, sus kilómetros y su tiempo."),
+            # REPASO-WEB-25NOV-1 (25-nov, sí de Mario): el SOS yendo solo (publicado en la 1.26.1119).
+            ("sos", "SOS también yendo solo", "Si sales solo y te pasa algo, mantén el dedo 3 segundos en el mapa y tus contactos de emergencia reciben el aviso con tu ubicación."),
         ],
         "faq": [
             ("¿Me sirve como GPS de moto sin comprar un navegador?",
@@ -126,6 +129,8 @@ PAGINAS = [
             ("lugar", "En el ordenador, a lo grande", "Planifica en la pantalla del ordenador y la tienes al momento en el móvil para navegarla."),
             ("vuela", "Vuélala antes de hacerla", "Vista aérea de todo el recorrido, para ver por dónde vas a pasar sin salir de casa."),
             ("fotos", "Compártela y hazle un vídeo", "Tu ruta en una página que cualquiera puede ver, y un vídeo vertical del recorrido para tus redes."),
+            # REPASO-WEB-25NOV-1 (25-nov, sí de Mario): «El tiempo en la ruta» (publicado en la 1.26.1122, también en el planificador web).
+            ("tiempo", "El tiempo en tu ruta", "Pon el día y la hora de salida y ves el tiempo de cada tramo a la hora a la que pasas, hasta 14 días antes. También en el ordenador."),
         ],
         "boton_extra": ("/planificar/", "🖥️ Planifica en el ordenador"),
         "faq": [
@@ -198,7 +203,7 @@ def pagina(p, cab, pie):
         "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "MOTOCLUBes",
         "operatingSystem": "iOS, Android", "applicationCategory": "TravelApplication",
         "description": p["description"], "url": url,
-        "publisher": {"@type": "Organization", "name": "MOTOCLUBES TECH S.L.", "url": BASE + "/"},
+        "publisher": {"@type": "Organization", "name": "MOTOCLUBES TECH S.L.U.", "url": BASE + "/"},
     }
     faq = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
         {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in p["faq"]]}
@@ -238,7 +243,7 @@ def pagina(p, cab, pie):
 <meta name="twitter:description" content="{e(p['description'])}">
 <meta name="twitter:image" content="{BASE}/img/og.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/mc.css?v=15oct1">
+<link rel="stylesheet" href="/assets/mc.css?v=19nov2">
 <script type="application/ld+json">{json.dumps(app, ensure_ascii=False)}</script>
 <script type="application/ld+json">{json.dumps(faq, ensure_ascii=False)}</script>
 <script type="application/ld+json">{json.dumps(migas, ensure_ascii=False)}</script>
@@ -252,7 +257,7 @@ def pagina(p, cab, pie):
     <p class="entradilla">{e(p['entradilla'])}</p>
     <div class="acciones" style="animation:none;justify-content:flex-start">
       <a class="boton boton-principal" href="/#avisame">Avísame cuando salga</a>
-      <a class="boton boton-suave" href="/probar/">Quiero probarla ya</a>{extra}
+      <a class="boton boton-suave" href="/probar/?o=web">Quiero probarla ya</a>{extra}
     </div>
   </div>
 </section>
