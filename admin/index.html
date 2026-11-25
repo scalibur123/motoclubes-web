@@ -2795,9 +2795,10 @@ async function abrirHilo(id) {
   $('fo-hilo').innerHTML = '<div class="sub">Cargando…</div>'
   const hiloCon = (campos) => sb.from('threads').select(campos).eq('id', id).maybeSingle()
   let [{ data: h, error }, { data: ps, error: e2 }] = await Promise.all([
-    hiloCon('id, user_id, category, title, body, created_at, video_url, foto_url'), // FORO-WEB-FOTO-1: el vídeo y la foto de la noticia, como en el móvil
+    hiloCon('id, user_id, category, title, body, created_at, video_url, foto_url, fotos'), // FORO-WEB-FOTO-1: el vídeo y las fotos de la noticia, como en el móvil
     sb.from('posts').select('id, user_id, body, created_at').eq('thread_id', id).is('hidden_at', null).order('created_at', { ascending: true }),
   ])
+  if (error && error.code === '42703') ({ data: h, error } = await hiloCon('id, user_id, category, title, body, created_at, video_url, foto_url')) // sin el SQL de las fotos aún
   if (error && error.code === '42703') ({ data: h, error } = await hiloCon('id, user_id, category, title, body, created_at')) // sin esas columnas: como antes
   if (foAbierto !== id) return
   if (error || e2 || !h) { $('fo-hilo').innerHTML = ''; verForoLista(); return foAviso('No se ha podido abrir el hilo: ' + esc((error || e2)?.message || 'ya no está')) }
@@ -2806,9 +2807,13 @@ async function abrirHilo(id) {
   const msg = (quien, cuando, texto, arriba = '') => `<div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px"><div class="sub">${foQuien(quien)} · ${fechaHora(cuando)}</div>${arriba}${foTexto(texto)}</div>`
   // FORO-WEB-FOTO-1 (Mario, 25-nov: «no aparece la foto»): arriba del texto, el vídeo y la foto, en el orden del móvil (app.foro.$id.tsx).
   // La foto, solo en las noticias (en un hilo de rider no se enseña una foto de fuera, igual que en el móvil); tocarla la abre entera.
-  const fotoUrl = h.category === 'noticias' && /^https:\/\//i.test(h.foto_url || '') ? h.foto_url : null
+  // NOTICIA-FOTOS-VARIAS-1: si la noticia trae varias fotos, todas en su orden, cada una con su título debajo; si no, la de siempre.
+  const buena = (u) => typeof u === 'string' && /^https:\/\//i.test(u)
+  const fotos = h.category !== 'noticias' ? []
+    : Array.isArray(h.fotos) && h.fotos.some(f => buena(f?.url)) ? h.fotos.filter(f => buena(f?.url)).map(f => ({ url: f.url, pie: typeof f.pie === 'string' ? f.pie.trim() : '' }))
+    : buena(h.foto_url) ? [{ url: h.foto_url, pie: '' }] : []
   const medios = (h.video_url ? (urlVid ? `<video src="${esc(urlVid)}" controls preload="metadata" playsinline style="width:100%;max-height:420px;border-radius:12px;background:#000"></video>` : '<div class="sub">No se puede ver el vídeo ahora.</div>') : '')
-    + (fotoUrl ? `<a href="${esc(fotoUrl)}" target="_blank" rel="noreferrer" style="display:block"><img src="${esc(fotoUrl)}" alt="" loading="lazy" style="display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:12px;background:#f3f3f3"></a>` : '')
+    + fotos.map(f => `<div><a href="${esc(f.url)}" target="_blank" rel="noreferrer" style="display:block"><img src="${esc(f.url)}" alt="" loading="lazy" style="display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:12px;background:#f3f3f3"></a>${f.pie ? `<div class="sub" style="margin-top:4px">${esc(f.pie)}</div>` : ''}</div>`).join('')
   $('fo-hilo').innerHTML = `<div><button class="btn2" id="fo-volver">← Volver al foro</button></div>
     <div><span class="chip gris">${esc(FO_CAT[h.category] || h.category)}</span><h2 style="margin-top:8px;font-size:22px">${esc(h.title)}</h2></div>
     ${msg(h.user_id, h.created_at, h.body, medios)}
