@@ -307,7 +307,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
          y su orden; en la app salen una tras otra, deslizando (antes, una: NOTICIA-FOTO-1). Lo mismo que en el móvil (A80). -->
     <div>
       <div style="font-size:12px;font-weight:700;letter-spacing:.04em">FOTOS (OPCIONAL) · <span id="n-fotos-n">0</span> DE 6</div>
-      <div class="sub" style="margin-top:2px">Una por cada rider, grupo o sitio que sale. En la app salen una tras otra, deslizando, con su pie debajo.</div>
+      <div class="sub" style="margin-top:2px">Una por cada rider, grupo o sitio que sale. Debajo de cada foto escribe su título. En la app salen una tras otra, deslizando, con el título debajo.</div>
       <div id="n-fotos" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
       <label class="btn2" id="n-fotos-mas" style="display:inline-block;margin-top:8px;cursor:pointer">+ Añadir fotos<input type="file" id="n-foto" accept="image/*" multiple hidden></label>
     </div>
@@ -1597,15 +1597,15 @@ let NFOTOS = []
 function pintarNFotos() {
   $('n-fotos-n').textContent = NFOTOS.length
   $('n-fotos-mas').style.display = NFOTOS.length >= 6 ? 'none' : 'inline-block'
-  $('n-fotos').innerHTML = NFOTOS.map((f, k) => `<div class="card" style="display:flex;gap:10px;align-items:center;padding:8px">
-    <img src="${f.vista}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px;flex:0 0 72px">
-    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-      <input type="text" class="n-pie" data-k="${k}" maxlength="120" placeholder="Pie de foto (p. ej. Joca · Coll de la Creuta)" value="${esc(f.pie)}">
-      <div style="display:flex;gap:6px;align-items:center;font-size:12px"><span class="sub">${k + 1}.ª · ${esc(f.fichero.name)} · ${mb(f.fichero.size)}</span>
-        <button class="btn2 n-sube" data-k="${k}" ${k === 0 ? 'disabled' : ''}>↑ Antes</button>
-        <button class="btn2 n-baja" data-k="${k}" ${k === NFOTOS.length - 1 ? 'disabled' : ''}>↓ Después</button>
-        <button class="btn2 n-quita" data-k="${k}" style="margin-left:auto;color:#c0392b">Quitar</button></div>
-    </div></div>`).join('')
+  // Mario (11:00): la foto y, debajo, su título, que lo escribe él; nunca el nombre del fichero del carrete.
+  $('n-fotos').innerHTML = NFOTOS.map((f, k) => `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:10px;max-width:460px">
+    <img src="${f.vista}" alt="" style="width:100%;max-height:240px;object-fit:cover;border-radius:8px">
+    <input type="text" class="n-pie" data-k="${k}" maxlength="120" placeholder="Título de la foto: sale debajo (p. ej. Joca · Coll de la Creuta)" value="${esc(f.pie)}">
+    <div style="display:flex;gap:6px;align-items:center;font-size:12px"><span class="sub">Foto ${k + 1} de ${NFOTOS.length}</span>
+      <button class="btn2 n-sube" data-k="${k}" ${k === 0 ? 'disabled' : ''}>↑ Antes</button>
+      <button class="btn2 n-baja" data-k="${k}" ${k === NFOTOS.length - 1 ? 'disabled' : ''}>↓ Después</button>
+      <button class="btn2 n-quita" data-k="${k}" style="margin-left:auto;color:#c0392b">Quitar</button></div>
+    </div>`).join('')
 }
 $('n-foto').onchange = () => {
   const nuevas = Array.from($('n-foto').files || []).slice(0, 6 - NFOTOS.length).map(fichero => ({ fichero, vista: URL.createObjectURL(fichero), pie: '' }))
