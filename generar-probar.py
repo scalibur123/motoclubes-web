@@ -342,6 +342,25 @@ for _k, _v in _R25.items():
         T[_l][_k] = _t
 
 
+# GMAIL-AVISO-1 (25-nov-2026, Mario: «perfecto, mucho mejor»): el aviso de Android cuando el correo no es de Gmail.
+_GM = {
+ 'Ese correo no parece el de tu Play Store.': {
+   'en': 'That doesn’t look like your Play Store email.', 'ca': 'Aquest correu no sembla el de la teva Play Store.',
+   'fr': 'Cette adresse ne ressemble pas à celle de votre Play Store.', 'pt': 'Esse e-mail não parece o da tua Play Store.',
+   'it': 'Questa email non sembra quella del tuo Play Store.'},
+ 'Para Android necesitamos el correo con el que entras en Play Store, casi siempre un Gmail. Para verlo: abre Play Store, toca tu foto arriba a la derecha y debajo de tu nombre sale tu correo.': {
+   'en': 'For Android we need the email you use to sign in to the Play Store, almost always a Gmail. To see it: open the Play Store, tap your photo at the top right and your email shows under your name.',
+   'ca': 'Per a Android necessitem el correu amb què entres a la Play Store, gairebé sempre un Gmail. Per veure’l: obre la Play Store, toca la teva foto a dalt a la dreta i sota el teu nom surt el teu correu.',
+   'fr': 'Pour Android, il nous faut l’adresse avec laquelle vous vous connectez au Play Store, presque toujours un Gmail. Pour la voir : ouvrez le Play Store, touchez votre photo en haut à droite et votre adresse apparaît sous votre nom.',
+   'pt': 'Para Android precisamos do e-mail com que entras na Play Store, quase sempre um Gmail. Para o veres: abre a Play Store, toca na tua foto em cima à direita e por baixo do teu nome aparece o teu e-mail.',
+   'it': 'Per Android ci serve l’email con cui accedi al Play Store, quasi sempre un Gmail. Per vederla: apri il Play Store, tocca la tua foto in alto a destra e sotto il tuo nome compare la tua email.'},
+ '>Lo cambio<': {'en': '>I’ll change it<', 'ca': '>El canvio<', 'fr': '>Je la change<', 'pt': '>Mudo-o<', 'it': '>La cambio<'},
+ '>Es este, seguir<': {'en': '>It’s this one, continue<', 'ca': '>És aquest, continua<', 'fr': '>C’est la bonne, continuer<', 'pt': '>É este, continuar<', 'it': '>È questa, continua<'},
+}
+for _k, _v in _GM.items():
+    for _l, _t in _v.items():
+        T[_l][_k] = _t
+
 def generar(l, dic):
     s = ES
     # El botón del correo de confirmar se llama como en web-aviso (T[idioma].boton): el correo de /probar/ va en su idioma.

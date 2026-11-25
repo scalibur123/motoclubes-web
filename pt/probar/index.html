@@ -62,6 +62,12 @@
   .pr .boton[disabled] { opacity: .6; cursor: default; }
   .pr-msg { min-height: 1em; margin-top: 12px; font-size: 14.5px; text-align: center; }
   .pr-msg.error { color: #ff8a8a; }
+  /* GMAIL-AVISO-1 (25-nov-2026): el aviso de Android cuando el correo no es de Gmail */
+  .pr-gmail { margin-top: 12px; padding: 14px 15px; border-radius: 14px; border: 1.5px solid var(--naranja); background: var(--naranja-suave);
+    font-size: 14.5px; line-height: 1.5; }
+  .pr-gmail p { margin: 0 0 8px; color: var(--texto); }
+  .pr-gmail-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .pr .pr-gmail .boton { min-height: 46px; font-size: 15px; }
   .pr-hecho { text-align: center; }
   .pr-hecho .gran { font-size: 46px; line-height: 1; margin-bottom: 12px; }
   .pr-hecho p { color: var(--texto-2); font-size: 15.5px; margin-bottom: 10px; }
@@ -146,6 +152,12 @@
       <p class="pr-titulo" id="etiqueta-correo">O teu e-mail</p>
       <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="tu@email.pt" aria-labelledby="etiqueta-correo" required>
       <p class="pr-ayuda" id="ayuda-correo"></p>
+      <!-- GMAIL-AVISO-1 (25-nov-2026, Mario: «perfecto, mucho mejor»): con Android y un correo que no es de Gmail, se avisa antes de mandar. -->
+      <div class="pr-gmail" id="aviso-gmail" hidden>
+        <p><b>Esse e-mail não parece o da tua Play Store.</b></p>
+        <p>Para Android precisamos do e-mail com que entras na Play Store, quase sempre um Gmail. Para o veres: abre a Play Store, toca na tua foto em cima à direita e por baixo do teu nome aparece o teu e-mail.</p>
+        <div class="pr-gmail-botones"><button type="button" class="boton boton-principal" id="gm-cambiar">Mudo-o</button><button type="button" class="boton boton-borde" id="gm-seguir">É este, continuar</button></div>
+      </div>
       <label class="pr-casilla"><input type="checkbox" name="acepta"> <span>Li e aceito a <a href="/legal/privacidad/">política de privacidade</a></span></label>
       <div class="pr-trampa" aria-hidden="true"><input type="text" name="web" tabindex="-1" autocomplete="off"></div>
       <button class="boton boton-principal" type="submit">Quero experimentar</button>
@@ -264,11 +276,28 @@
   pintar();
 
   var decir = function (t) { msgA.className = 'pr-msg error'; msgA.textContent = t; };
+  // GMAIL-AVISO-1 (25-nov, Mario: «perfecto, mucho mejor»): con Android, Google solo deja instalar la prueba con la cuenta de Play Store
+  // (casi siempre un Gmail) y la gente pone su Hotmail. Si el correo no es de Gmail, antes de mandar sale el aviso. «Es este, seguir» lo
+  // manda igual, porque hay cuentas de Google con otro correo. Si cambia el correo o el móvil, el aviso se quita.
+  var avisoG = document.getElementById('aviso-gmail'), gmailOk = '';
+  var esGmail = function (e) { return /@(gmail|googlemail)\.com$/i.test(e); };
+  document.getElementById('gm-cambiar').addEventListener('click', function () { avisoG.hidden = true; f.email.focus(); f.email.select(); });
+  document.getElementById('gm-seguir').addEventListener('click', function () {
+    gmailOk = f.email.value.trim().toLowerCase(); avisoG.hidden = true;
+    if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
+  f.email.addEventListener('input', function () { avisoG.hidden = true; });
+  f.querySelectorAll('input[name=plat]').forEach(function (r) { r.addEventListener('change', function () { avisoG.hidden = true; }); });
   f.addEventListener('submit', function (e) {
     e.preventDefault();
     var email = f.email.value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return decir('Revê o e-mail, parece que não está bem escrito.');
     if (!f.acepta.checked) return decir('Marca a caixa de privacidade para te podermos inscrever.');
+    if (plat() === 'android' && !esGmail(email) && gmailOk !== email.toLowerCase()) { // GMAIL-AVISO-1
+      msgA.className = 'pr-msg'; msgA.textContent = ''; avisoG.hidden = false;
+      try { avisoG.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) {}
+      return;
+    }
     var boton = f.querySelector('button');
     boton.disabled = true; msgA.textContent = '';
     fetch(U, {
