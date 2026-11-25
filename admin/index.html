@@ -303,8 +303,14 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>TÍTULO<input type="text" id="n-titulo"></label>
     <label>TEXTO<textarea id="n-texto" rows="14" placeholder="Texto de la noticia… y, al final, la pregunta"></textarea></label>
     <label>VÍDEO (OPCIONAL)<input type="file" id="n-video" accept="video/mp4,video/quicktime"><span class="sub" id="n-video-txt" style="font-weight:500;letter-spacing:0"></span></label>
-    <!-- NOTICIA-FOTO-1 (152.ª, Mario: «solo pueden ser vídeos, no me deja subir fotos»): una foto, sale grande arriba de la noticia -->
-    <label>FOTO (OPCIONAL)<input type="file" id="n-foto" accept="image/*"><span class="sub" id="n-foto-txt" style="font-weight:500;letter-spacing:0"></span></label>
+    <!-- NOTICIA-FOTOS-VARIAS-1 (25-nov-2026, Mario 10:34: «si no, la gente se siente discriminada»): hasta 6 fotos, cada una con su pie
+         y su orden; en la app salen una tras otra, deslizando (antes, una: NOTICIA-FOTO-1). Lo mismo que en el móvil (A80). -->
+    <div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.04em">FOTOS (OPCIONAL) · <span id="n-fotos-n">0</span> DE 6</div>
+      <div class="sub" style="margin-top:2px">Una por cada rider, grupo o sitio que sale. En la app salen una tras otra, deslizando, con su pie debajo.</div>
+      <div id="n-fotos" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+      <label class="btn2" id="n-fotos-mas" style="display:inline-block;margin-top:8px;cursor:pointer">+ Añadir fotos<input type="file" id="n-foto" accept="image/*" multiple hidden></label>
+    </div>
     <label class="check"><input type="checkbox" id="n-avisar"> Avisar a todos <span class="sub" style="font-weight:500">(aviso en el móvil y en la campanita; como mucho una noticia avisada al día)</span></label>
     <div style="display:flex;justify-content:flex-end"><button class="btn" id="n-publicar">Publicar</button></div>
   </div>
@@ -1563,7 +1569,8 @@ async function cargarNoticias() {
   const { data: ats } = await sb.rpc('mc_admin_hilos_atendidos') // si falla, solo cuentan «abierta» y «contestada»
   const atendida = Object.fromEntries((ats || []).map(a => [a.thread_id, a.atendido_at]))
   const pedir = (c) => sb.from('threads').select(c).eq('category', 'noticias').is('hidden_at', null).order('created_at', { ascending: false }).limit(20)
-  let { data, error } = await pedir('id, title, created_at, reply_count, video_url, foto_url') // NOTICIA-FOTO-1
+  let { data, error } = await pedir('id, title, created_at, reply_count, video_url, foto_url, fotos') // NOTICIA-FOTO-1 · NOTICIA-FOTOS-VARIAS-1
+  if (error && error.code === '42703') ({ data, error } = await pedir('id, title, created_at, reply_count, video_url, foto_url')) // sin el SQL de las fotos aún
   if (error && error.code === '42703') ({ data, error } = await pedir('id, title, created_at, reply_count, video_url')) // sin el SQL aún
   if (error) return nAviso('No se han podido cargar las noticias: ' + esc(error.message))
   // PANEL-CONTESTAR-1 (Mario: «las opiniones a cero es mentira»): `reply_count` no se actualiza; se cuentan los comentarios de verdad.
@@ -1582,27 +1589,61 @@ async function cargarNoticias() {
     const nuevo = !yo && (!hasta || new Date(u.created_at) > new Date(hasta))
     return { ...t, n: cs.length, ult: u ? u.created_at : t.created_at, nuevo }
   }).sort((a, b) => (b.nuevo - a.nuevo) || (a.nuevo ? (a.ult < b.ult ? 1 : -1) : (a.created_at < b.created_at ? 1 : -1)))
-  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button>${t.nuevo ? ' <span class="sub" style="font-size:12px;color:var(--od);font-weight:700">💬 comentario nuevo</span>' : ''}</td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}${t.foto_url ? '📷' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
+  $('n-filas').innerHTML = filas.map(t => `<tr class="org-fila" data-noticia="${esc(t.id)}"><td><button class="nombre-c">${esc(t.title)}</button>${t.nuevo ? ' <span class="sub" style="font-size:12px;color:var(--od);font-weight:700">💬 comentario nuevo</span>' : ''}</td><td class="sub">${fecha(t.created_at)}</td><td>${t.n}${t.n ? `<div class="sub" style="font-size:12px">la última ${fechaHora(t.ult)}</div>` : ''}</td><td>${t.video_url ? '🎬' : ''}${Array.isArray(t.fotos) && t.fotos.length > 1 ? `📷×${t.fotos.length}` : t.foto_url ? '📷' : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="sub">Aún no hay noticias.</td></tr>'
 }
 $('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
-$('n-foto').onchange = () => { const f = $('n-foto').files[0]; $('n-foto-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' } // NOTICIA-FOTO-1
+// NOTICIA-FOTOS-VARIAS-1: la lista de fotos del formulario (fichero, vista previa, pie), en su orden.
+let NFOTOS = []
+function pintarNFotos() {
+  $('n-fotos-n').textContent = NFOTOS.length
+  $('n-fotos-mas').style.display = NFOTOS.length >= 6 ? 'none' : 'inline-block'
+  $('n-fotos').innerHTML = NFOTOS.map((f, k) => `<div class="card" style="display:flex;gap:10px;align-items:center;padding:8px">
+    <img src="${f.vista}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px;flex:0 0 72px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+      <input type="text" class="n-pie" data-k="${k}" maxlength="120" placeholder="Pie de foto (p. ej. Joca · Coll de la Creuta)" value="${esc(f.pie)}">
+      <div style="display:flex;gap:6px;align-items:center;font-size:12px"><span class="sub">${k + 1}.ª · ${esc(f.fichero.name)} · ${mb(f.fichero.size)}</span>
+        <button class="btn2 n-sube" data-k="${k}" ${k === 0 ? 'disabled' : ''}>↑ Antes</button>
+        <button class="btn2 n-baja" data-k="${k}" ${k === NFOTOS.length - 1 ? 'disabled' : ''}>↓ Después</button>
+        <button class="btn2 n-quita" data-k="${k}" style="margin-left:auto;color:#c0392b">Quitar</button></div>
+    </div></div>`).join('')
+}
+$('n-foto').onchange = () => {
+  const nuevas = Array.from($('n-foto').files || []).slice(0, 6 - NFOTOS.length).map(fichero => ({ fichero, vista: URL.createObjectURL(fichero), pie: '' }))
+  if (($('n-foto').files || []).length > nuevas.length) nAviso('Como mucho 6 fotos por noticia.')
+  NFOTOS = NFOTOS.concat(nuevas); $('n-foto').value = ''; pintarNFotos()
+}
+$('n-fotos').oninput = (ev) => { const i = ev.target.closest('.n-pie'); if (i) NFOTOS[+i.dataset.k].pie = i.value }
+$('n-fotos').onclick = (ev) => {
+  const b = ev.target.closest('button'); if (!b) return
+  const k = +b.dataset.k
+  if (b.classList.contains('n-sube') && k > 0) [NFOTOS[k - 1], NFOTOS[k]] = [NFOTOS[k], NFOTOS[k - 1]]
+  else if (b.classList.contains('n-baja') && k < NFOTOS.length - 1) [NFOTOS[k + 1], NFOTOS[k]] = [NFOTOS[k], NFOTOS[k + 1]]
+  else if (b.classList.contains('n-quita')) { URL.revokeObjectURL(NFOTOS[k].vista); NFOTOS.splice(k, 1) }
+  pintarNFotos()
+}
 $('n-publicar').onclick = async () => {
-  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0], ff = $('n-foto').files[0]
+  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0]
   if (titulo.length < 5 || texto.length < 20) return nAviso('Falta el título o el texto.')
   if (!confirm(avisar ? '¿Publicarla ya y avisar a todos?' : '¿Publicarla ya? La verá todo el mundo.')) return
   $('n-publicar').disabled = true
   try {
     let ruta = null
     if (f) { $('n-publicar').textContent = 'Subiendo el vídeo…'; ruta = await subirVideoWeb(f, 'noticias') } // si falla, no se publica nada
-    let foto = null
-    if (ff) { $('n-publicar').textContent = 'Subiendo la foto…'; foto = await subirFotoWeb(ff) } // NOTICIA-FOTO-1: igual, si falla no se publica
+    // NOTICIA-FOTOS-VARIAS-1: las fotos, una a una (si una falla, no se publica nada); luego la noticia y sus fotos en un solo paso
+    // (mc_publicar_noticia_fotos: si la base no las acepta, tampoco se publica, y los pies se traducen con el resto).
+    const fotos = []
+    for (let k = 0; k < NFOTOS.length; k++) {
+      $('n-publicar').textContent = NFOTOS.length > 1 ? `Subiendo la foto ${k + 1} de ${NFOTOS.length}…` : 'Subiendo la foto…'
+      fotos.push({ url: await subirFotoWeb(NFOTOS[k].fichero), pie: NFOTOS[k].pie.trim() || null })
+    }
     $('n-publicar').textContent = 'Publicando…'
-    const { data: id, error } = await sb.rpc('mc_publicar_noticia', { p_titulo: titulo, p_texto: texto, p_avisar: avisar })
+    let { data: id, error } = await sb.rpc('mc_publicar_noticia_fotos', { p_titulo: titulo, p_texto: texto, p_avisar: avisar, p_fotos: fotos })
+    // Sin el SQL de las fotos todavía y sin fotos: como antes.
+    if (error && (error.code === 'PGRST202' || error.code === '42883') && !fotos.length) ({ data: id, error } = await sb.rpc('mc_publicar_noticia', { p_titulo: titulo, p_texto: texto, p_avisar: avisar }))
     if (error || !id) throw new Error(error?.message || 'No se ha podido publicar')
     let extra = ''
     if (ruta) { const { error: ev } = await sb.rpc('mc_noticia_video', { p_thread: id, p_video: ruta }); if (ev) extra = ' Pero sin el vídeo: ' + esc(ev.message) }
-    if (foto) { const { error: ef } = await sb.rpc('mc_noticia_foto', { p_thread: id, p_foto: foto }); if (ef) extra += ' Pero sin la foto: ' + esc(ef.message) }
-    $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; $('n-foto').value = ''; $('n-foto-txt').textContent = ''; $('n-avisar').checked = false
+    $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; NFOTOS.forEach(x => URL.revokeObjectURL(x.vista)); NFOTOS = []; pintarNFotos(); $('n-avisar').checked = false
     nAviso((avisar ? '✅ Noticia publicada y avisada a todos.' : '✅ Noticia publicada.') + extra, !extra)
     await cargarNoticias()
   } catch (e) { nAviso('No se ha podido publicar: ' + esc(e.message)) }
