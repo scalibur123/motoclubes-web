@@ -2746,18 +2746,25 @@ async function abrirHilo(id) {
   foAbierto = id; foAviso(''); hiloVisto(id) // NOTICIAS-ORDEN-1: abierta = leída
   $('fo-lista').classList.add('oculto'); $('fo-form').classList.add('oculto'); $('fo-hilo').classList.remove('oculto')
   $('fo-hilo').innerHTML = '<div class="sub">Cargando…</div>'
-  const [{ data: h, error }, { data: ps, error: e2 }] = await Promise.all([
-    sb.from('threads').select('id, user_id, category, title, body, created_at').eq('id', id).maybeSingle(),
+  const hiloCon = (campos) => sb.from('threads').select(campos).eq('id', id).maybeSingle()
+  let [{ data: h, error }, { data: ps, error: e2 }] = await Promise.all([
+    hiloCon('id, user_id, category, title, body, created_at, video_url, foto_url'), // FORO-WEB-FOTO-1: el vídeo y la foto de la noticia, como en el móvil
     sb.from('posts').select('id, user_id, body, created_at').eq('thread_id', id).is('hidden_at', null).order('created_at', { ascending: true }),
   ])
+  if (error && error.code === '42703') ({ data: h, error } = await hiloCon('id, user_id, category, title, body, created_at')) // sin esas columnas: como antes
   if (foAbierto !== id) return
   if (error || e2 || !h) { $('fo-hilo').innerHTML = ''; verForoLista(); return foAviso('No se ha podido abrir el hilo: ' + esc((error || e2)?.message || 'ya no está')) }
-  await foNombresDe([h.user_id, ...(ps || []).map(p => p.user_id)])
+  const [urlVid] = await Promise.all([h.video_url ? urlVideoWeb(h.video_url) : null, foNombresDe([h.user_id, ...(ps || []).map(p => p.user_id)])])
   if (foAbierto !== id) return
-  const msg = (quien, cuando, texto) => `<div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px"><div class="sub">${foQuien(quien)} · ${fechaHora(cuando)}</div>${foTexto(texto)}</div>`
+  const msg = (quien, cuando, texto, arriba = '') => `<div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px"><div class="sub">${foQuien(quien)} · ${fechaHora(cuando)}</div>${arriba}${foTexto(texto)}</div>`
+  // FORO-WEB-FOTO-1 (Mario, 25-nov: «no aparece la foto»): arriba del texto, el vídeo y la foto, en el orden del móvil (app.foro.$id.tsx).
+  // La foto, solo en las noticias (en un hilo de rider no se enseña una foto de fuera, igual que en el móvil); tocarla la abre entera.
+  const fotoUrl = h.category === 'noticias' && /^https:\/\//i.test(h.foto_url || '') ? h.foto_url : null
+  const medios = (h.video_url ? (urlVid ? `<video src="${esc(urlVid)}" controls preload="metadata" playsinline style="width:100%;max-height:420px;border-radius:12px;background:#000"></video>` : '<div class="sub">No se puede ver el vídeo ahora.</div>') : '')
+    + (fotoUrl ? `<a href="${esc(fotoUrl)}" target="_blank" rel="noreferrer" style="display:block"><img src="${esc(fotoUrl)}" alt="" loading="lazy" style="display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:12px;background:#f3f3f3"></a>` : '')
   $('fo-hilo').innerHTML = `<div><button class="btn2" id="fo-volver">← Volver al foro</button></div>
     <div><span class="chip gris">${esc(FO_CAT[h.category] || h.category)}</span><h2 style="margin-top:8px;font-size:22px">${esc(h.title)}</h2></div>
-    ${msg(h.user_id, h.created_at, h.body)}
+    ${msg(h.user_id, h.created_at, h.body, medios)}
     ${(ps || []).map(p => msg(p.user_id, p.created_at, p.body)).join('') || '<div class="sub">Aún no hay respuestas.</div>'}
     <div class="card" style="display:flex;flex-direction:column;gap:10px"><label>TU RESPUESTA<textarea id="fo-resp" rows="6"></textarea></label>
     <label class="check"><input type="checkbox" id="fo-como" checked> Contestar como MOTOCLUBes <span class="sub" style="font-weight:500">(si la quitas, sale con tu cuenta)</span></label>
