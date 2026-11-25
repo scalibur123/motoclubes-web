@@ -252,6 +252,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div><h1>Riders</h1><div class="sub">Todas las cuentas de la app, la última que ha abierto la app arriba. Pulsa un rider para ver su ficha.</div></div>
   <div class="cifras" id="r-cifras" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div><!-- RIDERS-RESUMEN-1 -->
   <div class="sub" id="r-cifras-nota" style="font-size:12px"></div>
+  <div class="card" id="r-origen" style="padding:14px 18px"></div><!-- RIDERS-ORIGEN-1 -->
   <div id="r-aviso"></div>
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><input type="text" id="r-buscar" placeholder="🔍 Buscar rider o correo" style="flex:1;min-width:220px;max-width:340px"><div class="opc" id="r-periodo"></div><div class="opc"><button type="button" id="r-invitan">💬 Quién invita</button></div><button type="button" class="btn" id="r-aviso-todos" style="padding:9px 18px">📣 Aviso a todos</button></div><!-- PERIODO-1 · QUIEN-INVITA-1 · RIDERS-BUSCAR-1 · AVISO-TODOS-ADMIN-1 -->
   <div class="card tabla oculto" id="r-inv"></div>
@@ -1337,6 +1338,46 @@ let OCULTAS = null // apodos que no son riders
 let ROBOTS = null
 const esRobot = (apodo) => !!(ROBOTS && apodo && ROBOTS.has(apodo))
 const chipDormido = (apodo, abrio) => esRobot(apodo) ? ' <span class="chip gris">🤖 Robot de Google</span>' : (dormido(abrio) ? ' <span class="chip rojo">Dormido</span>' : '')
+// ── RIDERS-ORIGEN-1 (25-nov, Mario 12:16-12:21: «en qué idioma tiene la app… un resumen de países, idiomas y provincias, para ver de un
+// vistazo quiénes entran»). Sale de `profiles` (idioma lo pone la app con `mc_idioma_poner`; país y provincia, el rider o la app) leído
+// aquí con la sesión de administrador (la RLS deja leer los perfiles). Cuenta los mismos que «Ya pueden usar la app»: sin la cuenta
+// oficial, las de pruebas ni los robots. En el teléfono no hay lista de riders: solo aquí (A80). ──
+let DE_DONDE = null // apodo → { idioma, pais, provincia }
+async function cargarDeDonde() {
+  if (DE_DONDE) return DE_DONDE
+  const m = new Map()
+  for (let desde = 0; desde < 50000; desde += 1000) { // Supabase da 1.000 filas por llamada
+    const { data, error } = await sb.from('profiles').select('nickname,idioma,pais,provincia').order('nickname').range(desde, desde + 999)
+    if (error) throw error
+    for (const p of data || []) if (p.nickname) m.set(p.nickname, { idioma: p.idioma || null, pais: p.pais || null, provincia: (p.provincia || '').trim() || null })
+    if (!data || data.length < 1000) break
+  }
+  return (DE_DONDE = m)
+}
+const IDIOMA_APP = { es: 'Castellano', ca: 'Catalán', en: 'Inglés', fr: 'Francés', pt: 'Portugués', it: 'Italiano' }
+const idiomaTxt = (i) => i ? (IDIOMA_APP[i] || i) : 'Sin dato'
+const bandera = (cc) => /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : ''
+let nombrePais = (cc) => cc || 'Sin dato'
+try { const dn = new Intl.DisplayNames(['es'], { type: 'region' }); nombrePais = (cc) => { if (!cc) return 'Sin dato'; try { return dn.of(cc) || cc } catch (e) { return cc } } } catch (e) {}
+const paisTxt = (cc) => cc ? `${bandera(cc)} ${esc(nombrePais(cc))}` : 'Sin dato'
+async function pintarDeDonde() {
+  const caja = $('r-origen')
+  DE_DONDE = null // cada vez que se vuelve a cargar la lista, los datos de ahora
+  try { await cargarDeDonde() } catch (e) { console.error('[RIDERS-ORIGEN-1]', e); caja.innerHTML = `<div class="sub">No se ha podido cargar de dónde son: ${esc(e.message)}</div>`; return }
+  const vistos = new Set(), filas = []
+  for (const r of RIDERS) {
+    if (!r.rider || vistos.has(r.rider) || (OCULTAS && OCULTAS.has(r.rider)) || esRobot(r.rider)) continue
+    vistos.add(r.rider); filas.push(DE_DONDE.get(r.rider) || { idioma: null, pais: null, provincia: null })
+  }
+  const contar = (f) => { const c = new Map(); for (const x of filas) { const k = f(x) || ''; c.set(k, (c.get(k) || 0) + 1) } return [...c].sort((a, b) => (!a[0]) - (!b[0]) || b[1] - a[1] || a[0].localeCompare(b[0], 'es')) }
+  const chips = (lista, txt) => lista.map(([k, n]) => `<span class="chip" style="background:${k ? '#F3EEE7' : '#FFF'};border:1px solid #E8E1D8;margin:4px 6px 0 0">${k ? txt(k) : 'Sin dato'} · <b>${n}</b></span>`).join('')
+  const grupo = (titulo, html) => `<div style="margin-top:10px"><div style="font-weight:800;font-size:13px">${titulo}</div><div>${html}</div></div>`
+  caja.innerHTML = `<div style="font-weight:800">De dónde son <span class="sub" style="font-weight:400">· ${filas.length} riders con cuenta</span></div>` +
+    grupo('Países', chips(contar(x => x.pais), paisTxt)) +
+    grupo('Idioma de la app', chips(contar(x => x.idioma), (k) => esc(idiomaTxt(k)))) +
+    grupo('Provincias', chips(contar(x => x.provincia), (k) => esc(k))) +
+    `<div class="sub" style="font-size:12px;margin-top:8px">El país: si el rider no lo ha elegido nunca, la app pone España. La provincia, solo si la ha puesto en su perfil. «Sin dato» en el idioma: no ha abierto una versión que lo apunte.</div>`
+}
 async function pintarCifrasRiders() {
   if (!OCULTAS) {
     try {
@@ -1361,6 +1402,7 @@ async function pintarCifrasRiders() {
   const personas = OCULTAS ? [...OCULTAS].filter(n => !esRobot(n)) : [], nRob = OCULTAS ? [...OCULTAS].filter(esRobot).length : 0 // PLAY-ROBOTS-1
   $('r-cifras-nota').textContent = OCULTAS ? (OCULTAS.size ? `Sin contar ${personas.join(' ni ')} (cuenta oficial y de pruebas)${nRob ? ` ni ${nRob} robot${nRob === 1 ? '' : 's'} de Google` : ''}.` : '')
     : 'Ojo: no se han podido quitar la cuenta oficial y las de pruebas; el primer número las incluye.'
+  await pintarDeDonde() // RIDERS-ORIGEN-1
 }
 $('r-cifras').onclick = (ev) => {
   const b = ev.target.closest('[data-fase]'); if (!b) return
@@ -1639,6 +1681,7 @@ async function verFicha(email, vuelve) {
   let f
   try { f = await invitar({ modo: 'ficha', email }) } catch (e) { $('f-cuerpo').innerHTML = `<div class="aviso mal">No se ha podido cargar la ficha: ${esc(e.message)}</div>`; return }
   FICHA = f
+  try { await cargarDeDonde() } catch (e) { console.error('[RIDERS-ORIGEN-1] ficha', e) } // RIDERS-ORIGEN-1: el idioma y el país
   const w = f.web, p = f.perfil, u = f.uso, c = f.cuenta
   const web = w ? dato('Se apuntó', fechaHora(w.creado_at)) + dato('Confirmó el correo', w.confirmado_at ? fechaHora(w.confirmado_at) : 'Aún no') +
       dato('Quiere probar la app', w.quiere_probar ? 'Sí · ' + movilTxt(w.plataforma) : 'No') + dato('Invitación', w.invitado_at ? 'Enviada el ' + fechaHora(w.invitado_at) : 'Sin enviar') +
@@ -1673,7 +1716,7 @@ async function verFicha(email, vuelve) {
       dato('Versión', esc(verApp(p?.app_version, p?.app_build))) +
       dato('Abrió la app por última vez', (p?.app_version_at ? fechaHora(p.app_version_at) + ' · ' + hace(p.app_version_at) : '—') + chipDormido(p?.nickname, p?.app_version_at)) +
       (vieja(p?.app_platform, p?.app_version) ? dato('Al día', '<span class="chip amar">Versión vieja</span>') : '') +
-      dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
+      dato('Carta de bienvenida', p?.tester_welcome_sent_at ? fechaHora(p.tester_welcome_sent_at) : 'No') + dato('Idioma de la app', esc(idiomaTxt(DE_DONDE?.get(p?.nickname)?.idioma))) /* RIDERS-ORIGEN-1 */ + dato('País', paisTxt(DE_DONDE?.get(p?.nickname)?.pais)) + (p?.provincia ? dato('Provincia', esc(p.provincia)) : '') + (p?.moto ? dato('Moto', esc(p.moto)) : '')
     : '<div class="sub">Todavía no tiene cuenta en la app.</div>'
   const uso = u ? `<div class="cifras">${cifra(u.planificadas, 'Rutas planificadas' + (u.publicas ? ` · ${u.publicas} públicas` : ''))}${cifra(u.rodadas, `Salidas rodadas · ${u.km_rodados} km`)}${u.en_recientes ? cifra(u.en_recientes, 'En Recientes (arranques y recados, 15 días)') : ''}
       ${cifra(u.salidas_grupo, `Salidas en grupo · ${u.km_grupo} km`)}${cifra(u.grupos, 'Grupos')}${cifra(u.radio_veces, `Veces con la radio · ${u.radio_min} min`)}
