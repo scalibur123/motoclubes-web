@@ -306,7 +306,14 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
     <label>VÍDEO (OPCIONAL)<input type="file" id="n-video" accept="video/mp4,video/quicktime"><span class="sub" id="n-video-txt" style="font-weight:500;letter-spacing:0"></span></label>
     <!-- NOTICIA-FOTO-1 (152.ª, Mario: «solo pueden ser vídeos, no me deja subir fotos»): una foto, sale grande arriba de la noticia -->
     <label>FOTO (OPCIONAL)<input type="file" id="n-foto" accept="image/*"><span class="sub" id="n-foto-txt" style="font-weight:500;letter-spacing:0"></span></label>
-    <label class="check"><input type="checkbox" id="n-avisar"> Avisar a todos <span class="sub" style="font-weight:500">(aviso en el móvil y en la campanita; como mucho una noticia avisada al día)</span></label>
+    <label class="check"><input type="checkbox" id="n-avisar"> Avisar a todos <span class="sub" style="font-weight:500">(aviso en el móvil y en la campanita de cada rider, en su idioma)</span></label>
+    <!-- NOTICIAS-AVISO-3 (26-nov, Mario: «que me avise en rojo de cuándo fue el último aviso y decida yo si aviso igualmente»):
+         en rojo si hace menos de 20 h del último «Avisar a todos» (a la vista antes de publicar) y, al publicar, la pregunta. -->
+    <div id="n-ultimo" class="oculto" style="color:var(--red);font-weight:700;font-size:14px;margin-top:-4px"></div>
+    <div id="n-pregunta" class="aviso mal oculto" style="display:flex;flex-direction:column;gap:10px">
+      <b id="n-pregunta-txt"></b>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn2" id="n-sin-aviso">Publicar sin aviso</button><button class="btn" id="n-igualmente">Avisar igualmente</button><button class="btn2" id="n-todavia" style="border:none;background:none">Todavía no</button></div>
+    </div>
     <div style="display:flex;justify-content:flex-end"><button class="btn" id="n-publicar">Publicar</button></div>
   </div>
   <div class="card tabla"><table><thead><tr><th>Noticias publicadas</th><th>Fecha</th><th>Opiniones</th><th>Vídeo / foto</th></tr></thead><tbody id="n-filas"></tbody></table></div>
@@ -1632,29 +1639,77 @@ async function cargarNoticias() {
 }
 $('n-video').onchange = () => { const f = $('n-video').files[0]; $('n-video-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' }
 $('n-foto').onchange = () => { const f = $('n-foto').files[0]; $('n-foto-txt').textContent = f ? `${f.name} · ${mb(f.size)}` : '' } // NOTICIA-FOTO-1
-$('n-publicar').onclick = async () => {
-  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked, f = $('n-video').files[0], ff = $('n-foto').files[0]
+// ── NOTICIAS-AVISO-3 (26-nov-2026, Mario 11:52 y 13:12: «el "Avisar a todos" no me puede bloquear: que me avise en rojo de cuándo fue el
+// último aviso y decida yo si aviso igualmente. En la Administración web y en el móvil»). Antes la base frenaba un segundo aviso en menos
+// de 20 h (NOTICIAS-AVISO-2); ahora devuelve el código MC020 con la hora y aquí se pregunta. Lo mismo en el Panel admin del móvil
+// (src/lib/noticias.ts y app.admin.noticias.tsx). Base: db/noticias_aviso_decide_2_hacer.sql (mc_publicar_noticia con p_forzar,
+// mc_noticia_ultimo_aviso). Sin ese SQL, todo como antes (sin rojo; el «no» de la base sale como fallo).
+const AVISO_RECIENTE_MS = 20 * 3600 * 1000
+let nUltimo = null, nSinHora = false
+function cuandoFueAviso(d, ahora = new Date()) { // «hoy a las 13:23», «ayer a las 19:29» o «el 24/11 a las 19:29»
+  const dos = (n) => String(n).padStart(2, '0'), hora = `${dos(d.getHours())}:${dos(d.getMinutes())}`
+  const mismo = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  const ayer = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - 1)
+  return mismo(d, ahora) ? `hoy a las ${hora}` : mismo(d, ayer) ? `ayer a las ${hora}` : `el ${d.getDate()}/${d.getMonth() + 1} a las ${hora}`
+}
+const nReciente = () => nSinHora || (!!nUltimo && Date.now() - nUltimo.getTime() < AVISO_RECIENTE_MS)
+const nCuando = () => nUltimo ? cuandoFueAviso(nUltimo) : 'hace menos de 20 horas'
+function nPintarUltimo() { const r = nReciente(); $('n-ultimo').textContent = r ? 'Último aviso: ' + nCuando() : ''; $('n-ultimo').classList.toggle('oculto', !r) }
+async function nLeerUltimo() {
+  try { const { data, error } = await sb.rpc('mc_noticia_ultimo_aviso'); if (error || !data) return null; const d = new Date(data); return isNaN(d.getTime()) ? null : d }
+  catch (e) { return null }
+}
+function nPreguntar() { $('n-pregunta-txt').textContent = `Ya avisaste ${nCuando()}. ¿Avisar a todos igualmente?`; $('n-pregunta').classList.remove('oculto'); $('n-pregunta').scrollIntoView({ block: 'nearest' }) }
+$('n-avisar').addEventListener('change', () => $('n-pregunta').classList.add('oculto'))
+$('n-todavia').onclick = () => $('n-pregunta').classList.add('oculto')
+$('n-sin-aviso').onclick = () => nPublicar(false, false)
+$('n-igualmente').onclick = () => nPublicar(true, true)
+$('n-publicar').onclick = () => {
+  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), avisar = $('n-avisar').checked
   if (titulo.length < 5 || texto.length < 20) return nAviso('Falta el título o el texto.')
+  if (avisar && nReciente()) return nPreguntar() // NOTICIAS-AVISO-3: la pregunta ya es la confirmación
   if (!confirm(avisar ? '¿Publicarla ya y avisar a todos?' : '¿Publicarla ya? La verá todo el mundo.')) return
+  nPublicar(avisar, false)
+}
+// `conAviso`: lo que se manda («Publicar sin aviso» lo quita); `igualmente`: «Avisar igualmente» (p_forzar).
+async function nPublicar(conAviso, igualmente) {
+  if ($('n-publicar').disabled) return
+  const titulo = $('n-titulo').value.trim(), texto = $('n-texto').value.trim(), f = $('n-video').files[0], ff = $('n-foto').files[0]
+  if (titulo.length < 5 || texto.length < 20) return nAviso('Falta el título o el texto.')
+  $('n-pregunta').classList.add('oculto')
   $('n-publicar').disabled = true
   try {
+    // Antes de subir nada, la hora del último aviso al momento (puede haber avisado el móvil hace un rato).
+    if (conAviso && !igualmente) {
+      $('n-publicar').textContent = 'Comprobando el último aviso…'
+      const u = await nLeerUltimo()
+      if (u) { nUltimo = u; nPintarUltimo() }
+      if (u && Date.now() - u.getTime() < AVISO_RECIENTE_MS) return nPreguntar()
+    }
     let ruta = null
     if (f) { $('n-publicar').textContent = 'Subiendo el vídeo…'; ruta = await subirVideoWeb(f, 'noticias') } // si falla, no se publica nada
     let foto = null
     if (ff) { $('n-publicar').textContent = 'Subiendo la foto…'; foto = await subirFotoWeb(ff) } // NOTICIA-FOTO-1: igual, si falla no se publica
     $('n-publicar').textContent = 'Publicando…'
-    const { data: id, error } = await sb.rpc('mc_publicar_noticia', { p_titulo: titulo, p_texto: texto, p_avisar: avisar })
+    const args = { p_titulo: titulo, p_texto: texto, p_avisar: conAviso }
+    if (igualmente) args.p_forzar = true // solo entonces: con la base de antes, lo de siempre sigue funcionando
+    const { data: id, error } = await sb.rpc('mc_publicar_noticia', args)
+    if (error && error.code === 'MC020') { // hace menos de 20 h del último aviso (otro aviso entre medias): se pregunta, no es un fallo
+      const d = new Date(error.details || ''); if (!isNaN(d.getTime())) nUltimo = d; else nSinHora = true
+      nPintarUltimo(); return nPreguntar()
+    }
     if (error || !id) throw new Error(error?.message || 'No se ha podido publicar')
     let extra = ''
     if (ruta) { const { error: ev } = await sb.rpc('mc_noticia_video', { p_thread: id, p_video: ruta }); if (ev) extra = ' Pero sin el vídeo: ' + esc(ev.message) }
     if (foto) { const { error: ef } = await sb.rpc('mc_noticia_foto', { p_thread: id, p_foto: foto }); if (ef) extra += ' Pero sin la foto: ' + esc(ef.message) }
     $('n-titulo').value = ''; $('n-texto').value = ''; $('n-video').value = ''; $('n-video-txt').textContent = ''; $('n-foto').value = ''; $('n-foto-txt').textContent = ''; $('n-avisar').checked = false
-    nAviso((avisar ? '✅ Noticia publicada y avisada a todos.' : '✅ Noticia publicada.') + extra, !extra)
+    nAviso((conAviso ? '✅ Noticia publicada y avisada a todos.' : '✅ Noticia publicada.') + extra, !extra)
+    if (conAviso) { nUltimo = new Date(); nSinHora = false; nPintarUltimo() } // la hora nueva, en rojo, sin esperar
     await cargarNoticias()
   } catch (e) { nAviso('No se ha podido publicar: ' + esc(e.message)) }
-  $('n-publicar').disabled = false; $('n-publicar').textContent = 'Publicar'
+  finally { $('n-publicar').disabled = false; $('n-publicar').textContent = 'Publicar' }
 }
-$('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias() }
+$('p-not').onclick = () => { verPestana('not'); nAviso(''); cargarNoticias(); nLeerUltimo().then((d) => { nUltimo = d; nSinHora = false; nPintarUltimo() }) } // NOTICIAS-AVISO-3
 $('n-filas').onclick = (ev) => { const tr = ev.target.closest('[data-noticia]'); if (!tr) return; if (foAbierto && foAbierto !== tr.dataset.noticia && !foPuedeSalir()) return; verPestana('for'); foAviso(''); abrirHilo(tr.dataset.noticia); void cargarForo() } // PANEL-CONTESTAR-1
 clicCab('t-cab', ordenT, () => pintarTesters()); clicCab('r-cab', ordenR, () => cargarRiders())
 $('r-inv').onclick = (ev) => { const b = ev.target.closest('.r-ficha'); if (b) verFicha(b.dataset.email, 'rid') } // QUIEN-INVITA-1
