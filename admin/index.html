@@ -939,8 +939,9 @@ function estadoFila(t) {
   // Revisión: si ha hecho algo DESPUÉS del aviso (pulsó el enlace, le mandaste el de Play…) ya no sale solo de la lista
   // y su fila vuelve a mostrar lo normal (con sus botones), para que no se te esconda lo que te toca hacer a ti.
   const trasAviso = (iso) => !!iso && !!t.ultimo_aviso_at && iso > t.ultimo_aviso_at
-  const contesto = t.ultimo_aviso_at && (trasAviso(t.clic_at) || trasAviso(t.play_enviado_at) || trasAviso(t.play_clic_at))
-  if (t.ultimo_aviso_at && !contesto) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + (esperaGmailW(t) ? ' si no contesta' : ' si no entra')}</span>${bloq}`
+  const contesto = t.ultimo_aviso_at && (trasAviso(t.clic_at) || trasAviso(t.play_enviado_at) || trasAviso(t.play_clic_at)
+    || (t.plataforma === 'android' && !!t.email_play && !t.play_enviado_at)) // GMAIL-BOTONES-1: con su Gmail puesto, te toca darle de alta (testers-diario no le quita)
+  if (t.ultimo_aviso_at && !contesto) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + (esperaGmailW(t) ? ' si no pones su Gmail' : ' si no entra')}</span>${bloq}`
     + (esperaGmailW(t) && !t.bloqueado ? ' ' + botonPlay(t) : '') // GMAIL-BOTONES-1: si contesta con su Gmail, el enlace se le manda desde aquí mismo
   // ANDROID-PLAY-DIRECTO-1 (17-oct, Mario: «que me ponga invitar, si lo que está esperando es el enlace, no sé qué pinta»):
   // a un Android sin enlace de Play no se le invita: le das de alta en Play Console y le mandas el enlace desde aquí.
@@ -1779,7 +1780,7 @@ async function verFicha(email, vuelve) {
           ((() => { const t = (TESTERS || []).find(x => x.email.toLowerCase() === String(w.email).toLowerCase()); return t ? elegibleUlt(t)
             : !w.ultimo_aviso_at && !w.no_quitar && !c && !w.baja_at && w.confirmado_at && w.quiere_probar && (w.invitado_at || w.play_enviado_at) })()
             ? `<div style="text-align:right;margin-top:8px"><button class="btn3" id="fn-ultimo">Mandarle el último aviso</button></div>` : '') +
-          (w.ultimo_aviso_at ? dato('Último aviso', fechaHora(w.ultimo_aviso_at) + (w.no_quitar ? ' · no se quita de la lista' : ' · sale solo de la lista a los 3 días si no entra')) +
+          (w.ultimo_aviso_at ? dato('Último aviso', fechaHora(w.ultimo_aviso_at) + (w.no_quitar ? ' · no se quita de la lista' : w.plataforma === 'android' && !esGmail(w.email) && !w.play_enviado_at ? (w.email_play ? ' · con su Gmail puesto no sale de la lista: mándale el enlace de Play' : ' · sale solo de la lista a los 3 días si no pones su Gmail') : ' · sale solo de la lista a los 3 días si no entra')) +
             `<div style="text-align:right;margin-top:8px"><button class="btn3" id="fn-noquitar" data-si="${w.no_quitar ? '0' : '1'}">${w.no_quitar ? 'Dejar que salga solo' : 'No quitar de la lista'}</button></div>` : ''))
     : '<div class="sub">No está en la lista de la web.</div>'
   const app = c ? dato('Rider', esc(p?.nickname || '—')) + dato('Cuenta creada', fechaHora(c.alta)) + dato('Móvil', p?.app_movil ? esc(p.app_movil) : movilTxt(p?.app_platform)) /* MOVIL-FICHA-1: el modelo, si la app ya lo ha mandado */ +
