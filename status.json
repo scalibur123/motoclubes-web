@@ -6,6 +6,7 @@
     "android": "1.26.11262"
   },
   "interruptores": {
-    "medir_fondo": true
+    "medir_fondo": true,
+    "correo_google": true
   }
 }
