@@ -1959,6 +1959,7 @@ $('t-ver-and').onclick = () => verCorreo('android')
 // 🆕 GMAIL-BOTONES-1: los dos correos de los Android sin Gmail, a ti, por Google (para ver con qué «De» llegan y dónde caen)
 $('t-gmail-prueba').onclick = async () => {
   const b = $('t-gmail-prueba'); b.disabled = true; tAviso('Enviándote los dos correos…', true)
+  try { $('t-aviso').scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch (e) {} // Mario 27-nov: el aviso quedaba fuera de la pantalla
   try {
     const r = await invitar({ modo: 'gmail_prueba' })
     tAviso(r.ok ? `✅ Te han salido los dos a ${esc(r.para)}. Mira con qué «De» te llegan (tiene que poner MOTOCLUBes y soporte@motoclubes.es) y en qué carpeta caen.`
