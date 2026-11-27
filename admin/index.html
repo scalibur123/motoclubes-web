@@ -228,6 +228,7 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
     <button class="btn2" id="t-ver-ios">Ver el correo de iPhone</button>
     <button class="btn2" id="t-ver-and">Ver el correo de Android</button>
+    <button class="btn2" id="t-gmail-prueba" title="Te llegan a ti los dos correos de los Android sin Gmail («Pedir Gmail» y «Último aviso»), por tu correo de Google">Probar «Pedir Gmail» en mi correo</button><!-- GMAIL-BOTONES-1 -->
     <span style="flex-grow:1"></span>
     <button class="btn" id="t-enviar" disabled>Enviar invitación</button>
   </div>
@@ -922,6 +923,11 @@ const toqueT = (t) => [t.apuntado, t.invitado_at, t.clic_at, t.recordatorio_at, 
 // él ya cuenta como dentro (no le llega el «Último aviso» ni sale de la lista). La regla, en el servidor (_shared/misma-persona.ts).
 const campoGmail = (t) => t.plataforma === 'android' && !esGmail(t.email)
   ? `<input type="email" class="t-gmail" data-email="${esc(t.email)}" value="${esc(t.email_play || '')}" placeholder="Su Gmail de Play" style="width:190px;padding:5px 8px;margin-right:4px"> ` : ''
+// 🆕 GMAIL-BOTONES-1 (27-nov, Mario 14:12-14:17): un Android que se apuntó con un correo que no es de Google y espera su alta en
+// Play. En su fila: «Pedir Gmail» (el correo tranquilo: dónde ver su Gmail) y «Último aviso» (le guardamos la plaza 3 días; si no
+// contesta, el repaso de la mañana le saca de la lista). Los dos salen por el correo de Google de MOTOCLUBes (Workspace).
+const esperaGmailW = (t) => t.fase === 'te_toca' && t.plataforma === 'android' && !esGmail(t.email) && !t.email_play && !t.tiene_cuenta
+const botonPlay = (t) => `${campoGmail(t)}<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button>`
 const CUENTA_POR = { unida: 'unida a mano', gmail_play: 'con su Gmail de Play', mismo_nombre: 'con otro correo del mismo nombre' }
 const chipOtroCorreo = (t) => CUENTA_POR[t.cuenta_por] ? ` <span class="chip gris" title="Entró en la app con otro correo">Dentro ${CUENTA_POR[t.cuenta_por]}</span>` : ''
 function estadoFila(t) {
@@ -934,10 +940,12 @@ function estadoFila(t) {
   // y su fila vuelve a mostrar lo normal (con sus botones), para que no se te esconda lo que te toca hacer a ti.
   const trasAviso = (iso) => !!iso && !!t.ultimo_aviso_at && iso > t.ultimo_aviso_at
   const contesto = t.ultimo_aviso_at && (trasAviso(t.clic_at) || trasAviso(t.play_enviado_at) || trasAviso(t.play_clic_at))
-  if (t.ultimo_aviso_at && !contesto) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + ' si no entra'}</span>${bloq}`
+  if (t.ultimo_aviso_at && !contesto) return `<span class="chip amar">Último aviso · ${fecha(t.ultimo_aviso_at)}</span> <span class="chip ${t.no_quitar ? 'verde' : 'gris'}">${t.no_quitar ? 'No se quita' : 'Sale de la lista el ' + fechaD(tandaAuto(t.ultimo_aviso_at, 3)) + (esperaGmailW(t) ? ' si no contesta' : ' si no entra')}</span>${bloq}`
+    + (esperaGmailW(t) && !t.bloqueado ? ' ' + botonPlay(t) : '') // GMAIL-BOTONES-1: si contesta con su Gmail, el enlace se le manda desde aquí mismo
   // ANDROID-PLAY-DIRECTO-1 (17-oct, Mario: «que me ponga invitar, si lo que está esperando es el enlace, no sé qué pinta»):
   // a un Android sin enlace de Play no se le invita: le das de alta en Play Console y le mandas el enlace desde aquí.
   if (t.fase === 'te_toca' && t.plataforma === 'android') return t.bloqueado ? `<span class="chip gris">Por dar de alta en Play</span>${bloq}`
+    : esperaGmailW(t) ? `${t.gmail_pedido_at ? `<span class="chip gris">Gmail pedido · ${fecha(t.gmail_pedido_at)}</span> ` : ''}${botonPlay(t)}${btn('t-pedir', 'Pedir Gmail')}${t.no_quitar ? '' : btn('t-ult1', 'Último aviso')}` // GMAIL-BOTONES-1
     : `${campoGmail(t)}<button class="btn3 o t-play" data-email="${esc(t.email)}">Mandar enlace de Play</button>` // MISMA-PERSONA-3: con su Gmail a la vista
   if (t.fase === 'te_toca') return t.bloqueado ? `<span class="chip gris">Por invitar</span>${bloq}` : `<span class="chip gris">Por invitar</span> <button class="btn2 t-uno" data-email="${esc(t.email)}" style="margin-left:8px;padding:4px 12px">Invitar</button>`
   if (t.fase === 'a_medias') {
@@ -1066,10 +1074,10 @@ $('t-marcados').onclick = async (ev) => {
 // Mandar el recordatorio o la ayuda (uno o varios) y decir qué ha pasado
 let enviandoAviso = false // revisión: mientras sale un envío, ningún otro botón manda (la función mira lo enviado al empezar)
 async function mandarAviso(modo, emails) {
-  const que = modo === 'ayuda' ? 'la ayuda' : 'el recordatorio'
+  const que = modo === 'ayuda' ? 'la ayuda' : modo === 'pedir_gmail' ? 'el «Pedir Gmail»' : 'el recordatorio' // GMAIL-BOTONES-1
   if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
   enviandoAviso = true
-  document.querySelectorAll('.t-recordar, .t-ayuda, #t-grupo-enviar').forEach(b => { b.disabled = true })
+  document.querySelectorAll('.t-recordar, .t-ayuda, .t-pedir, .t-ult1, #t-grupo-enviar').forEach(b => { b.disabled = true })
   tAviso('Enviando…', true)
   try {
     const r = await invitar({ modo, emails })
@@ -1914,6 +1922,16 @@ $('t-filas').onclick = async (ev) => {
     const campo = [...document.querySelectorAll('.t-gmail')].find((x) => x.dataset.email === pl.dataset.email)
     pl.disabled = true; await mandarPlay(pl.dataset.email, campo ? campo.value : ''); return cargarTesters()
   }
+  // 🆕 GMAIL-BOTONES-1: «Pedir Gmail» y «Último aviso» de un Android que espera su Gmail
+  const pg = ev.target.closest('.t-pedir')
+  if (pg) {
+    if (enviandoAviso) return tAviso('Espera a que termine el envío que está saliendo.')
+    if (!confirm(`¿Mandar «Pedir Gmail» a ${pg.dataset.email}? Le explica dónde ver su Gmail en Play Store.`)) return
+    pg.disabled = true; pg.textContent = 'Enviando…'
+    return mandarAviso('pedir_gmail', [pg.dataset.email])
+  }
+  const u1 = ev.target.closest('.t-ult1')
+  if (u1) { const r = await mandarUltimoElegido([u1.dataset.email], u1); if (!r) return; const msg = $('t-aviso').innerHTML; await cargarTesters(); $('t-aviso').innerHTML = msg; return }
   // TESTERS-AVISOS-1: «Recordar» y «Mandar ayuda» de una fila
   const av = ev.target.closest('.t-recordar, .t-ayuda')
   if (av) {
@@ -1935,6 +1953,16 @@ $('t-filas').onclick = async (ev) => {
 }
 $('t-ver-ios').onclick = () => verCorreo('ios')
 $('t-ver-and').onclick = () => verCorreo('android')
+// 🆕 GMAIL-BOTONES-1: los dos correos de los Android sin Gmail, a ti, por Google (para ver con qué «De» llegan y dónde caen)
+$('t-gmail-prueba').onclick = async () => {
+  const b = $('t-gmail-prueba'); b.disabled = true; tAviso('Enviándote los dos correos…', true)
+  try {
+    const r = await invitar({ modo: 'gmail_prueba' })
+    tAviso(r.ok ? `✅ Te han salido los dos a ${esc(r.para)}. Mira con qué «De» te llegan (tiene que poner MOTOCLUBes y soporte@motoclubes.es) y en qué carpeta caen.`
+      : `No han salido por Google: ${esc((r.correos || []).map(x => x.error).filter(Boolean).join(' · ') || r.error || 'sin respuesta')}`, !!r.ok)
+  } catch (e) { tAviso('No se ha podido mandar la prueba: ' + esc(e.message)) }
+  b.disabled = false
+}
 $('t-enviar').onclick = async () => {
   const por = TESTERS.filter(porInvitar)
   if (!por.length) return
@@ -2664,7 +2692,7 @@ const HE_LOG_CAT = { web_aviso_confirmar: 'web', 'notify-salida': 'salida', 'not
 // HECHO-TODO-1: correos del registro que ya salen por mc_envios (no se repiten) o que van a ti (avisos para Mario).
 const HE_LOG_FUERA = ['web_enlace_play', 'web_ayuda_tester', 'web_aviso_testflight', 'web_ultimo_aviso_tester', 'web_recordatorio_tester',
   'admin_correo_rider', 'admin_aviso_rider', 'admin_correo_negocio', 'incidencia_respuesta', 'incidencia_arreglada', 'web_invitacion_tester',
-  'web_pedir_cuenta_google', 'web_aviso_tester_admin', 'testers_diario_admin']
+  'web_pedir_cuenta_google', 'web_aviso_tester_admin', 'testers_diario_admin', 'web_pedir_gmail'] // GMAIL-BOTONES-1: ya sale por mc_envios
 const HE_LOG_TXT = { web_aviso_confirmar: 'Correo para confirmar su correo', 'notify-salida': 'Aviso de salida en grupo',
   'notify-salida-copia': 'Aviso de salida en grupo', 'notify-feedback-resolved': 'Aviso de «Te escuchamos» resuelto' }
 const heDia = (iso) => String(iso || '').length === 10 ? new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : fechaHora(iso)
