@@ -895,7 +895,7 @@ $('t-ultimo').onclick = async (ev) => {
   try {
     const r = await invitar({ modo: 'ultimo', emails })
     const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
-    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length)
+    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : '', dudosoTxt(r)].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length && !(r.dudosos || []).length)
   } catch (e) { tAviso('No se ha podido mandar el último aviso: ' + esc(e.message)) }
   enviandoAviso = false
   await cargarTesters()
@@ -1048,6 +1048,8 @@ function pintarMarcados() {
     <button class="btn3" id="t-marca-quitar">Quitar las marcas</button>
     <button class="btn" id="t-marca-enviar">Mandar el último aviso a ${MARCA.size === 1 ? '1 marcado' : 'los ' + MARCA.size + ' marcados'}</button></div>`
 }
+// GMAIL-BOTONES-1 (2.ª revisión): Google no contestó al mandarlo: puede que haya salido. Antes de volver a pulsar, mirar «Enviados».
+const dudosoTxt = (r) => (r.dudosos || []).length ? `⚠️ Puede que les haya llegado a ${r.dudosos.map(esc).join(', ')} (Google no contestó a tiempo): mira «Enviados» de tu correo antes de volver a mandarlo` : ''
 async function mandarUltimoElegido(emails, b) {
   if (!emails.length) return null
   if (enviandoAviso) { tAviso('Espera a que termine el envío que está saliendo.'); return null } // revisión: antes de preguntar
@@ -1056,7 +1058,7 @@ async function mandarUltimoElegido(emails, b) {
   try {
     const r = await invitar({ modo: 'ultimo', emails, mano: true })
     const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
-    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length)
+    tAviso(`Último aviso: ${[r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : '', dudosoTxt(r)].filter(Boolean).join(' · ')}.`, !!r.enviados && !(r.fallos || []).length && !(r.dudosos || []).length)
     enviandoAviso = false
     return { fallos: (r.fallos || []).map(x => String(x).toLowerCase()) }
   } catch (e) { // revisión: si se corta a mitad, puede que alguno ya haya salido: se dice y se recarga la lista para verlo
@@ -1083,8 +1085,8 @@ async function mandarAviso(modo, emails) {
   try {
     const r = await invitar({ modo, emails })
     const sal = (r.saltados || []).map(x => `${esc(x.email)} (${esc(x.motivo)})`)
-    const txt = [r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : ''].filter(Boolean).join(' · ')
-    tAviso(`${que[0].toUpperCase() + que.slice(1)}: ${txt}.`, !!r.enviados && !(r.fallos || []).length)
+    const txt = [r.enviados ? `✅ ${r.enviados === 1 ? 'Enviado' : 'Enviados'} ${r.enviados}` : 'No ha salido ninguno', sal.length ? 'No se mandó a: ' + sal.join(', ') : '', (r.fallos || []).length ? 'Fallaron: ' + r.fallos.map(esc).join(', ') : '', dudosoTxt(r)].filter(Boolean).join(' · ')
+    tAviso(`${que[0].toUpperCase() + que.slice(1)}: ${txt}.`, !!r.enviados && !(r.fallos || []).length && !(r.dudosos || []).length)
   } catch (e) { tAviso(`No se ha podido mandar ${que}: ${esc(e.message)}`) }
   enviandoAviso = false
   await cargarTesters()
