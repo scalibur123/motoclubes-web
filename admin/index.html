@@ -2380,10 +2380,10 @@ $('p-con').onclick = () => { verPestana('con'); coAviso(''); cargarContactos() }
 
 // ── USO-APP-1 (28-oct, 129.ª) · qué miran los riders ──
 const USO_BLOQUES = [
-  ['videos', '🎬 Vídeos', 'Cada vez que un vídeo de la guía o de una noticia llega a arrancar. «Llegan al» = hasta qué segundo lo ven, de media (solo cuenta cuando cierran el vídeo o cambian de pantalla). Desde la versión 1.26.10284.'],
+  ['videos', '🎬 Vídeos', 'Todos los vídeos, el último publicado arriba. Cada vez que un vídeo de la guía o de una noticia llega a arrancar. «Llegan al» = hasta qué segundo lo ven, de media (solo cuenta cuando cierran el vídeo o cambian de pantalla). Desde la versión 1.26.10284.'],
   ['noticias', '📰 Noticias', 'Todas las noticias, la última arriba, y cuántos riders han abierto cada una en estos días.'],
   ['hilos', '💬 Hilos del foro', 'Todos los hilos, el último arriba, y cuántos riders han abierto cada uno en estos días. Tus visitas no cuentan.'],
-  ['guia', '📖 Guía · apartados', 'Cada apartado de la guía que abren. Desde la versión 1.26.10284.'],
+  ['guia', '📖 Guía · apartados', 'Cada apartado de la guía que abren, el último que se ha cambiado arriba. Desde la versión 1.26.10284.'],
   ['guia_otros', '📖 Guía · otros botones', 'Por el texto del botón, en el idioma del rider (y los apartados en las versiones anteriores a la 1.26.10284).'],
   ['pantallas', '📱 Pantallas', 'Cada vez que entran en una pantalla.'],
 ]
@@ -2436,10 +2436,15 @@ async function cargarUso() {
     }
     const [hilos, guia] = await Promise.all([
       todos('threads', 'id, title, category, created_at, video_url', q => q.is('hidden_at', null).order('created_at', { ascending: false })),
-      todos('guia_secciones', 'id, titulo, video_url, visible, orden', q => q.order('orden', { ascending: true })),
+      todos('guia_secciones', 'id, titulo, video_url, visible, orden, updated_at', q => q.order('orden', { ascending: true })), // updated_at: USO-VIDEOS-ORDEN-1
     ])
     if (n !== usoPet) return
     for (const t of hilos) USO_FECHA[t.id] = t.created_at
+    // 🆕 USO-VIDEOS-ORDEN-1 (Mario 27-nov 15:54: «lo último hecho, lo 1º… en todos los sitios»): la fecha de cada vídeo y de cada
+    // apartado de la guía. Vídeo de noticia = cuando se colgó la noticia; de la guía = la última vez que se guardó ese apartado
+    // (la guía no apunta cuándo se subió el vídeo: si se edita un apartado, sube arriba).
+    for (const t of hilos) if (t.video_url) USO_FECHA['noticia:' + t.id] = t.created_at
+    for (const g of guia) { if (g.updated_at) { USO_FECHA['guia:' + g.id] = g.updated_at; USO_FECHA[g.id] = USO_FECHA[g.id] || g.updated_at } }
     usoCompletar(USO, { hilos, guia, pantallas: Object.keys(USO_PANTALLA) })
   } catch (e) { console.warn('[uso] lista entera', e) }
   if (n !== usoPet) return
@@ -2472,7 +2477,7 @@ function pintarUso() {
   $('u-cifras').innerHTML = [[USO?.activos ?? 0, 'Riders con la app abierta'], [suma('noticias'), 'Han leído alguna noticia'], [suma('videos'), 'Han visto algún vídeo'], [new Set([...de('guia'), ...de('guia_otros')].flatMap(f => f.quienes || [])).size, 'Han tocado algo en la guía']]
     .map(([n, t]) => `<div class="card cifra"><b>${n}</b><span>${t}</span></div>`).join('')
   $('u-bloques').innerHTML = USO_BLOQUES.map(([b, titulo, ayuda]) => {
-    const porFecha = b === 'noticias' || b === 'hilos' // USO-ULTIMO-ARRIBA-1: lo último colgado arriba (sin fecha, al final)
+    const porFecha = b === 'noticias' || b === 'hilos' || b === 'videos' || b === 'guia' // USO-ULTIMO-ARRIBA-1 · USO-VIDEOS-ORDEN-1: lo último arriba (sin fecha, al final)
     const lista = porFecha ? de(b).slice().sort((x, y) => String(USO_FECHA[y.clave] || '').localeCompare(String(USO_FECHA[x.clave] || ''))) : de(b), conSeg = b === 'videos'
     const cuerpo = lista.map((f, i) => {
       const k = b + '|' + i, abierta = usoAbierta === k
