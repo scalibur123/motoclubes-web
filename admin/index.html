@@ -335,6 +335,9 @@ input.vacio{border-color:#FFB27A;background:#FFF8F2}
        pregunten les pueda redirigir: mírate el vídeo»). Lee mc_admin_videos(p_dias) (db/admin_videos_2_hacer.sql). Lo mismo en el
        móvil: Panel de administrador → «Quién ve los vídeos» (regla 18). -->
   <div class="card" id="u-videos" style="padding:16px 22px"></div>
+  <!-- BATERIA-AVISOS-1 (27-nov · Mario: «establecer algún tipo de control para saber si el rider lo ha hecho o no»). Lee
+       mc_bateria_android_admin() (db/bateria_avisos_2_hacer.sql). Lo mismo en el móvil: Panel de administrador → «Batería en Android». -->
+  <div class="card" id="u-bateria" style="padding:16px 22px"></div>
   <div id="u-bloques" style="display:flex;flex-direction:column;gap:16px"></div>
 </main>
 <!-- PANEL-HECHO-1 (30-oct, 131.ª). Mario: «echo de menos una visión general de todo lo hecho en el portal». Todo en una lista, de lo último a lo primero. -->
@@ -2457,7 +2460,7 @@ function pintarUso() {
 }
 $('u-bloques').onclick = (ev) => { const tr = ev.target.closest('[data-uso]'); if (!tr) return; usoAbierta = usoAbierta === tr.dataset.uso ? null : tr.dataset.uso; pintarUso() }
 $('u-dias').onchange = () => cargarUso()
-$('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos(); cargarVideos() }
+$('p-uso').onclick = () => { verPestana('uso'); cargarUso(); cargarUltimos(); cargarVideos(); cargarBateria() }
 // ── ADMIN-VIDEOS-1 (25-nov): «🎬 Quién ve los vídeos», en Uso. Esta semana o este mes; va aparte de los días de arriba. ──
 let VID = null, VID_DIAS = 7, vidPet = 0, vidTodos = false
 async function cargarVideos() {
@@ -2501,6 +2504,51 @@ $('u-videos').onclick = (ev) => {
   const b = ev.target.closest('[data-vdias]')
   if (b) { const d = Number(b.dataset.vdias); if (d !== VID_DIAS) { VID_DIAS = d; cargarVideos() } return }
   if (ev.target.closest('#u-videos-todos')) { vidTodos = true; pintarVideos() }
+}
+// ── BATERIA-AVISOS-1 (27-nov): «🔋 Batería en Android», en Uso. Cada rider de Android con su móvil, si tiene hecho el ajuste de
+// batería y los avisos que le han llegado (tarjeta en la campanita el primer día, aviso 1 a los 2 días, aviso 2 a la semana) y si ha
+// pedido ayuda. «?»: Xiaomi y Honor tienen un 2.º ajuste que la app no puede leer. «Versión vieja»: aún no le llegan los avisos. ──
+let BAT = null, batTodos = false, batPet = 0
+async function cargarBateria() {
+  const n = ++batPet
+  $('u-bateria').innerHTML = '<div class="sub">Cargando la batería de los Android…</div>'
+  const { data, error } = await sb.rpc('mc_bateria_android_admin')
+  if (n !== batPet) return
+  if (error) {
+    $('u-bateria').innerHTML = /mc_bateria_android_admin|PGRST202|schema cache/i.test(error.message + ' ' + (error.code || ''))
+      ? '<div class="aviso mal">«Batería en Android»: aún no está creada la función en la base. Falta ejecutar <b>db/bateria_avisos_2_hacer.sql</b> en Supabase.</div>'
+      : `<div class="aviso mal">No se ha podido cargar la batería de los Android: ${esc(error.message)}</div>`
+    return
+  }
+  BAT = data || null
+  pintarBateria()
+}
+function pintarBateria() {
+  const b = BAT || { total: 0, hechos: 0, sin_hacer: 0, falta_2: 0, version_vieja: 0, ayuda: 0, filas: [] }
+  const filas = Array.isArray(b.filas) ? b.filas : []
+  const ver = batTodos ? filas : filas.filter(f => f.estado === 'sin_hacer' || f.ayuda_at)
+  const chip = (e) => e === 'hecho' ? '<span class="chip verde">✓ Hecho</span>'
+    : e === 'sin_hacer' ? '<span class="chip rojo">✗ Sin hacer</span>'
+    : e === 'falta_2' ? '<span class="chip amar">? Falta el 2.º paso</span>' : '<span class="chip gris">Sin dato</span>'
+  const avisos = (f) => [f.campanita_at ? 'Campanita ' + fecha(f.campanita_at) : '', f.aviso1_at ? 'Aviso 1 ' + fecha(f.aviso1_at) : '',
+    f.aviso2_at ? 'Aviso 2 ' + fecha(f.aviso2_at) : ''].filter(Boolean).join(' · ') || (f.app_nueva ? '—' : '<span class="sub">Versión vieja: aún no le llegan</span>')
+  const nombre = (f) => f.email ? `<button class="nombre-c r-ficha" data-email="${esc(f.email)}">${esc(f.nick || 'Sin nick')}</button>` : `<b>${esc(f.nick || 'Sin nick')}</b>`
+  const cuerpo = ver.map(f => `<tr><td class="partir">${nombre(f)}</td><td class="sub partir">${esc(f.movil || [f.marca, f.modelo].filter(Boolean).join(' ') || 'Android')}<br>${esc(f.version || '')}</td>
+      <td>${chip(f.estado)}</td><td class="sub">${f.visto_at ? fecha(f.visto_at) : '—'}</td><td class="sub partir">${avisos(f)}</td>
+      <td>${f.ayuda_at ? `<span class="chip azul">Pidió ayuda ${fecha(f.ayuda_at)}${f.ayuda_n > 1 ? ' (' + f.ayuda_n + ' veces)' : ''}</span>` : ''}</td></tr>`).join('')
+    || `<tr><td colspan="6" class="sub">${batTodos ? 'Ningún rider de Android todavía.' : 'Nadie sin hacer ni pidiendo ayuda.'}</td></tr>`
+  const boton = (todos, t) => `<button type="button" class="${batTodos === todos ? 'btn' : 'btn3'}" data-btodos="${todos ? 1 : 0}" style="padding:6px 14px">${t}</button>`
+  $('u-bateria').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div class="partir" style="flex:1 1 300px"><div style="font-weight:800;font-size:18px">🔋 Batería en Android</div>
+        <div class="sub">Si tienen hecho el ajuste para que el móvil no cierre MOTOCLUBes con la pantalla apagada. Toca un rider para ver su ficha.</div></div>
+      <div style="display:flex;gap:6px">${boton(false, 'Sin hacer y ayuda')}${boton(true, 'Todos')}</div></div>
+    <div style="margin:12px 0 14px"><b style="font-size:22px">${b.hechos}</b> de <b>${b.total}</b> lo tienen hecho · <b>${b.sin_hacer}</b> sin hacer ·
+      <b>${b.falta_2}</b> Xiaomi u Honor con el 2.º paso sin saber · <b>${b.version_vieja}</b> con la versión vieja · <b>${b.ayuda}</b> han pedido ayuda</div>
+    <div class="tabla"><table><thead><tr><th>Rider</th><th>Móvil</th><th>Ajuste</th><th>Abrió la app</th><th>Avisos</th><th>Ayuda</th></tr></thead><tbody>${cuerpo}</tbody></table></div>`
+}
+$('u-bateria').onclick = (ev) => {
+  const f = ev.target.closest('.r-ficha'); if (f) return verFicha(f.dataset.email, 'uso')
+  const b = ev.target.closest('[data-btodos]'); if (b) { const t = b.dataset.btodos === '1'; if (t !== batTodos) { batTodos = t; pintarBateria() } }
 }
 // ── ADMIN-ULTIMOS-1 (151.ª): «Lo último», arriba de Uso. Las 10 últimas cosas de la app, de la más nueva a la más vieja. ──
 const ULT_TIPO = { alta: 'Alta', entrada: 'Entra en la app', ruta: 'Ruta', publica: 'Ruta pública', foto: 'Foto', comentario: 'Comentario',
