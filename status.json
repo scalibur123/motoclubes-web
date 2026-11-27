@@ -4,5 +4,8 @@
   "version": {
     "ios": "1.26.1124",
     "android": "1.26.11262"
+  },
+  "interruptores": {
+    "medir_fondo": true
   }
 }
