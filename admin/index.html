@@ -2564,9 +2564,11 @@ function pintarBateria() {
   const b = BAT || { total: 0, hechos: 0, sin_hacer: 0, falta_2: 0, version_vieja: 0, ayuda: 0, filas: [] }
   const filas = Array.isArray(b.filas) ? b.filas : []
   const ver = batTodos ? filas : filas.filter(f => f.estado === 'sin_hacer' || f.ayuda_at)
-  const chip = (e) => e === 'hecho' ? '<span class="chip verde">✓ Hecho</span>'
-    : e === 'sin_hacer' ? '<span class="chip rojo">✗ Sin hacer</span>'
-    : e === 'falta_2' ? '<span class="chip amar">? Falta el 2.º paso</span>' : '<span class="chip gris">Sin dato</span>'
+  // BATERIA-XIAOMI-HECHO-1 (28-nov, Mario 12:16: «si no lo vamos a ver nunca, no tiene sentido que esté»): en Xiaomi y Honor el 2.º ajuste
+  // (autoinicio) no lo puede leer ninguna app: con el 1.º hecho, «✓ Hecho» como los demás. Lo que no se puede comprobar queda apuntado
+  // en el PLAYBOOK: si uno de ellos tiene cierres con la pantalla apagada, sospechar del autoinicio.
+  const chip = (e) => (e === 'hecho' || e === 'falta_2') ? '<span class="chip verde">✓ Hecho</span>'
+    : e === 'sin_hacer' ? '<span class="chip rojo">✗ Sin hacer</span>' : '<span class="chip gris">Sin dato</span>'
   const avisos = (f) => [f.campanita_at ? 'Campanita ' + fecha(f.campanita_at) : '', f.aviso1_at ? 'Aviso 1 ' + fecha(f.aviso1_at) : '',
     f.aviso2_at ? 'Aviso 2 ' + fecha(f.aviso2_at) : ''].filter(Boolean).join(' · ') || (f.app_nueva ? '—' : '<span class="sub">Versión vieja: aún no le llegan</span>')
   const nombre = (f) => f.email ? `<button class="nombre-c r-ficha" data-email="${esc(f.email)}">${esc(f.nick || 'Sin nick')}</button>` : `<b>${esc(f.nick || 'Sin nick')}</b>`
@@ -2579,8 +2581,8 @@ function pintarBateria() {
       <div class="partir" style="flex:1 1 300px"><div style="font-weight:800;font-size:18px">🔋 Batería en Android</div>
         <div class="sub">Si tienen hecho el ajuste para que el móvil no cierre MOTOCLUBes con la pantalla apagada. Toca un rider para ver su ficha.</div></div>
       <div style="display:flex;gap:6px">${boton(false, 'Sin hacer y ayuda')}${boton(true, 'Todos')}</div></div>
-    <div style="margin:12px 0 14px"><b style="font-size:22px">${b.hechos}</b> de <b>${b.total}</b> lo tienen hecho · <b>${b.sin_hacer}</b> sin hacer ·
-      <b>${b.falta_2}</b> Xiaomi u Honor con el 2.º paso sin saber · <b>${b.version_vieja}</b> con la versión vieja · <b>${b.ayuda}</b> han pedido ayuda</div>
+    <div style="margin:12px 0 14px"><b style="font-size:22px">${(b.hechos || 0) + (b.falta_2 || 0)}</b> de <b>${b.total}</b> lo tienen hecho · <b>${b.sin_hacer}</b> sin hacer ·
+      <b>${b.version_vieja}</b> con la versión vieja · <b>${b.ayuda}</b> han pedido ayuda</div>
     <div class="tabla"><table><thead><tr><th>Rider</th><th>Móvil</th><th>Ajuste</th><th>Abrió la app</th><th>Avisos</th><th>Ayuda</th></tr></thead><tbody>${cuerpo}</tbody></table></div>`
 }
 $('u-bateria').onclick = (ev) => {
